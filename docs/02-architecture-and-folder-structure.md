@@ -202,7 +202,7 @@ content/
 
 ## 4. `shared/` (Global Assets)
 
-Assets that apply to *all* reels (brand identity).
+Assets and configuration that apply to *all* reels (brand identity and agent instructions).
 
 ```text
 shared/
@@ -211,9 +211,19 @@ shared/
 ├── audio/
 │   ├── intro.mp3
 │   └── watermark.mp3
-└── templates/
-    └── seed_template.md
+├── prompts/                  # System prompts for agents (reusable instructions)
+│   ├── research_system.md    # Research assistant instructions
+│   ├── script_system.md      # Scriptwriter instructions
+│   ├── visual_plan_system.md # Visual director instructions
+│   ├── assets_system.md      # Image/video prompt engineer instructions
+│   └── voice_system.md       # Voice director instructions
+└── templates/                # User-facing templates (starting points)
+    └── seed_template.md      # Template for creating new reels
 ```
+
+**Distinction:**
+- **`prompts/`**: System prompts define agent behavior and are loaded by the orchestrator. These are internal instructions that apply globally across all reels.
+- **`templates/`**: User-facing templates provide formats/starting points for users to fill in (e.g., `seed_template.md`).
 
 ---
 
