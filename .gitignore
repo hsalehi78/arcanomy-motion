@@ -19,76 +19,49 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+
+# Virtual environments
+.venv/
 venv/
-env/
 ENV/
-.venv
+env/
 
-# Node.js / Remotion
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-.npm
-.eslintcache
-.parcel-cache
-.next/
-out/
-dist/
-build/
-.remotion/
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
 
-# Generated video files
-*.mp4
-*.mov
-*.avi
-*.mkv
-*.webm
-*.srt
-*.vtt
-
-# Generated data files
-*.csv
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
-!remotion.config.ts
-
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
-*.key
-*.pem
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Content (user data)
+content/
+
+# Node
+node_modules/
+remotion/node_modules/
+remotion/out/
+
+# Remotion build artifacts
+remotion/.remotion/
+
+# OS
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
 logs/
-*.log.*
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.bak
-*.backup
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Project specific
-reels/*/final.mp4
-reels/*/final.srt
-reels/*/metadata.json
-reels/*/assets/
-reels/*/output/
-
+# uv
+.uv/
+uv.lock
