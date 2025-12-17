@@ -241,7 +241,10 @@ def list_blogs(
 
 @app.command("ingest-blog")
 def ingest_blog(
-    identifier: str = typer.Argument(..., help="Blog identifier from list-blogs"),
+    identifier: Optional[str] = typer.Argument(
+        None,
+        help="Blog identifier (optional - will show interactive picker if omitted)",
+    ),
     output_dir: Path = typer.Option(
         Path("content/reels"),
         "--output",
@@ -254,25 +257,74 @@ def ingest_blog(
         "-p",
         help="LLM provider (openai, anthropic, gemini)",
     ),
+    limit: int = typer.Option(
+        10,
+        "--limit",
+        "-n",
+        help="Number of blogs to show in interactive mode",
+    ),
 ):
-    """Create a new reel from an Arcanomy blog post."""
+    """Create a new reel from an Arcanomy blog post.
+
+    Run without arguments for interactive mode (pick by number).
+    """
     from dotenv import load_dotenv
+    from rich.console import Console
+    from rich.table import Table
 
     load_dotenv()
+    console = Console()
 
-    # Fetch blog metadata to get title and other info
-    typer.echo(f"Fetching blog list to find: {identifier}")
+    # Fetch blog list
+    typer.echo("Fetching blog list...")
     try:
-        blogs = fetch_featured_blogs()
-        blog = next((b for b in blogs if b.identifier == identifier), None)
+        blogs = fetch_featured_blogs(limit=limit if not identifier else None)
     except Exception as e:
         typer.echo(f"Error fetching blog list: {e}", err=True)
         raise typer.Exit(1)
 
-    if not blog:
-        typer.echo(f"Error: Blog not found with identifier: {identifier}", err=True)
-        typer.echo("Run 'arcanomy list-blogs' to see available blogs.")
-        raise typer.Exit(1)
+    # Interactive mode: no identifier provided
+    if not identifier:
+        if not blogs:
+            typer.echo("No blogs found.")
+            raise typer.Exit(1)
+
+        # Show numbered list
+        table = Table(title=f"Pick a blog (1-{len(blogs)})")
+        table.add_column("#", style="bold cyan", width=3)
+        table.add_column("Published", style="dim")
+        table.add_column("Title", style="bold")
+        table.add_column("Category", style="green")
+
+        for i, blog in enumerate(blogs, 1):
+            table.add_row(
+                str(i),
+                blog.published_date,
+                blog.title[:50] + "..." if len(blog.title) > 50 else blog.title,
+                blog.category,
+            )
+
+        console.print(table)
+        typer.echo()
+
+        # Prompt for selection
+        choice = typer.prompt("Enter number to select", type=int)
+
+        if choice < 1 or choice > len(blogs):
+            typer.echo(f"Invalid choice. Enter a number between 1 and {len(blogs)}.", err=True)
+            raise typer.Exit(1)
+
+        blog = blogs[choice - 1]
+        identifier = blog.identifier
+        typer.echo(f"\nSelected: {blog.title}")
+    else:
+        # Direct mode: find blog by identifier
+        blog = next((b for b in blogs if b.identifier == identifier), None)
+
+        if not blog:
+            typer.echo(f"Error: Blog not found with identifier: {identifier}", err=True)
+            typer.echo("Run 'arcanomy ingest-blog' without arguments to pick interactively.")
+            raise typer.Exit(1)
 
     # Create reel folder using the blog identifier (already has date)
     reel_path = output_dir / identifier
@@ -318,6 +370,157 @@ def ingest_blog(
     typer.echo(f"\n  Next steps:")
     typer.echo(f"    1. Review and edit the seed/config files")
     typer.echo(f"    2. Run: uv run arcanomy run {reel_path}")
+
+
+@app.command()
+def commit(
+    message: Optional[str] = typer.Option(
+        None,
+        "--message",
+        "-m",
+        help="Custom commit message (auto-generated if not provided)",
+    ),
+):
+    """Stage, commit, and push all changes."""
+    import subprocess
+
+    # Check for changes
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+    )
+    lines = [l for l in result.stdout.strip().split("\n") if l]
+
+    if not lines:
+        typer.echo("No changes to commit")
+        return
+
+    # Categorize changes
+    modified, added, deleted, untracked = [], [], [], []
+    for line in lines:
+        status = line[:2]
+        file = line[3:]
+        if "M" in status:
+            modified.append(file)
+        elif "A" in status:
+            added.append(file)
+        elif "D" in status:
+            deleted.append(file)
+        elif status == "??":
+            untracked.append(file)
+
+    total = len(modified) + len(added) + len(deleted) + len(untracked)
+    typer.echo(f"Found {total} changed file(s)")
+    if modified:
+        typer.echo(f"  Modified: {len(modified)}")
+    if added:
+        typer.echo(f"  Added: {len(added)}")
+    if deleted:
+        typer.echo(f"  Deleted: {len(deleted)}")
+    if untracked:
+        typer.echo(f"  Untracked: {len(untracked)}")
+
+    # Stage all changes
+    typer.echo("\nStaging all changes...")
+    subprocess.run(["git", "add", "-A"], check=True)
+    typer.echo("[OK] All changes staged")
+
+    # Generate commit message if not provided
+    if not message:
+        all_files = modified + added + deleted + untracked
+        message = _generate_commit_message(all_files, added, deleted)
+
+    typer.echo(f'\nCommit message: "{message}"')
+
+    # Commit
+    typer.echo("\nCommitting...")
+    result = subprocess.run(
+        ["git", "commit", "-m", message],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        typer.echo(f"Commit failed: {result.stderr}", err=True)
+        raise typer.Exit(1)
+    typer.echo("[OK] Changes committed")
+
+    # Push
+    typer.echo("\nPushing to remote...")
+    result = subprocess.run(["git", "push"], capture_output=True, text=True)
+    if result.returncode != 0:
+        typer.echo(f"Push failed: {result.stderr}", err=True)
+        typer.echo("You may need to pull first.")
+        raise typer.Exit(1)
+    typer.echo("[OK] Pushed to remote")
+
+    typer.echo("\n[OK] All done!")
+
+
+def _generate_commit_message(
+    all_files: list[str],
+    added: list[str],
+    deleted: list[str],
+) -> str:
+    """Generate a commit message based on changed files."""
+    # Categorize
+    components = [f for f in all_files if "components/" in f]
+    stages = [f for f in all_files if "stages/" in f]
+    services = [f for f in all_files if "services/" in f]
+    domain = [f for f in all_files if "domain/" in f]
+    docs = [f for f in all_files if f.endswith(".md")]
+    configs = [f for f in all_files if f.endswith((".yaml", ".toml", ".json"))]
+    scripts = [f for f in all_files if "scripts/" in f]
+    remotion = [f for f in all_files if "remotion/" in f]
+
+    # Determine message based on primary changes
+    if len(added) > len(all_files) // 2 and added:
+        primary = added[0]
+        name = primary.split("/")[-1]
+        return f"Add {name}"
+
+    if len(deleted) > len(all_files) // 2 and deleted:
+        if len(deleted) == 1:
+            return f"Remove {deleted[0].split('/')[-1]}"
+        return f"Remove {len(deleted)} files"
+
+    if stages:
+        if len(stages) == 1:
+            name = stages[0].split("/")[-1].replace(".py", "")
+            return f"Update {name} stage"
+        return f"Update {len(stages)} stages"
+
+    if services:
+        if len(services) == 1:
+            name = services[0].split("/")[-1].replace(".py", "")
+            return f"Update {name} service"
+        return f"Update {len(services)} services"
+
+    if domain:
+        return "Update domain models"
+
+    if components:
+        if len(components) == 1:
+            name = components[0].split("/")[-1].replace(".tsx", "")
+            return f"Update {name} component"
+        return f"Update {len(components)} components"
+
+    if remotion:
+        return "Update Remotion config"
+
+    if scripts:
+        if len(scripts) == 1:
+            name = scripts[0].split("/")[-1]
+            return f"Update {name}"
+        return "Update scripts"
+
+    if configs:
+        return "Update configuration"
+
+    if docs:
+        return "Update documentation"
+
+    return f"Update {len(all_files)} file{'s' if len(all_files) != 1 else ''}"
 
 
 if __name__ == "__main__":

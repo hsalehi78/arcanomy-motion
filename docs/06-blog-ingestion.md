@@ -47,10 +47,30 @@ uv run arcanomy list-blogs --limit 20
 
 ### `arcanomy ingest-blog`
 
-Creates a new reel from a blog post using its identifier.
+Creates a new reel from a blog post. Run without arguments for **interactive mode**.
 
 ```bash
+# Interactive mode: pick by number
+uv run arcanomy ingest-blog
+
+# Direct mode: provide identifier
 uv run arcanomy ingest-blog 2025-08-10-knowledge-the-psychology-of-money
+```
+
+**Interactive mode output:**
+
+```
+Pick a blog (1-10)
+┏━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃ # ┃ Published  ┃ Title                      ┃ Category         ┃
+┡━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ 1 │ 2025-08-10 │ The Psychology of Money    │ Wealth Psychology│
+│ 2 │ ...        │ ...                        │ ...              │
+└───┴────────────┴────────────────────────────┴──────────────────┘
+
+Enter number to select: 1
+
+Selected: The Psychology of Money
 ```
 
 **Options:**
@@ -59,6 +79,7 @@ uv run arcanomy ingest-blog 2025-08-10-knowledge-the-psychology-of-money
 |------|---------|-------------|
 | `--output`, `-o` | `content/reels` | Output directory for the reel |
 | `--provider`, `-p` | `openai` | LLM provider (openai, anthropic, gemini) |
+| `--limit`, `-n` | `10` | Number of blogs to show in interactive mode |
 
 **What it does:**
 
