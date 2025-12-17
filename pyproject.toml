@@ -22,6 +22,9 @@ dependencies = [
     "pillow>=10.0.0",
     "requests>=2.31.0",
     
+    # HTTP client
+    "httpx>=0.27.0",
+    
     # Auth (for API clients)
     "pyjwt>=2.8.0",
 ]

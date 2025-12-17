@@ -4,9 +4,15 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 
 from src.domain import Objective
-from src.services import LLMService
+from src.services import (
+    LLMService,
+    fetch_featured_blogs,
+    fetch_blog_mdx,
+    extract_seed_and_config,
+)
 from src.stages import (
     run_research,
     run_script,
@@ -185,6 +191,133 @@ def status(
         typer.echo(f"  {status} {name}")
 
     typer.echo()
+
+
+@app.command("list-blogs")
+def list_blogs(
+    limit: int = typer.Option(
+        10,
+        "--limit",
+        "-n",
+        help="Maximum number of blogs to show",
+    ),
+):
+    """List available blogs from Arcanomy CDN."""
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+
+    try:
+        blogs = fetch_featured_blogs(limit=limit)
+    except Exception as e:
+        typer.echo(f"Error fetching blogs: {e}", err=True)
+        raise typer.Exit(1)
+
+    if not blogs:
+        typer.echo("No blogs found.")
+        return
+
+    table = Table(title=f"Available Blogs (showing {len(blogs)})")
+    table.add_column("#", style="dim", width=3)
+    table.add_column("Published", style="cyan")
+    table.add_column("Title", style="bold")
+    table.add_column("Category", style="green")
+    table.add_column("Identifier", style="dim")
+
+    for i, blog in enumerate(blogs, 1):
+        table.add_row(
+            str(i),
+            blog.published_date,
+            blog.title[:40] + "..." if len(blog.title) > 40 else blog.title,
+            blog.category,
+            blog.identifier,
+        )
+
+    console.print(table)
+    typer.echo("\nTo create a reel from a blog, run:")
+    typer.echo("  uv run arcanomy ingest-blog <identifier>")
+
+
+@app.command("ingest-blog")
+def ingest_blog(
+    identifier: str = typer.Argument(..., help="Blog identifier from list-blogs"),
+    output_dir: Path = typer.Option(
+        Path("content/reels"),
+        "--output",
+        "-o",
+        help="Output directory for reels",
+    ),
+    provider: str = typer.Option(
+        "openai",
+        "--provider",
+        "-p",
+        help="LLM provider (openai, anthropic, gemini)",
+    ),
+):
+    """Create a new reel from an Arcanomy blog post."""
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    # Fetch blog metadata to get title and other info
+    typer.echo(f"Fetching blog list to find: {identifier}")
+    try:
+        blogs = fetch_featured_blogs()
+        blog = next((b for b in blogs if b.identifier == identifier), None)
+    except Exception as e:
+        typer.echo(f"Error fetching blog list: {e}", err=True)
+        raise typer.Exit(1)
+
+    if not blog:
+        typer.echo(f"Error: Blog not found with identifier: {identifier}", err=True)
+        typer.echo("Run 'arcanomy list-blogs' to see available blogs.")
+        raise typer.Exit(1)
+
+    # Create reel folder using the blog identifier (already has date)
+    reel_path = output_dir / identifier
+
+    if reel_path.exists():
+        typer.echo(f"Error: Reel already exists at {reel_path}", err=True)
+        raise typer.Exit(1)
+
+    # Fetch the MDX content
+    typer.echo(f"Fetching MDX content for: {blog.title}")
+    try:
+        mdx_content = fetch_blog_mdx(identifier)
+    except Exception as e:
+        typer.echo(f"Error fetching blog content: {e}", err=True)
+        raise typer.Exit(1)
+
+    # Use LLM to extract seed and config
+    typer.echo("Extracting seed and config using LLM...")
+    llm = LLMService(provider=provider)
+
+    try:
+        seed_content, config = extract_seed_and_config(mdx_content, blog, llm)
+    except Exception as e:
+        typer.echo(f"Error extracting content: {e}", err=True)
+        raise typer.Exit(1)
+
+    # Create the reel folder structure
+    reel_path.mkdir(parents=True)
+    (reel_path / "00_data").mkdir()
+
+    # Write seed file
+    (reel_path / "00_seed.md").write_text(seed_content)
+
+    # Write config file
+    config_yaml = yaml.dump(config, default_flow_style=False, allow_unicode=True)
+    (reel_path / "00_reel.yaml").write_text(config_yaml)
+
+    typer.echo(f"\n✓ Created new reel at: {reel_path}")
+    typer.echo(f"  Source blog: {blog.title}")
+    typer.echo(f"\n  Files created:")
+    typer.echo(f"    - {reel_path}/00_seed.md")
+    typer.echo(f"    - {reel_path}/00_reel.yaml")
+    typer.echo(f"\n  Next steps:")
+    typer.echo(f"    1. Review and edit the seed/config files")
+    typer.echo(f"    2. Run: uv run arcanomy run {reel_path}")
 
 
 if __name__ == "__main__":
