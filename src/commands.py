@@ -523,6 +523,16 @@ def _generate_commit_message(
     return f"Update {len(all_files)} file{'s' if len(all_files) != 1 else ''}"
 
 
+# Standalone commit command entry point
+_commit_app = typer.Typer()
+_commit_app.command()(commit)
+
+
+def run_commit():
+    """Entry point for standalone 'uv run commit' command."""
+    _commit_app()
+
+
 if __name__ == "__main__":
     app()
 

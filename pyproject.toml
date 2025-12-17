@@ -31,6 +31,7 @@ dependencies = [
 
 [project.scripts]
 arcanomy = "src.commands:app"
+commit = "src.commands:run_commit"
 
 [build-system]
 requires = ["hatchling"]
