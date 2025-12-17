@@ -38,6 +38,9 @@ env/
 .env.local
 .env.*.local
 
+# Arcanomy context
+.current_reel
+
 # Content (user data)
 content/
 

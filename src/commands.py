@@ -33,6 +33,71 @@ app = typer.Typer(
 
 logger = get_logger()
 
+# File to store current reel context
+CURRENT_REEL_FILE = Path(".current_reel")
+
+
+def _get_current_reel() -> Path:
+    """Get the current reel path from context file."""
+    if not CURRENT_REEL_FILE.exists():
+        typer.echo("❌ No reel selected. Run: uv run set <reel-path>", err=True)
+        raise typer.Exit(1)
+    
+    reel_path = Path(CURRENT_REEL_FILE.read_text().strip())
+    if not reel_path.exists():
+        typer.echo(f"❌ Reel folder no longer exists: {reel_path}", err=True)
+        raise typer.Exit(1)
+    
+    return reel_path
+
+
+def _print_context(reel_path: Path, stage_name: str = None):
+    """Print current reel context."""
+    typer.echo(f"📂 Reel: {reel_path.name}")
+    if stage_name:
+        typer.echo(f"🎬 Stage: {stage_name}")
+    typer.echo("─" * 40)
+
+
+@app.command("set")
+def set_reel(
+    reel_path: str = typer.Argument(..., help="Path to the reel folder (can be partial)"),
+):
+    """Set the current reel to work on."""
+    # Support short paths like "permission-trap" or full paths
+    path = Path(reel_path)
+    
+    # If not a direct path, search in content/reels
+    if not path.exists():
+        reels_dir = Path("content/reels")
+        if reels_dir.exists():
+            # Find matching reel by partial name
+            matches = [d for d in reels_dir.iterdir() if d.is_dir() and reel_path in d.name]
+            if len(matches) == 1:
+                path = matches[0]
+            elif len(matches) > 1:
+                typer.echo(f"❌ Multiple matches found:", err=True)
+                for m in matches:
+                    typer.echo(f"   - {m.name}")
+                raise typer.Exit(1)
+            else:
+                typer.echo(f"❌ No reel found matching: {reel_path}", err=True)
+                raise typer.Exit(1)
+    
+    if not path.exists():
+        typer.echo(f"❌ Reel folder not found: {path}", err=True)
+        raise typer.Exit(1)
+    
+    # Save to context file
+    CURRENT_REEL_FILE.write_text(str(path.resolve()))
+    
+    typer.echo(f"✅ Current reel set to: {path.name}")
+    typer.echo(f"   Full path: {path.resolve()}")
+    typer.echo(f"\n   Now you can run:")
+    typer.echo(f"   uv run research    # Stage 1")
+    typer.echo(f"   uv run script      # Stage 2")
+    typer.echo(f"   uv run plan        # Stage 3")
+
 
 @app.command()
 def new(
@@ -87,8 +152,12 @@ audit_level: "strict"
 """
     (reel_path / "00_reel.yaml").write_text(config_content)
 
-    typer.echo(f"✓ Created new reel at: {reel_path}")
-    typer.echo(f"  Edit {reel_path}/00_seed.md and 00_reel.yaml to get started")
+    # Auto-set as current reel
+    CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
+
+    typer.echo(f"✅ Created new reel at: {reel_path}")
+    typer.echo(f"   (Also set as current reel)")
+    typer.echo(f"\n   Edit {reel_path}/00_seed.md and 00_reel.yaml to get started")
 
 
 @app.command()
@@ -372,6 +441,134 @@ def ingest_blog(
     typer.echo(f"    2. Run: uv run arcanomy run {reel_path}")
 
 
+# =============================================================================
+# SHORTHAND STAGE COMMANDS (use after `uv run set <reel>`)
+# =============================================================================
+
+
+@app.command()
+def research(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run research stage (Stage 1) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Research (Stage 1)")
+    
+    llm = LLMService(provider=provider)
+    output_path = run_research(reel_path, llm)
+    
+    typer.echo(f"\n✅ Research complete!")
+    typer.echo(f"   Created: {output_path.name}")
+
+
+@app.command()
+def script(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run script stage (Stage 2) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Script (Stage 2)")
+    
+    llm = LLMService(provider=provider)
+    segments = run_script(reel_path, llm)
+    
+    typer.echo(f"\n✅ Script complete!")
+    typer.echo(f"   Generated {len(segments)} segments")
+
+
+@app.command()
+def plan(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run visual plan stage (Stage 3) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Visual Plan (Stage 3)")
+    
+    llm = LLMService(provider=provider)
+    run_visual_plan(reel_path, llm)
+    
+    typer.echo(f"\n✅ Visual plan complete!")
+
+
+@app.command()
+def assets(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run asset generation stage (Stage 4) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Assets (Stage 4)")
+    
+    llm = LLMService(provider=provider)
+    run_asset_generation(reel_path, llm)
+    
+    typer.echo(f"\n✅ Asset generation complete!")
+
+
+@app.command()
+def assemble():
+    """Run assembly stage (Stage 5) on current reel."""
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Assembly (Stage 5)")
+    
+    run_assembly(reel_path)
+    
+    typer.echo(f"\n✅ Assembly complete!")
+
+
+@app.command()
+def deliver():
+    """Run delivery stage (Stage 6) on current reel."""
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Delivery (Stage 6)")
+    
+    run_delivery(reel_path)
+    
+    typer.echo(f"\n✅ Delivery complete!")
+
+
+@app.command()
+def current():
+    """Show the current reel context."""
+    if not CURRENT_REEL_FILE.exists():
+        typer.echo("❌ No reel selected.")
+        typer.echo("   Run: uv run set <reel-path>")
+        raise typer.Exit(1)
+    
+    reel_path = _get_current_reel()
+    typer.echo(f"📂 Current reel: {reel_path.name}")
+    typer.echo(f"   Path: {reel_path}")
+    
+    # Show quick status
+    typer.echo(f"\n   Status:")
+    stages = [
+        ("00_seed.md", "Seed"),
+        ("01_research.output.md", "Research"),
+        ("02_story_generator.output.json", "Script"),
+        ("03_character_generation.output.md", "Plan"),
+    ]
+    for filename, name in stages:
+        exists = (reel_path / filename).exists()
+        status = "✓" if exists else "○"
+        typer.echo(f"   {status} {name}")
+
+
+# =============================================================================
+# GIT COMMANDS
+# =============================================================================
+
+
 @app.command()
 def commit(
     message: Optional[str] = typer.Option(
@@ -523,14 +720,89 @@ def _generate_commit_message(
     return f"Update {len(all_files)} file{'s' if len(all_files) != 1 else ''}"
 
 
-# Standalone commit command entry point
+# =============================================================================
+# STANDALONE ENTRY POINTS (for `uv run <command>`)
+# =============================================================================
+
+# Commit
 _commit_app = typer.Typer()
 _commit_app.command()(commit)
-
 
 def run_commit():
     """Entry point for standalone 'uv run commit' command."""
     _commit_app()
+
+
+# Set
+_set_app = typer.Typer()
+_set_app.command()(set_reel)
+
+def _run_set():
+    """Entry point for 'uv run set'."""
+    _set_app()
+
+
+# Research
+_research_app = typer.Typer()
+_research_app.command()(research)
+
+def _run_research():
+    """Entry point for 'uv run research'."""
+    _research_app()
+
+
+# Script
+_script_app = typer.Typer()
+_script_app.command()(script)
+
+def _run_script():
+    """Entry point for 'uv run script'."""
+    _script_app()
+
+
+# Plan
+_plan_app = typer.Typer()
+_plan_app.command()(plan)
+
+def _run_plan():
+    """Entry point for 'uv run plan'."""
+    _plan_app()
+
+
+# Assets
+_assets_app = typer.Typer()
+_assets_app.command()(assets)
+
+def _run_assets():
+    """Entry point for 'uv run assets'."""
+    _assets_app()
+
+
+# Assemble
+_assemble_app = typer.Typer()
+_assemble_app.command()(assemble)
+
+def _run_assemble():
+    """Entry point for 'uv run assemble'."""
+    _assemble_app()
+
+
+# Deliver
+_deliver_app = typer.Typer()
+_deliver_app.command()(deliver)
+
+def _run_deliver():
+    """Entry point for 'uv run deliver'."""
+    _deliver_app()
+
+
+# Current
+_current_app = typer.Typer()
+_current_app.command()(current)
+
+def _run_current():
+    """Entry point for 'uv run current'."""
+    _current_app()
 
 
 if __name__ == "__main__":
