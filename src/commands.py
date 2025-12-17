@@ -564,6 +564,152 @@ def current():
         typer.echo(f"   {status} {name}")
 
 
+@app.command()
+def guide():
+    """Show complete workflow guide and all available commands."""
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+    
+    console = Console()
+    
+    # Header
+    console.print()
+    console.print(Panel.fit(
+        "[bold cyan]Arcanomy Motion[/bold cyan]\n"
+        "[dim]AI-powered short-form video production pipeline[/dim]",
+        border_style="cyan"
+    ))
+    
+    # Workflow Overview
+    console.print("\n[bold yellow]WORKFLOW OVERVIEW[/bold yellow]")
+    console.print("-" * 60)
+    
+    workflow = """
+[bold]1. CREATE OR SELECT A REEL[/bold]
+   
+   [cyan]Option A:[/cyan] Create from scratch
+   [dim]$[/dim] uv run arcanomy new my-reel-slug
+   
+   [cyan]Option B:[/cyan] Import from Arcanomy blog (interactive)
+   [dim]$[/dim] uv run arcanomy ingest-blog
+   
+   [cyan]Option C:[/cyan] Select existing reel
+   [dim]$[/dim] uv run set permission-trap
+
+[bold]2. RUN THE PIPELINE (6 stages)[/bold]
+   
+   [green]Stage 1:[/green] Research     -> Gathers facts, stats, psychology
+   [dim]$[/dim] uv run research
+   
+   [green]Stage 2:[/green] Script       -> Writes voiceover + segments
+   [dim]$[/dim] uv run script
+   
+   [green]Stage 3:[/green] Visual Plan  -> Defines characters, style, mood
+   [dim]$[/dim] uv run plan
+   
+   [green]Stage 4:[/green] Assets       -> Generates image/video prompts
+   [dim]$[/dim] uv run assets
+   
+   [green]Stage 5:[/green] Assembly     -> Creates Remotion manifest
+   [dim]$[/dim] uv run assemble
+   
+   [green]Stage 6:[/green] Delivery     -> Renders final MP4
+   [dim]$[/dim] uv run deliver
+
+[bold]3. PREVIEW & EXPORT[/bold]
+   
+   [dim]$[/dim] uv run arcanomy preview   [dim]# Start Remotion preview[/dim]
+   [dim]$[/dim] uv run arcanomy status <path>  [dim]# Check reel status[/dim]
+"""
+    console.print(workflow)
+    
+    # Quick Commands Table
+    console.print("\n[bold yellow]QUICK COMMANDS[/bold yellow]")
+    console.print("-" * 60)
+    
+    table = Table(box=box.SIMPLE, show_header=True, header_style="bold")
+    table.add_column("Command", style="cyan", width=30)
+    table.add_column("Description", style="white")
+    
+    table.add_row("uv run current", "Show current reel + status")
+    table.add_row("uv run set <slug>", "Set working reel (partial match OK)")
+    table.add_row("uv run research", "Run Stage 1 on current reel")
+    table.add_row("uv run script", "Run Stage 2 on current reel")
+    table.add_row("uv run plan", "Run Stage 3 on current reel")
+    table.add_row("uv run assets", "Run Stage 4 on current reel")
+    table.add_row("uv run assemble", "Run Stage 5 on current reel")
+    table.add_row("uv run deliver", "Run Stage 6 on current reel")
+    table.add_row("uv run commit", "Git add + commit + push")
+    
+    console.print(table)
+    
+    # Full Commands Table
+    console.print("\n[bold yellow]FULL COMMANDS (arcanomy CLI)[/bold yellow]")
+    console.print("-" * 60)
+    
+    table2 = Table(box=box.SIMPLE, show_header=True, header_style="bold")
+    table2.add_column("Command", style="cyan", width=40)
+    table2.add_column("Description", style="white")
+    
+    table2.add_row("uv run arcanomy new <slug>", "Create new reel from template")
+    table2.add_row("uv run arcanomy ingest-blog", "Import blog (interactive)")
+    table2.add_row("uv run arcanomy ingest-blog <id>", "Import specific blog")
+    table2.add_row("uv run arcanomy list-blogs", "Show available blogs")
+    table2.add_row("uv run arcanomy run <path>", "Run full pipeline")
+    table2.add_row("uv run arcanomy run <path> -s 2", "Run specific stage only")
+    table2.add_row("uv run arcanomy status <path>", "Show pipeline status")
+    table2.add_row("uv run arcanomy preview", "Start Remotion dev server")
+    table2.add_row("uv run arcanomy guide", "Show this guide")
+    
+    console.print(table2)
+    
+    # Folder Structure
+    console.print("\n[bold yellow]REEL FOLDER STRUCTURE[/bold yellow]")
+    console.print("-" * 60)
+    
+    structure = """
+[dim]content/reels/2025-12-15-my-reel/[/dim]
++-- [cyan]00_seed.md[/cyan]           [dim]<- Your creative brief (edit this)[/dim]
++-- [cyan]00_reel.yaml[/cyan]         [dim]<- Config: duration, voice, type[/dim]
++-- [cyan]00_data/[/cyan]             [dim]<- CSV files for charts[/dim]
++-- [green]01_research.output.md[/green]  [dim]<- Stage 1 output[/dim]
++-- [green]02_story_generator.output.json[/green]  [dim]<- Stage 2 segments[/dim]
++-- [green]03_character_generation.output.md[/green]  [dim]<- Stage 3 plan[/dim]
++-- [blue]renders/[/blue]             [dim]<- Generated media assets[/dim]
++-- [yellow]final/[/yellow]
+    +-- final.mp4         [dim]<- The output video[/dim]
+    +-- final.srt         [dim]<- Subtitle file[/dim]
+    +-- metadata.json     [dim]<- Audit trail[/dim]
+"""
+    console.print(structure)
+    
+    # Tips
+    console.print("\n[bold yellow]TIPS[/bold yellow]")
+    console.print("-" * 60)
+    
+    tips = """
+* [bold]Partial matching:[/bold] [dim]uv run set permission[/dim] finds [dim]2025-12-15-permission-trap[/dim]
+* [bold]Resume pipeline:[/bold] Just re-run a stage; it reads previous outputs
+* [bold]Retry a stage:[/bold] Delete its [dim].output.*[/dim] files, then re-run
+* [bold]Switch LLM:[/bold] Add [dim]-p anthropic[/dim] or [dim]-p gemini[/dim] to any stage
+* [bold]Debug prompts:[/bold] Check [dim]*.input.md[/dim] files to see what was sent
+"""
+    console.print(tips)
+    
+    # Current Context
+    if CURRENT_REEL_FILE.exists():
+        try:
+            reel_path = Path(CURRENT_REEL_FILE.read_text().strip())
+            if reel_path.exists():
+                console.print(f"\n[bold green]Current reel:[/bold green] {reel_path.name}")
+        except Exception:
+            pass
+    
+    console.print()
+
+
 # =============================================================================
 # GIT COMMANDS
 # =============================================================================
@@ -803,6 +949,15 @@ _current_app.command()(current)
 def _run_current():
     """Entry point for 'uv run current'."""
     _current_app()
+
+
+# Guide
+_guide_app = typer.Typer()
+_guide_app.command()(guide)
+
+def _run_guide():
+    """Entry point for 'uv run guide'."""
+    _guide_app()
 
 
 if __name__ == "__main__":

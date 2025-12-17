@@ -42,6 +42,7 @@ assets = "src.commands:_run_assets"
 assemble = "src.commands:_run_assemble"
 deliver = "src.commands:_run_deliver"
 current = "src.commands:_run_current"
+guide = "src.commands:_run_guide"
 
 [build-system]
 requires = ["hatchling"]
