@@ -13,8 +13,8 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 
 ## Doc set
 1. `01-vision-and-reel-types.md` — motivation, reel types, length bands, goals
-2. `02-architecture-and-folder-structure.md` — repo layout, per-reel folders, audit trail
-3. `03-reel-spec-schema.md` — the per-reel `reel.yaml` (inputs that route prompts/modules)
+2. `02-architecture-and-folder-structure.md` — repo layout + pipeline folder model + audit trail
+3. `03-objective-md-format.md` — **single-file reel input**: `objective.md` (YAML frontmatter + required headers)
 4. `04-pipeline-stages.md` — step-by-step pipeline (inputs/outputs per stage)
 5. `05-visual-style-and-subtitles.md` — v1 style rules (Arcanomy look) + subtitle policy
 

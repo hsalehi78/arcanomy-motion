@@ -101,8 +101,8 @@ Support architecturally, use sparingly.
 ---
 
 ## Reel types (v1)
-Each reel has a `type` in `reel.yaml`.  
-This routes prompts, scene planning, and Remotion templates.
+Each reel has a `type` in the YAML frontmatter of `objective.md`.  
+This routes prompts, stage logic, scene planning, and Remotion templates.
 
 ### 1) Animated Chart Explainer (primary)
 **Best for:** “show, don’t tell” money truths; tool + essay loop  
