@@ -43,8 +43,15 @@ def run_research(reel_path: Path, llm: LLMService) -> Path:
                 content = read_file(csv_file)
                 # Show first 20 lines max
                 lines = content.strip().split("\n")[:20]
-                data_snippets.append(f"**{csv_file.name}:**\n```csv\n{chr(10).join(lines)}\n```")
+                csv_preview = "\n".join(lines)
+                data_snippets.append(f"**{csv_file.name}:**\n```csv\n{csv_preview}\n```")
             data_context = "\n\n".join(data_snippets)
+
+    # Build data section
+    if data_context:
+        data_section = f"## Available Data\n{data_context}"
+    else:
+        data_section = "## Available Data\nNo CSV data provided. Research from public sources."
 
     user_prompt = f"""# Research Brief
 
@@ -61,16 +68,26 @@ def run_research(reel_path: Path, llm: LLMService) -> Path:
 - **Duration:** {objective.duration_blocks} blocks ({objective.duration_seconds} seconds)
 - **Reel Type:** {objective.type}
 
-{f"## Available Data{chr(10)}{data_context}" if data_context else "## Available Data{chr(10)}No CSV data provided. Research from public sources."}
+{data_section}
 
 ---
 
 Generate a complete research document following the 7-section structure in your instructions. Ensure all statistics are sourced and all visual metaphors are concrete and filmable.
 """
 
-    # Save input prompt
+    # Save input prompt (both system + user for full audit trail)
     input_path = reel_path / "01_research.input.md"
-    write_file(input_path, f"# Research Prompt\n\n{user_prompt}")
+    input_content = f"""# Research Stage Input
+
+## System Prompt
+{system_prompt}
+
+---
+
+## User Prompt
+{user_prompt}
+"""
+    write_file(input_path, input_content)
 
     # Call LLM
     response = llm.complete(user_prompt, system=system_prompt)

@@ -1,9 +1,26 @@
 """LLM service wrapper for OpenAI, Anthropic, and Google Gemini."""
 
 import os
+from dataclasses import dataclass
 from typing import Literal, Optional
 
+import typer
+
 Provider = Literal["openai", "anthropic", "gemini"]
+
+
+@dataclass
+class TokenUsage:
+    """Token usage stats from LLM call."""
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    model: str
+    provider: str
+
+    def print(self):
+        """Print token usage to console."""
+        typer.echo(f"   📊 Tokens: {self.input_tokens:,} in → {self.output_tokens:,} out ({self.total_tokens:,} total) [{self.model}]")
 
 
 class LLMService:
@@ -12,6 +29,7 @@ class LLMService:
     def __init__(self, provider: Provider = "openai"):
         self.provider = provider
         self._client = None
+        self.last_usage: Optional[TokenUsage] = None
 
     def _get_client(self):
         """Lazy-load the appropriate client."""
@@ -58,6 +76,18 @@ class LLMService:
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
+            
+            # Track token usage
+            usage = response.usage
+            self.last_usage = TokenUsage(
+                input_tokens=usage.prompt_tokens,
+                output_tokens=usage.completion_tokens,
+                total_tokens=usage.total_tokens,
+                model=model,
+                provider=self.provider,
+            )
+            self.last_usage.print()
+            
             return response.choices[0].message.content
 
         elif self.provider == "anthropic":
@@ -68,12 +98,39 @@ class LLMService:
                 system=system or "",
                 messages=[{"role": "user", "content": prompt}],
             )
+            
+            # Track token usage
+            usage = response.usage
+            self.last_usage = TokenUsage(
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                total_tokens=usage.input_tokens + usage.output_tokens,
+                model=model,
+                provider=self.provider,
+            )
+            self.last_usage.print()
+            
             return response.content[0].text
 
         elif self.provider == "gemini":
             response = client.generate_content(
                 prompt if not system else f"{system}\n\n{prompt}"
             )
+            
+            # Gemini token counting (approximate from metadata if available)
+            try:
+                usage_meta = response.usage_metadata
+                self.last_usage = TokenUsage(
+                    input_tokens=usage_meta.prompt_token_count,
+                    output_tokens=usage_meta.candidates_token_count,
+                    total_tokens=usage_meta.total_token_count,
+                    model="gemini-1.5-pro",
+                    provider=self.provider,
+                )
+                self.last_usage.print()
+            except Exception:
+                pass  # Gemini may not always return usage
+            
             return response.text
 
         raise ValueError(f"Unknown provider: {self.provider}")
