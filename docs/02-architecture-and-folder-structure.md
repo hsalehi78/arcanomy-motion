@@ -6,7 +6,9 @@ Arcanomy Motion is a **hybrid monorepo** combining:
 1.  **Python Orchestrator:** Handles logic, LLM calls, and state management.
 2.  **Remotion (React):** Handles deterministic rendering of video, charts, and typography.
 
-We follow a **"Smart Agent + Dumb Scripts"** architecture. Agents orchestrate the flow by reading project files and combining prompts, while simple Python scripts execute single API calls (e.g., "generate one image", "render one video clip").
+We follow a **"Smart Agent + Dumb Scripts"** architecture:
+- **Smart Agent Stages:** LLM plans, writes prompts, makes creative decisions
+- **Dumb Script Stages:** Automated execution of API calls, no creativity
 
 ---
 
@@ -27,30 +29,35 @@ Then, it writes a script. But it doesn't just write paragraphs; it cuts the scri
 > **Chunk 1:** "Bitcoin is digital gold." (Show a gold coin)
 > **Chunk 2:** "It is scarce." (Show a chart going up)
 
-### 3. The Artist (Image Gen)
-For every chunk, the robot paints **one beautiful picture**.
-If the chunk needs a chart, it draws a sketch of the chart.
-*(This creates images in `renders/`)*
+### 3. The Art Director (Visual Plan)
+For every chunk, the robot writes detailed instructions for painting a picture.
+It describes exactly what the image should look like, what textures, what lighting.
+*(This creates `03_visual_plan.output.json` with complete image prompts)*
 
-### 4. The Animator (Video Gen)
-The robot takes that one picture and makes it move for **10 seconds**.
-- It decides: "Zoom in slowly" or "Pan left."
-- It uses a tool called **Kling** (or Runway) to turn the still picture into a moving video.
-*(Now we have `bg_01.mp4`, `bg_02.mp4`...)*
+### 4. The Artist (Image Gen)
+A "dumb" robot reads those instructions and paints the pictures.
+It uses tools like **DALL-E** or **Midjourney** to create one image per chunk.
+*(This creates images in `renders/images/`)*
 
-### 5. The Voice Actor (Audio Gen)
+### 5. The Animator (Video Gen)
+The robot takes each picture and makes it "breathe" for **10 seconds**.
+- It adds subtle movement: "Zoom in slowly" or "Rain falling in background."
+- It uses tools like **Kling AI** or **Runway** to animate the still images.
+*(Now we have `renders/videos/bg_01.mp4`, `bg_02.mp4`...)*
+
+### 6. The Voice Actor (Audio Gen)
 The robot reads the script out loud using a tool called **ElevenLabs**.
-It makes sure the voice lasts exactly as long as the video chunk.
-*(Now we have `voice_01.mp3`, `voice_02.mp3`...)*
+It makes sure the voice matches the video timing.
+*(Now we have `renders/voice_full.mp3`)*
 
-### 6. The Editor (Assembly)
+### 7. The Editor (Assembly)
 Now the robot has a pile of stuff:
 - 3 Video clips
-- 3 Audio clips
+- 1 Audio track
 - Background music
 
-It glues them all together in a timeline. It puts the voice *on top* of the video, and the music *underneath* everything.
-Finally, it presses "Print" (Render) and gives you **one final MP4 video file**.
+It glues them all together in a timeline using **Remotion**.
+Finally, it presses "Render" and gives you **one final MP4 video file**.
 
 ---
 
@@ -62,9 +69,9 @@ arcanomy-motion/
 ├── src/                      # Python Source Code (Orchestrator)
 ├── remotion/                 # Remotion Project (React/TypeScript)
 ├── content/                  # User Data & Local Outputs (Git-ignored)
-├── shared/                   # Global Assets (fonts, logos, intro/outro)
+├── shared/                   # Global Assets (fonts, logos, prompts)
 ├── tests/                    # Python Tests
-├── pyproject.toml            # Python Dependencies & Config (Poetry/uv)
+├── pyproject.toml            # Python Dependencies & Config (uv)
 └── .gitignore
 ```
 
@@ -82,17 +89,19 @@ src/
 │   └── manifest.py           # The "Render Manifest" sent to Remotion
 │
 ├── services/                 # External API Wrappers
-│   ├── llm.py                # OpenAI / Anthropic
+│   ├── llm.py                # OpenAI / Anthropic / Google
 │   ├── elevenlabs.py         # Voice generation
+│   ├── image_gen.py          # DALL-E / Midjourney / Gemini
 │   └── remotion_cli.py       # Wrapper for calling `npx remotion render`
 │
 ├── stages/                   # Pipeline Logic (Pure Python)
 │   ├── s01_research.py
 │   ├── s02_script.py
 │   ├── s03_plan.py
-│   ├── s04_assets.py
-│   ├── s05_assembly.py
-│   └── s06_delivery.py
+│   ├── s03_5_assets.py       # Image generation execution
+│   ├── s04_5_videos.py       # Video generation execution
+│   ├── s05_voice.py
+│   └── s06_assembly.py
 │
 ├── utils/                    # Helpers
 │   ├── io.py                 # Safe file reading/writing
@@ -153,38 +162,38 @@ content/
         │
         ├── 02_story_generator.input.md
         ├── 02_story_generator.output.md
-        ├── 02_story_generator.output.json  # [Key] Segmentation source of truth
+        ├── 02_story_generator.output.json  # [Key] Segments with visual_intent
         │
         ├── 03_visual_plan.input.md
-        ├── 03_visual_plan.output.md
+        ├── 03_visual_plan.output.md        # Human-readable plan + prompts
+        ├── 03_visual_plan.output.json      # [Key] Asset manifest with prompts
         │
-        ├── 03.5_generate_assets_agent.input.md
-        ├── 03.5_generate_assets_agent.output.json # Asset list (images/charts)
+        ├── 03.5_asset_generation.input.md
+        ├── 03.5_asset_generation.output.json  # Image generation results
         │
-        ├── 04_video_prompt_engineering.input.md
-        ├── 04_video_prompt_engineering.output.md
+        ├── 04.5_video_generation.input.md
+        ├── 04.5_video_generation.output.json  # Video generation results
         │
-        ├── 04.5_generate_videos_agent.input.md
-        ├── 04.5_generate_videos_agent.output.json # Video file paths
+        ├── 05_voice.input.md
+        ├── 05_voice.output.md              # Voice direction annotations
         │
-        ├── 05_voice_prompt_engineer.input.md
-        ├── 05_voice_prompt_engineer.output.md
-        │
-        ├── 05.5_generate_audio_agent.input.md
-        ├── 05.5_generate_audio_agent.output.json # Audio file paths
+        ├── 05.5_audio_generation.input.md
+        ├── 05.5_audio_generation.output.json  # Audio file paths
         │
         ├── 06_music.input.md
-        ├── 06_music.output.json
+        ├── 06_music.output.json            # Selected track / SFX list
         │
-        ├── 07_assemble_final_agent.input.md
-        ├── 07_assemble_final_agent.output.json # Final Remotion timeline
+        ├── 07_assembly.input.md
+        ├── 07_assembly.output.json         # Final Remotion timeline
         │
-        ├── renders/                 # [Assets] Intermediate media files
-        │   ├── bg_01.mp4
-        │   ├── bg_02.mp4
-        │   ├── intro.png
-        │   ├── voice_full.mp3
-        │   └── charts/              # Remotion chart renders (optional/cache)
+        ├── renders/                 # [Assets] Generated media files
+        │   ├── images/              # Static images from Stage 3.5
+        │   │   ├── object_clock_chart.png
+        │   │   └── character_professional.png
+        │   ├── videos/              # Video clips from Stage 4.5
+        │   │   ├── bg_01.mp4
+        │   │   └── bg_02.mp4
+        │   └── voice_full.mp3       # Audio from Stage 5.5
         │
         └── final/                   # [Delivery] Final outputs
             ├── final.mp4
@@ -196,7 +205,7 @@ content/
 
 - **Inputs (.input.md):** We save the *exact* prompt sent to the LLM. This allows us to tweak the prompt manually if needed and re-run the step.
 - **Outputs (.output.md/.json):** We save the text response (MD) and the structured data (JSON). The JSON is often the input for the next "dumb script" (e.g., a list of image prompts to generate).
-- **Renders Folder:** All heavy media files live in `renders/` to keep the root directory text-focused and scannable.
+- **Renders Folder:** All heavy media files live in `renders/` with subdirectories for organization.
 
 ---
 
@@ -211,19 +220,36 @@ shared/
 ├── audio/
 │   ├── intro.mp3
 │   └── watermark.mp3
-├── prompts/                  # System prompts for agents (reusable instructions)
-│   ├── research_system.md    # Research assistant instructions
-│   ├── script_system.md      # Scriptwriter instructions
-│   ├── visual_plan_system.md # Visual director instructions
-│   ├── assets_system.md      # Image/video prompt engineer instructions
-│   └── voice_system.md       # Voice director instructions
-└── templates/                # User-facing templates (starting points)
-    └── seed_template.md      # Template for creating new reels
+├── prompts/                         # System prompts for agents
+│   ├── 01_research_system.md        # Research assistant instructions
+│   ├── 02_script_system.md          # Scriptwriter instructions
+│   ├── 03_visual_plan_system.md     # Visual director + prompt engineer
+│   ├── 03.5_asset_generation_system.md  # Automated image generation
+│   └── 05_voice_system.md           # Voice director instructions
+└── templates/                       # User-facing templates
+    └── seed_template.md             # Template for creating new reels
 ```
 
 **Distinction:**
 - **`prompts/`**: System prompts define agent behavior and are loaded by the orchestrator. These are internal instructions that apply globally across all reels.
 - **`templates/`**: User-facing templates provide formats/starting points for users to fill in (e.g., `seed_template.md`).
+
+---
+
+## Pipeline Summary
+
+| Stage | Type | What Happens | Key Output |
+|-------|------|--------------|------------|
+| 0 | Manual | User creates seed + config | `00_seed.md`, `00_reel.yaml` |
+| 1 | Agent | Research & fact-check | `01_research.output.md` |
+| 2 | Agent | Write script + segment | `02_story_generator.output.json` |
+| 3 | Agent | Visual plan + all prompts | `03_visual_plan.output.json` |
+| 3.5 | Script | Generate images | `renders/images/*.png` |
+| 4.5 | Script | Generate videos | `renders/videos/*.mp4` |
+| 5 | Agent | Voice direction | `05_voice.output.md` |
+| 5.5 | Script | Generate audio | `renders/voice_*.mp3` |
+| 6 | Agent | Music selection | `06_music.output.json` |
+| 7 | Script | Final assembly | `final/final.mp4` |
 
 ---
 
@@ -233,7 +259,23 @@ shared/
 2.  **Orchestrator** runs step-by-step:
     -   Reads inputs.
     -   Generates `.input.md` (prompt).
-    -   Calls Agent/LLM.
+    -   Calls Agent/LLM (for Smart Agent stages).
     -   Saves `.output.md` and `.output.json`.
-    -   Calls "Dumb Scripts" (using the JSON) to generate assets into `renders/`.
+    -   Calls "Dumb Scripts" (for execution stages) to generate assets into `renders/`.
 3.  **Final Assembly** reads all JSONs and assets, creates a timeline, and calls Remotion to render the final video.
+
+---
+
+## The "Breathing Photograph" Approach
+
+Key constraint that shapes the entire pipeline:
+
+- Each segment gets **ONE static image**
+- The image is animated with **ONE subtle micro-movement** for 10 seconds
+- Video AI (Kling, Runway) adds: zoom, drift, rain falling, breathing, etc.
+- This is NOT action sequences — it's "photographs that breathe"
+
+This constraint means:
+- Stage 3 creates prompts for **static state images**
+- Motion prompts describe **subtle animation**, not complex choreography
+- Assets are designed to sustain 10 seconds of micro-movement

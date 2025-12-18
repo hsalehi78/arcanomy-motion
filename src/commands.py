@@ -244,12 +244,12 @@ def status(
         ("00_reel.yaml", "Config"),
         ("01_research.output.md", "Research"),
         ("02_story_generator.output.json", "Script"),
-        ("03_visual_plan.output.md", "Visual Plan"),
-        ("03.5_generate_assets_agent.output.json", "Asset Prompts"),
-        ("04.5_generate_videos_agent.output.json", "Videos"),
+        ("03_visual_plan.output.json", "Visual Plan"),
+        ("03.5_asset_generation.output.json", "Images"),
+        ("04.5_video_generation.output.json", "Videos"),
         ("05.5_generate_audio_agent.output.json", "Audio"),
         ("06_music.output.json", "Music"),
-        ("07_assemble_final_agent.output.json", "Manifest"),
+        ("07_assembly.output.json", "Manifest"),
         ("final/final.mp4", "Final Video"),
     ]
 
@@ -503,17 +503,47 @@ def plan(
 def assets(
     provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
 ):
-    """Run asset generation stage (Stage 4) on current reel."""
+    """Run asset generation stage (Stage 3.5) on current reel."""
     from dotenv import load_dotenv
     load_dotenv()
     
     reel_path = _get_current_reel()
-    _print_context(reel_path, "Assets (Stage 4)")
+    _print_context(reel_path, "Assets (Stage 3.5)")
     
     llm = LLMService(provider=provider)
     run_asset_generation(reel_path, llm)
     
     typer.echo(f"\n[OK] Asset generation complete!")
+
+
+@app.command()
+def videos():
+    """Run video generation stage (Stage 4.5) on current reel."""
+    from src.stages import run_video_generation
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Videos (Stage 4.5)")
+    
+    run_video_generation(reel_path)
+    
+    typer.echo(f"\n[OK] Video generation complete!")
+
+
+@app.command()
+def voice(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run voice prompting stage (Stage 5) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Voice (Stage 5)")
+    
+    llm = LLMService(provider=provider)
+    run_voice_prompting(reel_path, llm)
+    
+    typer.echo(f"\n[OK] Voice prompting complete!")
 
 
 @app.command()
@@ -556,7 +586,8 @@ def current():
         ("00_seed.md", "Seed"),
         ("01_research.output.md", "Research"),
         ("02_story_generator.output.json", "Script"),
-        ("03_visual_plan.output.md", "Plan"),
+        ("03_visual_plan.output.json", "Plan"),
+        ("03.5_asset_generation.output.json", "Images"),
     ]
     for filename, name in stages:
         exists = (reel_path / filename).exists()
@@ -922,6 +953,24 @@ _assets_app.command()(assets)
 def _run_assets():
     """Entry point for 'uv run assets'."""
     _assets_app()
+
+
+# Videos
+_videos_app = typer.Typer()
+_videos_app.command()(videos)
+
+def _run_videos():
+    """Entry point for 'uv run videos'."""
+    _videos_app()
+
+
+# Voice
+_voice_app = typer.Typer()
+_voice_app.command()(voice)
+
+def _run_voice():
+    """Entry point for 'uv run voice'."""
+    _voice_app()
 
 
 # Assemble

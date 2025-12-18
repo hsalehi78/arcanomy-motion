@@ -67,11 +67,22 @@ def run_assembly(reel_path: Path) -> Path:
     """
     objective = Objective.from_reel_folder(reel_path)
 
-    # Load segments with all assets
-    segments_path = reel_path / "03.5_generate_assets_agent.output.json"
+    # Load segments with all assets from visual plan
+    segments_path = reel_path / "03_visual_plan.output.json"
     with open(segments_path, "r", encoding="utf-8") as f:
-        segments_data = json.load(f)
-    segments = [Segment.from_dict(s) for s in segments_data]
+        visual_plan = json.load(f)
+    
+    # Build segments from assets
+    assets = visual_plan.get("assets", [])
+    segments = []
+    
+    # Also load the original script segments for text
+    script_path = reel_path / "02_story_generator.output.json"
+    if script_path.exists():
+        with open(script_path, "r", encoding="utf-8") as f:
+            script_data = json.load(f)
+        script_segments = script_data.get("segments", [])
+        segments = [Segment.from_dict(s) for s in script_segments]
 
     # Load audio paths
     audio_path = reel_path / "05.5_generate_audio_agent.output.json"
@@ -83,7 +94,7 @@ def run_assembly(reel_path: Path) -> Path:
             segment.audio_path = audio_by_id.get(segment.id)
 
     # Load video paths
-    video_path = reel_path / "04.5_generate_videos_agent.output.json"
+    video_path = reel_path / "04.5_video_generation.output.json"
     if video_path.exists():
         with open(video_path, "r", encoding="utf-8") as f:
             video_data = json.load(f)
@@ -103,7 +114,7 @@ def run_assembly(reel_path: Path) -> Path:
     manifest = Manifest.from_segments(segments, fps=30, music_path=music_track)
 
     # Save input for audit
-    input_path = reel_path / "07_assemble_final_agent.input.md"
+    input_path = reel_path / "07_assembly.input.md"
     input_content = f"""# Assembly Stage Input
 
 ## Configuration
@@ -128,7 +139,7 @@ Segments to assemble:
     write_file(input_path, input_content)
 
     # Save manifest
-    manifest_path = reel_path / "07_assemble_final_agent.output.json"
+    manifest_path = reel_path / "07_assembly.output.json"
     write_file(manifest_path, json.dumps(manifest.to_dict(), indent=2))
 
     # Create final directory

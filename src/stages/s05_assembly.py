@@ -52,7 +52,7 @@ def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
 Annotate each segment with prosody directions that make the delivery feel natural and engaging."""
 
     # Save input (both system + user for full audit trail)
-    input_path = reel_path / "05_voice_prompt_engineer.input.md"
+    input_path = reel_path / "05_voice.input.md"
     input_content = f"""# Voice Direction Stage Input
 
 ## System Prompt
@@ -71,7 +71,7 @@ Annotate each segment with prosody directions that make the delivery feel natura
     response = llm.complete(user_prompt, system=system_prompt)
 
     # Save output
-    output_path = reel_path / "05_voice_prompt_engineer.output.md"
+    output_path = reel_path / "05_voice.output.md"
     write_file(output_path, f"# Voice Direction\n\n{response}")
 
     return output_path

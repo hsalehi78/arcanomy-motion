@@ -31,14 +31,15 @@ uv run set permission-trap    # Partial match works!
 
 Once you've set your reel, run each stage in order:
 
-| Stage | Command           | Reads                                                         | Produces                                           |
-|-------|-------------------|---------------------------------------------------------------|----------------------------------------------------|
-| 1     | `uv run research` | `01_*_system.md` + `00_seed.md` + `00_reel.yaml` + `00_data/` | `01_research.input.md` → `.output.md`              |
-| 2     | `uv run script`   | `02_*_system.md` + seed + `01_*.output.md`                    | `02_story_generator.input.md` → `.output.md/.json` |
-| 3     | `uv run plan`     | `03_*_system.md` + `02_*.output.md`                           | `03_visual_plan.input.md` → `.output.md`           |
-| 4     | `uv run assets`   | `04_*_system.md` + `02_*.json` + `03_*.output.md`             | `03.5_*.json` + `renders/bg_*.mp4`                 |
-| 5     | `uv run assemble` | `05_*_system.md` + all outputs + `renders/`                   | `07_*.json` (manifest) + `renders/voice_*.mp3`     |
-| 6     | `uv run deliver`  | Manifest + all assets                                         | `final/final.mp4`, `.srt`, `metadata.json`         |
+| Stage | Command           | What It Does                                        | Key Output                          |
+|-------|-------------------|-----------------------------------------------------|-------------------------------------|
+| 1     | `uv run research` | Research & fact-check the seed concept              | `01_research.output.md`             |
+| 2     | `uv run script`   | Write script & split into 10s segments              | `02_story_generator.output.json`    |
+| 3     | `uv run plan`     | Create visual plan + image/motion prompts           | `03_visual_plan.output.json`        |
+| 3.5   | `uv run assets`   | Generate images from prompts (DALL-E/Midjourney)    | `renders/images/*.png`              |
+| 4.5   | `uv run videos`   | Generate video clips from images (Kling/Runway)     | `renders/videos/*.mp4`              |
+| 5     | `uv run voice`    | Generate voice audio (ElevenLabs)                   | `renders/voice_*.mp3`               |
+| 6     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
 
 Or run the full pipeline at once:
 ```bash
@@ -66,9 +67,10 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run research` | Run Stage 1 on current reel |
 | `uv run script` | Run Stage 2 on current reel |
 | `uv run plan` | Run Stage 3 on current reel |
-| `uv run assets` | Run Stage 4 on current reel |
-| `uv run assemble` | Run Stage 5 on current reel |
-| `uv run deliver` | Run Stage 6 on current reel |
+| `uv run assets` | Run Stage 3.5 on current reel |
+| `uv run videos` | Run Stage 4.5 on current reel |
+| `uv run voice` | Run Stage 5 on current reel |
+| `uv run assemble` | Run Stage 6 on current reel |
 | `uv run commit` | Git add + commit + push |
 
 ---
@@ -102,21 +104,46 @@ content/reels/2025-12-15-my-reel/
 │
 ├── 02_story_generator.input.md
 ├── 02_story_generator.output.md        <- Stage 2: Human-readable script
-├── 02_story_generator.output.json      <- Stage 2: Segments for pipeline
+├── 02_story_generator.output.json      <- Stage 2: Segments with visual_intent
 │
 ├── 03_visual_plan.input.md
-├── 03_visual_plan.output.md            <- Stage 3: Visual plan
+├── 03_visual_plan.output.md            <- Stage 3: Visual plan + prompts
+├── 03_visual_plan.output.json          <- Stage 3: Asset manifest (machine-readable)
+│
+├── 03.5_asset_generation.output.json   <- Stage 3.5: Image generation results
+│
+├── 04.5_video_generation.output.json   <- Stage 4.5: Video generation results
+│
+├── 05_voice.output.md                  <- Stage 5: Voice direction
+├── 05.5_audio_generation.output.json   <- Stage 5.5: Audio generation results
 │
 ├── renders/                            <- Generated media assets
-│   ├── bg_01.mp4
-│   ├── voice_01.mp3
-│   └── ...
+│   ├── images/                         <- Static images (from Stage 3.5)
+│   │   ├── object_clock_chart.png
+│   │   └── character_professional.png
+│   ├── videos/                         <- Video clips (from Stage 4.5)
+│   │   ├── bg_01.mp4
+│   │   └── bg_02.mp4
+│   └── voice_full.mp3                  <- Audio (from Stage 5.5)
 │
 └── final/
     ├── final.mp4                       <- The output video
     ├── final.srt                       <- Subtitle file
     └── metadata.json                   <- Audit trail
 ```
+
+---
+
+## The Pipeline Philosophy
+
+**Smart Agent + Dumb Script:**
+- **Agent stages** (1, 2, 3, 5): LLM plans, writes prompts, makes creative decisions
+- **Script stages** (3.5, 4.5, 5.5, 6): Automated execution of API calls, no creativity
+
+**Stage 3 is the keystone:**
+- Creates complete image prompts (ready for DALL-E)
+- Creates motion prompts (ready for Kling/Runway)
+- Outputs machine-readable JSON for automation
 
 ---
 
@@ -147,8 +174,8 @@ uv run arcanomy status <path>     # Full pipeline status
 ## The 10-Second Block Philosophy
 
 All Arcanomy reels are built from **10-second blocks**. This aligns with:
-- AI video generation constraints
-- Editorial discipline (every block must earn its place)
+- AI video generation constraints (Kling/Runway clip limits)
+- "Breathing Photograph" approach (one image → one 10s animated clip)
 - Short-form platform requirements
 
 | Duration | Blocks | Use Case |
@@ -186,12 +213,27 @@ Full docs are in the `docs/` folder:
 
 ---
 
+## System Prompts
+
+The LLM instructions are in `shared/prompts/`:
+
+| File | Stage | Purpose |
+|------|-------|---------|
+| `01_research_system.md` | 1 | Research assistant |
+| `02_script_system.md` | 2 | Scriptwriter |
+| `03_visual_plan_system.md` | 3 | Visual director + prompt engineer |
+| `03.5_asset_generation_system.md` | 3.5 | Automated image generation |
+| `05_voice_system.md` | 5 | Voice director |
+
+---
+
 **Ready to start?**
 
 ```bash
 uv run arcanomy ingest-blog    # Pick a blog
 uv run research                # Stage 1
 uv run script                  # Stage 2
+uv run plan                    # Stage 3
+uv run assets                  # Stage 3.5
 # ... continue through stages
 ```
-
