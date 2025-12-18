@@ -43,12 +43,12 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 
 ---
 
-### Stage 3: Visual & Character Planning
+### Stage 3: Visual Plan
 **Goal:** Define the visual language before generating pixels.
 - **Agent Action:** Describes the characters, setting, and style.
 - **Files:**
-  - `03_character_generation.input.md`
-  - `03_character_generation.output.md` (Character/Style bios)
+  - `03_visual_plan.input.md`
+  - `03_visual_plan.output.md` (Visual style guide and character bios)
 
 ---
 

@@ -244,7 +244,7 @@ def status(
         ("00_reel.yaml", "Config"),
         ("01_research.output.md", "Research"),
         ("02_story_generator.output.json", "Script"),
-        ("03_character_generation.output.md", "Visual Plan"),
+        ("03_visual_plan.output.md", "Visual Plan"),
         ("03.5_generate_assets_agent.output.json", "Asset Prompts"),
         ("04.5_generate_videos_agent.output.json", "Videos"),
         ("05.5_generate_audio_agent.output.json", "Audio"),
@@ -556,7 +556,7 @@ def current():
         ("00_seed.md", "Seed"),
         ("01_research.output.md", "Research"),
         ("02_story_generator.output.json", "Script"),
-        ("03_character_generation.output.md", "Plan"),
+        ("03_visual_plan.output.md", "Plan"),
     ]
     for filename, name in stages:
         exists = (reel_path / filename).exists()
@@ -676,7 +676,7 @@ def guide():
 +-- [cyan]00_data/[/cyan]             [dim]<- CSV files for charts[/dim]
 +-- [green]01_research.output.md[/green]  [dim]<- Stage 1 output[/dim]
 +-- [green]02_story_generator.output.json[/green]  [dim]<- Stage 2 segments[/dim]
-+-- [green]03_character_generation.output.md[/green]  [dim]<- Stage 3 plan[/dim]
++-- [green]03_visual_plan.output.md[/green]  [dim]<- Stage 3 plan[/dim]
 +-- [blue]renders/[/blue]             [dim]<- Generated media assets[/dim]
 +-- [yellow]final/[/yellow]
     +-- final.mp4         [dim]<- The output video[/dim]

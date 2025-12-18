@@ -106,7 +106,7 @@ The pipeline follows a **granular audit trail** pattern. Every stage produces ex
 | **0** | Initialization | User creates | `00_seed.md`, `00_reel.yaml`, `00_data/` | Manual setup |
 | **1** | Research | Seed + Data | `01_research.output.md` | Ground concept in facts |
 | **2** | Story & Segmentation | Research | `02_story_generator.output.json` | Write script, split into 10s blocks |
-| **3** | Character/Visual Planning | Story | `03_character_generation.output.md` | Define visual language |
+| **3** | Visual Plan | Story | `03_visual_plan.output.md` | Define visual language |
 | **3.5** | Image Prompt Gen | Visual plan | `03.5_generate_assets_agent.output.json` | Create image prompts |
 | **4** | Video Prompt Engineering | Image prompts | `04_video_prompt_engineering.output.md` | Define motion directives |
 | **4.5** | Video Generation | Motion prompts | `renders/bg_*.mp4` | Execute video API calls |

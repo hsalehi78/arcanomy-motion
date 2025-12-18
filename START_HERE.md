@@ -31,14 +31,14 @@ uv run set permission-trap    # Partial match works!
 
 Once you've set your reel, run each stage in order:
 
-| Stage | Command | What It Does |
-|-------|---------|--------------|
-| 1 | `uv run research` | Gathers facts, stats, psychology from seed |
-| 2 | `uv run script` | Writes voiceover + 10-second segments |
-| 3 | `uv run plan` | Defines characters, style, mood |
-| 4 | `uv run assets` | Generates image/video prompts |
-| 5 | `uv run assemble` | Creates Remotion manifest |
-| 6 | `uv run deliver` | Renders final MP4 |
+| Stage | Command           | Reads                                                         | Produces                                           |
+|-------|-------------------|---------------------------------------------------------------|----------------------------------------------------|
+| 1     | `uv run research` | `01_*_system.md` + `00_seed.md` + `00_reel.yaml` + `00_data/` | `01_research.input.md` → `.output.md`              |
+| 2     | `uv run script`   | `02_*_system.md` + seed + `01_*.output.md`                    | `02_story_generator.input.md` → `.output.md/.json` |
+| 3     | `uv run plan`     | `03_*_system.md` + `02_*.output.md`                           | `03_visual_plan.input.md` → `.output.md`           |
+| 4     | `uv run assets`   | `04_*_system.md` + `02_*.json` + `03_*.output.md`             | `03.5_*.json` + `renders/bg_*.mp4`                 |
+| 5     | `uv run assemble` | `05_*_system.md` + all outputs + `renders/`                   | `07_*.json` (manifest) + `renders/voice_*.mp3`     |
+| 6     | `uv run deliver`  | Manifest + all assets                                         | `final/final.mp4`, `.srt`, `metadata.json`         |
 
 Or run the full pipeline at once:
 ```bash
@@ -104,8 +104,8 @@ content/reels/2025-12-15-my-reel/
 ├── 02_story_generator.output.md        <- Stage 2: Human-readable script
 ├── 02_story_generator.output.json      <- Stage 2: Segments for pipeline
 │
-├── 03_character_generation.input.md
-├── 03_character_generation.output.md   <- Stage 3: Visual plan
+├── 03_visual_plan.input.md
+├── 03_visual_plan.output.md            <- Stage 3: Visual plan
 │
 ├── renders/                            <- Generated media assets
 │   ├── bg_01.mp4

@@ -155,8 +155,8 @@ content/
         ├── 02_story_generator.output.md
         ├── 02_story_generator.output.json  # [Key] Segmentation source of truth
         │
-        ├── 03_character_generation.input.md
-        ├── 03_character_generation.output.md
+        ├── 03_visual_plan.input.md
+        ├── 03_visual_plan.output.md
         │
         ├── 03.5_generate_assets_agent.input.md
         ├── 03.5_generate_assets_agent.output.json # Asset list (images/charts)

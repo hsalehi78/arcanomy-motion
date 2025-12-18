@@ -12,7 +12,7 @@ PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 
 def load_system_prompt() -> str:
     """Load the visual plan system prompt from shared/prompts."""
-    prompt_path = PROMPTS_DIR / "visual_plan_system.md"
+    prompt_path = PROMPTS_DIR / "03_visual_plan_system.md"
     if prompt_path.exists():
         return read_file(prompt_path)
     # Fallback if file missing
@@ -66,8 +66,8 @@ Please provide:
 6. Any character or object descriptions"""
 
     # Save input (both system + user for full audit trail)
-    input_path = reel_path / "03_character_generation.input.md"
-    input_content = f"""# Visual Planning Stage Input
+    input_path = reel_path / "03_visual_plan.input.md"
+    input_content = f"""# Visual Plan Stage Input
 
 ## System Prompt
 
@@ -85,7 +85,7 @@ Please provide:
     response = llm.complete(user_prompt, system=system_prompt)
 
     # Save output
-    output_path = reel_path / "03_character_generation.output.md"
+    output_path = reel_path / "03_visual_plan.output.md"
     write_file(output_path, f"# Visual Plan\n\n{response}")
 
     return output_path

@@ -13,7 +13,7 @@ PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 
 def load_system_prompt() -> str:
     """Load the assets system prompt from shared/prompts."""
-    prompt_path = PROMPTS_DIR / "assets_system.md"
+    prompt_path = PROMPTS_DIR / "04_assets_system.md"
     if prompt_path.exists():
         return read_file(prompt_path)
     # Fallback if file missing
@@ -54,7 +54,7 @@ def run_asset_generation(reel_path: Path, llm: LLMService) -> list[Segment]:
     segments = [Segment.from_dict(s) for s in segments_list]
 
     # Load visual plan
-    visual_plan_path = reel_path / "03_character_generation.output.md"
+    visual_plan_path = reel_path / "03_visual_plan.output.md"
     visual_plan = read_file(visual_plan_path) if visual_plan_path.exists() else ""
 
     segments_desc = "\n".join(

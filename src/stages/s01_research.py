@@ -12,7 +12,7 @@ PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 
 def load_system_prompt() -> str:
     """Load the research system prompt from shared/prompts."""
-    prompt_path = PROMPTS_DIR / "research_system.md"
+    prompt_path = PROMPTS_DIR / "01_research_system.md"
     if prompt_path.exists():
         return read_file(prompt_path)
     # Fallback if file missing

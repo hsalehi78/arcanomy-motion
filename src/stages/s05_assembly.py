@@ -13,7 +13,7 @@ PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 
 def load_voice_system_prompt() -> str:
     """Load the voice system prompt from shared/prompts."""
-    prompt_path = PROMPTS_DIR / "voice_system.md"
+    prompt_path = PROMPTS_DIR / "05_voice_system.md"
     if prompt_path.exists():
         return read_file(prompt_path)
     # Fallback if file missing
