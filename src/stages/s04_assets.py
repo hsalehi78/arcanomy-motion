@@ -7,6 +7,26 @@ from src.domain import Segment
 from src.services import LLMService
 from src.utils.io import read_file, write_file
 
+# Path to shared prompts directory
+PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
+
+
+def load_system_prompt() -> str:
+    """Load the assets system prompt from shared/prompts."""
+    prompt_path = PROMPTS_DIR / "assets_system.md"
+    if prompt_path.exists():
+        return read_file(prompt_path)
+    # Fallback if file missing
+    return """You are a prompt engineer for AI image generation.
+Create detailed, specific prompts that will produce consistent, high-quality images.
+
+For each segment, provide:
+1. An image prompt (for DALL-E 3 or similar)
+2. A video motion prompt (for Kling/Runway - describe camera movement and subject motion)
+
+Style should be consistent across all segments.
+Output as JSON array."""
+
 
 def run_asset_generation(reel_path: Path, llm: LLMService) -> list[Segment]:
     """Generate image and video prompts for each segment.
@@ -18,26 +38,24 @@ def run_asset_generation(reel_path: Path, llm: LLMService) -> list[Segment]:
     Returns:
         List of Segment objects with prompts populated
     """
+    system_prompt = load_system_prompt()
+
     # Load segments
     segments_path = reel_path / "02_story_generator.output.json"
     with open(segments_path, "r", encoding="utf-8") as f:
         segments_data = json.load(f)
-    segments = [Segment.from_dict(s) for s in segments_data]
+    
+    # Handle both formats: {"segments": [...]} or just [...]
+    if isinstance(segments_data, dict) and "segments" in segments_data:
+        segments_list = segments_data["segments"]
+    else:
+        segments_list = segments_data
+    
+    segments = [Segment.from_dict(s) for s in segments_list]
 
     # Load visual plan
     visual_plan_path = reel_path / "03_character_generation.output.md"
     visual_plan = read_file(visual_plan_path) if visual_plan_path.exists() else ""
-
-    # Generate image prompts
-    system_prompt = """You are a prompt engineer for AI image generation.
-Create detailed, specific prompts that will produce consistent, high-quality images.
-
-For each segment, provide:
-1. An image prompt (for DALL-E 3 or similar)
-2. A video motion prompt (for Kling/Runway - describe camera movement and subject motion)
-
-Style should be consistent across all segments.
-Output as JSON array."""
 
     segments_desc = "\n".join(
         f"Segment {s.id}: {s.visual_intent}" for s in segments
@@ -58,9 +76,21 @@ Output format:
   ]
 }}"""
 
-    # Save input
+    # Save input (both system + user for full audit trail)
     input_path = reel_path / "03.5_generate_assets_agent.input.md"
-    write_file(input_path, f"# Asset Prompt Generation\n\n{user_prompt}")
+    input_content = f"""# Asset Generation Stage Input
+
+## System Prompt
+
+{system_prompt}
+
+{"=" * 80}
+========================== USER PROMPT BELOW ==========================
+{"=" * 80}
+
+{user_prompt}
+"""
+    write_file(input_path, input_content)
 
     # Call LLM
     response = llm.complete_json(user_prompt, system=system_prompt)
@@ -121,4 +151,3 @@ def run_video_generation(reel_path: Path) -> list[Segment]:
     write_file(output_path, json.dumps(execution_log, indent=2))
 
     return segments
-

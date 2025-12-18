@@ -20,7 +20,7 @@ class TokenUsage:
 
     def print(self):
         """Print token usage to console."""
-        typer.echo(f"   📊 Tokens: {self.input_tokens:,} in → {self.output_tokens:,} out ({self.total_tokens:,} total) [{self.model}]")
+        typer.echo(f"   [Tokens] {self.input_tokens:,} in -> {self.output_tokens:,} out ({self.total_tokens:,} total) [{self.model}]")
 
 
 class LLMService:

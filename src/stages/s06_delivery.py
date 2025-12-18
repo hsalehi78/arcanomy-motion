@@ -31,7 +31,24 @@ def run_music_selection(reel_path: Path) -> dict:
 
     # Save input/output
     input_path = reel_path / "06_music.input.md"
-    write_file(input_path, f"# Music Selection\n\nMood: {objective.music_mood}")
+    input_content = f"""# Music Selection Stage Input
+
+## Configuration
+
+- **Music Mood:** {objective.music_mood}
+- **Reel Type:** {objective.type}
+- **Duration:** {objective.duration_seconds}s
+
+{"=" * 80}
+========================== SELECTION CRITERIA ==========================
+{"=" * 80}
+
+Search for a track matching:
+- Mood: {objective.music_mood}
+- Duration: Must be at least {objective.duration_seconds} seconds
+- Style: Appropriate for financial/educational content
+"""
+    write_file(input_path, input_content)
 
     output_path = reel_path / "06_music.output.json"
     write_file(output_path, json.dumps(result, indent=2))
@@ -85,19 +102,34 @@ def run_assembly(reel_path: Path) -> Path:
     # Build manifest
     manifest = Manifest.from_segments(segments, fps=30, music_path=music_track)
 
+    # Save input for audit
+    input_path = reel_path / "07_assemble_final_agent.input.md"
+    input_content = f"""# Assembly Stage Input
+
+## Configuration
+
+- **Title:** {objective.title}
+- **Type:** {objective.type}
+- **Duration:** {objective.duration_seconds}s
+- **Segments:** {len(segments)}
+- **Music:** {music_track or 'None'}
+
+{"=" * 80}
+========================== MANIFEST PREVIEW ==========================
+{"=" * 80}
+
+Segments to assemble:
+"""
+    for seg in segments:
+        input_content += f"\n- Segment {seg.id}: {seg.duration}s"
+        input_content += f"\n  Audio: {seg.audio_path or 'pending'}"
+        input_content += f"\n  Video: {seg.video_path or 'pending'}"
+    
+    write_file(input_path, input_content)
+
     # Save manifest
     manifest_path = reel_path / "07_assemble_final_agent.output.json"
     write_file(manifest_path, json.dumps(manifest.to_dict(), indent=2))
-
-    # Also save input for audit
-    input_path = reel_path / "07_assemble_final_agent.input.md"
-    write_file(
-        input_path,
-        f"# Assembly Input\n\n"
-        f"Segments: {len(segments)}\n"
-        f"Duration: {objective.duration_seconds}s\n"
-        f"Music: {music_track or 'None'}\n",
-    )
 
     # Create final directory
     final_dir = reel_path / "final"
@@ -168,4 +200,3 @@ def run_delivery(reel_path: Path) -> dict:
         }
 
     return status
-

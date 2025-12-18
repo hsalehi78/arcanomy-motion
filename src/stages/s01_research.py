@@ -80,11 +80,13 @@ Generate a complete research document following the 7-section structure in your 
     input_content = f"""# Research Stage Input
 
 ## System Prompt
+
 {system_prompt}
 
----
+{"=" * 80}
+========================== USER PROMPT BELOW ==========================
+{"=" * 80}
 
-## User Prompt
 {user_prompt}
 """
     write_file(input_path, input_content)

@@ -40,12 +40,12 @@ CURRENT_REEL_FILE = Path(".current_reel")
 def _get_current_reel() -> Path:
     """Get the current reel path from context file."""
     if not CURRENT_REEL_FILE.exists():
-        typer.echo("❌ No reel selected. Run: uv run set <reel-path>", err=True)
+        typer.echo("[ERROR] No reel selected. Run: uv run set <reel-path>", err=True)
         raise typer.Exit(1)
     
     reel_path = Path(CURRENT_REEL_FILE.read_text().strip())
     if not reel_path.exists():
-        typer.echo(f"❌ Reel folder no longer exists: {reel_path}", err=True)
+        typer.echo(f"[ERROR] Reel folder no longer exists: {reel_path}", err=True)
         raise typer.Exit(1)
     
     return reel_path
@@ -53,10 +53,10 @@ def _get_current_reel() -> Path:
 
 def _print_context(reel_path: Path, stage_name: str = None):
     """Print current reel context."""
-    typer.echo(f"📂 Reel: {reel_path.name}")
+    typer.echo(f"[Reel] {reel_path.name}")
     if stage_name:
-        typer.echo(f"🎬 Stage: {stage_name}")
-    typer.echo("─" * 40)
+        typer.echo(f"[Stage] {stage_name}")
+    typer.echo("-" * 40)
 
 
 @app.command("set")
@@ -76,22 +76,22 @@ def set_reel(
             if len(matches) == 1:
                 path = matches[0]
             elif len(matches) > 1:
-                typer.echo(f"❌ Multiple matches found:", err=True)
+                typer.echo(f"[ERROR] Multiple matches found:", err=True)
                 for m in matches:
                     typer.echo(f"   - {m.name}")
                 raise typer.Exit(1)
             else:
-                typer.echo(f"❌ No reel found matching: {reel_path}", err=True)
+                typer.echo(f"[ERROR] No reel found matching: {reel_path}", err=True)
                 raise typer.Exit(1)
     
     if not path.exists():
-        typer.echo(f"❌ Reel folder not found: {path}", err=True)
+        typer.echo(f"[ERROR] Reel folder not found: {path}", err=True)
         raise typer.Exit(1)
     
     # Save to context file
     CURRENT_REEL_FILE.write_text(str(path.resolve()))
     
-    typer.echo(f"✅ Current reel set to: {path.name}")
+    typer.echo(f"[OK] Current reel set to: {path.name}")
     typer.echo(f"   Full path: {path.resolve()}")
     typer.echo(f"\n   Now you can run:")
     typer.echo(f"   uv run research    # Stage 1")
@@ -155,7 +155,7 @@ audit_level: "strict"
     # Auto-set as current reel
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
-    typer.echo(f"✅ Created new reel at: {reel_path}")
+    typer.echo(f"[OK] Created new reel at: {reel_path}")
     typer.echo(f"   (Also set as current reel)")
     typer.echo(f"\n   Edit {reel_path}/00_seed.md and 00_reel.yaml to get started")
 
@@ -209,12 +209,12 @@ def run(
             logger.info(f"Running stage {num}: {name}")
             try:
                 func()
-                logger.info(f"  ✓ {name} complete")
+                logger.info(f"  [OK] {name} complete")
             except Exception as e:
                 logger.error(f"  ✗ {name} failed: {e}")
                 raise typer.Exit(1)
 
-    typer.echo("✓ Pipeline complete")
+    typer.echo("[OK] Pipeline complete")
 
 
 @app.command()
@@ -256,7 +256,7 @@ def status(
     typer.echo(f"\nPipeline status for: {reel_path.name}\n")
     for filename, name in stages:
         exists = (reel_path / filename).exists()
-        status = "✓" if exists else "○"
+        status = "[x]" if exists else "[ ]"
         typer.echo(f"  {status} {name}")
 
     typer.echo()
@@ -431,7 +431,7 @@ def ingest_blog(
     config_yaml = yaml.dump(config, default_flow_style=False, allow_unicode=True)
     (reel_path / "00_reel.yaml").write_text(config_yaml)
 
-    typer.echo(f"\n✓ Created new reel at: {reel_path}")
+    typer.echo(f"\n[OK] Created new reel at: {reel_path}")
     typer.echo(f"  Source blog: {blog.title}")
     typer.echo(f"\n  Files created:")
     typer.echo(f"    - {reel_path}/00_seed.md")
@@ -460,7 +460,7 @@ def research(
     llm = LLMService(provider=provider)
     output_path = run_research(reel_path, llm)
     
-    typer.echo(f"\n✅ Research complete!")
+    typer.echo(f"\n[OK] Research complete!")
     typer.echo(f"   Created: {output_path.name}")
 
 
@@ -478,7 +478,7 @@ def script(
     llm = LLMService(provider=provider)
     segments = run_script(reel_path, llm)
     
-    typer.echo(f"\n✅ Script complete!")
+    typer.echo(f"\n[OK] Script complete!")
     typer.echo(f"   Generated {len(segments)} segments")
 
 
@@ -496,7 +496,7 @@ def plan(
     llm = LLMService(provider=provider)
     run_visual_plan(reel_path, llm)
     
-    typer.echo(f"\n✅ Visual plan complete!")
+    typer.echo(f"\n[OK] Visual plan complete!")
 
 
 @app.command()
@@ -513,7 +513,7 @@ def assets(
     llm = LLMService(provider=provider)
     run_asset_generation(reel_path, llm)
     
-    typer.echo(f"\n✅ Asset generation complete!")
+    typer.echo(f"\n[OK] Asset generation complete!")
 
 
 @app.command()
@@ -524,7 +524,7 @@ def assemble():
     
     run_assembly(reel_path)
     
-    typer.echo(f"\n✅ Assembly complete!")
+    typer.echo(f"\n[OK] Assembly complete!")
 
 
 @app.command()
@@ -535,19 +535,19 @@ def deliver():
     
     run_delivery(reel_path)
     
-    typer.echo(f"\n✅ Delivery complete!")
+    typer.echo(f"\n[OK] Delivery complete!")
 
 
 @app.command()
 def current():
     """Show the current reel context."""
     if not CURRENT_REEL_FILE.exists():
-        typer.echo("❌ No reel selected.")
+        typer.echo("[ERROR] No reel selected.")
         typer.echo("   Run: uv run set <reel-path>")
         raise typer.Exit(1)
     
     reel_path = _get_current_reel()
-    typer.echo(f"📂 Current reel: {reel_path.name}")
+    typer.echo(f"[Reel] {reel_path.name}")
     typer.echo(f"   Path: {reel_path}")
     
     # Show quick status
@@ -560,7 +560,7 @@ def current():
     ]
     for filename, name in stages:
         exists = (reel_path / filename).exists()
-        status = "✓" if exists else "○"
+        status = "[x]" if exists else "[ ]"
         typer.echo(f"   {status} {name}")
 
 

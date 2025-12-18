@@ -7,6 +7,27 @@ from src.domain import Segment
 from src.services import ElevenLabsService, LLMService
 from src.utils.io import read_file, write_file
 
+# Path to shared prompts directory
+PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
+
+
+def load_voice_system_prompt() -> str:
+    """Load the voice system prompt from shared/prompts."""
+    prompt_path = PROMPTS_DIR / "voice_system.md"
+    if prompt_path.exists():
+        return read_file(prompt_path)
+    # Fallback if file missing
+    return """You are a voice director for short-form video content.
+Annotate the script with prosody and emotion directions for text-to-speech.
+
+Use annotations like:
+- [pause 0.5s]
+- [emphasis]word[/emphasis]
+- [slower]phrase[/slower]
+- [whisper]phrase[/whisper]
+
+Keep the natural flow while adding subtle emotional guidance."""
+
 
 def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
     """Generate voice direction annotations for the script.
@@ -18,20 +39,11 @@ def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
     Returns:
         Path to the voice direction output
     """
+    system_prompt = load_voice_system_prompt()
+
     # Load script
     script_path = reel_path / "02_story_generator.output.md"
     script = read_file(script_path) if script_path.exists() else ""
-
-    system_prompt = """You are a voice director for short-form video content.
-Annotate the script with prosody and emotion directions for text-to-speech.
-
-Use annotations like:
-- [pause 0.5s]
-- [emphasis]word[/emphasis]
-- [slower]phrase[/slower]
-- [whisper]phrase[/whisper]
-
-Keep the natural flow while adding subtle emotional guidance."""
 
     user_prompt = f"""Add voice direction to this script:
 
@@ -39,9 +51,21 @@ Keep the natural flow while adding subtle emotional guidance."""
 
 Annotate each segment with prosody directions that make the delivery feel natural and engaging."""
 
-    # Save input
+    # Save input (both system + user for full audit trail)
     input_path = reel_path / "05_voice_prompt_engineer.input.md"
-    write_file(input_path, f"# Voice Direction Prompt\n\n{user_prompt}")
+    input_content = f"""# Voice Direction Stage Input
+
+## System Prompt
+
+{system_prompt}
+
+{"=" * 80}
+========================== USER PROMPT BELOW ==========================
+{"=" * 80}
+
+{user_prompt}
+"""
+    write_file(input_path, input_content)
 
     # Call LLM
     response = llm.complete(user_prompt, system=system_prompt)
@@ -67,7 +91,14 @@ def run_audio_generation(reel_path: Path, voice_id: str) -> list[dict]:
     segments_path = reel_path / "02_story_generator.output.json"
     with open(segments_path, "r", encoding="utf-8") as f:
         segments_data = json.load(f)
-    segments = [Segment.from_dict(s) for s in segments_data]
+    
+    # Handle both formats: {"segments": [...]} or just [...]
+    if isinstance(segments_data, dict) and "segments" in segments_data:
+        segments_list = segments_data["segments"]
+    else:
+        segments_list = segments_data
+    
+    segments = [Segment.from_dict(s) for s in segments_list]
 
     renders_dir = reel_path / "renders"
     renders_dir.mkdir(exist_ok=True)
@@ -103,4 +134,3 @@ def run_audio_generation(reel_path: Path, voice_id: str) -> list[dict]:
     write_file(output_path, json.dumps(results, indent=2))
 
     return results
-
