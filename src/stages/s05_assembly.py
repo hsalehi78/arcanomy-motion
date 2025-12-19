@@ -102,12 +102,14 @@ def run_audio_generation(reel_path: Path, voice_id: str) -> list[dict]:
 
     renders_dir = reel_path / "renders"
     renders_dir.mkdir(exist_ok=True)
+    voice_dir = renders_dir / "voice"
+    voice_dir.mkdir(exist_ok=True)
 
     elevenlabs = ElevenLabsService()
     results = []
 
     for segment in segments:
-        output_path = renders_dir / f"voice_{segment.id:02d}.mp3"
+        output_path = voice_dir / f"voice_{segment.id:02d}.mp3"
 
         try:
             elevenlabs.generate_speech(

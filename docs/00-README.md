@@ -34,8 +34,7 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 | 5.5 | Script | Generate narrator audio | `uv run audio` |
 | 6 | Agent | Sound effects prompts | `uv run sfx` |
 | 6.5 | Script | Generate sound effects | `uv run sfxgen` |
-| 7 | Agent | Music selection | `uv run music` |
-| 8 | Script | Final assembly | `uv run assemble` |
+| 7 | Script | Final assembly (FFmpeg) | `uv run final` |
 
 ## Next build milestone (MVP)
 **MVP = 1 reel end-to-end** that produces:

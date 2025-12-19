@@ -223,6 +223,8 @@ def run_audio_generation(
     # Prepare output directory
     renders_dir = reel_path / "renders"
     renders_dir.mkdir(exist_ok=True)
+    voice_dir = renders_dir / "voice"
+    voice_dir.mkdir(exist_ok=True)
 
     # Initialize ElevenLabs service
     elevenlabs = None
@@ -235,7 +237,7 @@ def run_audio_generation(
     for narration in narrations:
         seq = narration.get("sequence", narration.get("segment_id", 1))
         text = narration.get("optimized_text", narration.get("original_text", ""))
-        output_path = renders_dir / f"voice_{seq:02d}.mp3"
+        output_path = voice_dir / f"voice_{seq:02d}.mp3"
 
         execution_log.append(f"\n## Sequence {seq:02d}")
         execution_log.append(f"- Original text: \"{narration.get('original_text', text)}\"")

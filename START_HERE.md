@@ -40,7 +40,7 @@ Once you've set your reel, run each stage in order:
 | 4     | `uv run vidprompt`| Refine motion prompts for video AI                  | `04_video_prompt.output.json`       |
 | 4.5   | `uv run videos`   | Generate video clips from images (Kling/Runway)     | `renders/videos/*.mp4`              |
 | 5     | `uv run voice`    | Voice direction (optimize narration)                | `05_voice.output.json`              |
-| 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/voice_*.mp3`               |
+| 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/voice/*.mp3`               |
 | 6     | `uv run sfx`      | Create sound effect prompts per clip                | `06_sound_effects.output.json`      |
 | 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/sfx/*.mp3`                 |
 | 7     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
@@ -143,7 +143,9 @@ content/reels/2025-12-15-my-reel/
 │   ├── sfx/                            <- Sound effects (from Stage 6.5)
 │   │   ├── clip_01_sfx.mp3
 │   │   └── clip_02_sfx.mp3
-│   └── voice_full.mp3                  <- Audio (from Stage 5.5)
+│   └── voice/                          <- Audio (from Stage 5.5)
+│       ├── voice_01.mp3
+│       └── voice_02.mp3
 │
 └── final/
     ├── final.mp4                       <- The output video

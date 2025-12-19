@@ -7,8 +7,8 @@ Arcanomy Motion is a **hybrid monorepo** combining:
 2.  **Remotion (React):** Handles deterministic rendering of video, charts, and typography.
 
 We follow a **"Smart Agent + Dumb Scripts"** architecture:
-- **Smart Agent Stages** (1, 2, 3, 4, 5, 6, 7): LLM plans, writes prompts, makes creative decisions
-- **Dumb Script Stages** (3.5, 4.5, 5.5, 6.5, 8): Automated execution of API calls, no creativity
+- **Smart Agent Stages** (1, 2, 3, 4, 5, 6): LLM plans, writes prompts, makes creative decisions
+- **Dumb Script Stages** (3.5, 4.5, 5.5, 6.5, 7): Automated execution of API calls/FFmpeg, no creativity
 
 ---
 
@@ -54,16 +54,24 @@ The robot takes each picture and makes it "breathe" for **10 seconds**.
 ### 7. The Voice Actor (Audio Gen)
 The robot reads the script out loud using a tool called **ElevenLabs**.
 It makes sure the voice matches the video timing.
-*(Now we have `renders/voice_full.mp3`)*
+*(Now we have `renders/voice/voice_01.mp3`, etc.)*
 
-### 8. The Editor (Assembly)
+### 8. The Sound Effects Designer (SFX)
+The robot creates atmospheric sound effects for each scene.
+It uses **ElevenLabs Sound Effects API** to generate ambient audio.
+*(Now we have `renders/sfx/clip_01_sfx.mp3`, etc.)*
+
+### 9. The Editor (Final Assembly)
 Now the robot has a pile of stuff:
-- 3 Video clips
-- 1 Audio track
-- Background music
+- Video clips
+- Voice narration
+- Sound effects
 
-It glues them all together in a timeline using **Remotion**.
-Finally, it presses "Render" and gives you **one final MP4 video file**.
+It uses **FFmpeg** to:
+1. Center the voice in each 10-second clip
+2. Mix voice with sound effects (voice 100%, SFX 25%)
+3. Combine the mixed audio with video
+4. Concatenate all clips into **one final MP4 video file**.
 
 ---
 
@@ -104,14 +112,14 @@ src/
 │   ├── s01_research.py
 │   ├── s02_script.py
 │   ├── s03_plan.py
-│   ├── s03_5_assets.py       # Image generation execution
+│   ├── s04_assets.py         # Image generation execution
 │   ├── s04_vidprompt.py      # Video prompt engineering
-│   ├── s04_5_videos.py       # Video generation execution
 │   ├── s05_voice.py
 │   ├── s05_audio.py          # Voice audio generation execution
 │   ├── s06_sfx.py            # Sound effects prompt engineering
 │   ├── s06_sfx_gen.py        # Sound effects generation execution
-│   └── s06_delivery.py       # Music selection + assembly
+│   ├── s06_delivery.py       # Legacy assembly (Remotion-based)
+│   └── s07_final.py          # Final assembly (FFmpeg-based)
 │
 ├── utils/                    # Helpers
 │   ├── io.py                 # Safe file reading/writing
@@ -201,11 +209,8 @@ content/
         ├── 06.5_sound_effects_generation.input.md
         ├── 06.5_sound_effects_generation.output.json  # SFX file paths
         │
-        ├── 07_music.input.md
-        ├── 07_music.output.json              # Selected track
-        │
-        ├── 08_assembly.input.md
-        ├── 08_assembly.output.json           # Final Remotion timeline
+        ├── 07_final.input.md                 # Final assembly execution log
+        ├── 07_final.output.json              # Assembly results
         │
         ├── renders/                 # [Assets] Generated media files
         │   ├── images/              # Static images from Stage 3.5
@@ -217,12 +222,12 @@ content/
         │   ├── sfx/                 # Sound effects from Stage 6.5
         │   │   ├── clip_01_sfx.mp3
         │   │   └── clip_02_sfx.mp3
-        │   └── voice_full.mp3       # Audio from Stage 5.5
+        │   └── voice/               # Audio from Stage 5.5
+        │       ├── voice_01.mp3
+        │       └── voice_02.mp3
         │
-        └── final/                   # [Delivery] Final outputs
-            ├── final.mp4
-            ├── final.srt
-            └── metadata.json
+        └── final/                   # [Delivery] Final output
+            └── final.mp4            # Assembled video from Stage 7
 ```
 
 ### Philosophy: Explicit State
@@ -254,6 +259,7 @@ shared/
 │   ├── 05_voice_system.md           # Voice director instructions
 │   ├── 06_sound_effects_system.md   # Sound effects designer
 │   └── 06.5_sound_effects_generation_system.md  # SFX generation
+│   # Note: Stage 7 (Final Assembly) uses FFmpeg, no LLM needed
 └── templates/                       # User-facing templates
     └── seed_template.md             # Template for creating new reels
 ```
@@ -276,11 +282,10 @@ shared/
 | 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate videos | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate narrator audio | `renders/voice_*.mp3` |
+| 5.5 | Script | Generate narrator audio | `renders/voice/*.mp3` |
 | 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
 | 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
-| 7 | Agent | Music selection | `07_music.output.json` |
-| 8 | Script | Final assembly | `final/final.mp4` |
+| 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
 
 ---
 

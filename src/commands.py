@@ -26,6 +26,7 @@ from src.stages import (
     run_sfx_prompting,
     run_sfx_generation,
     run_music_selection,
+    run_final_assembly,
 )
 from src.utils.logger import get_logger
 
@@ -646,6 +647,46 @@ def sfxgen(
     typer.echo(f"\n[OK] Sound effects generation complete! ({success}/{len(results)} successful)")
 
 
+@app.command("final")
+def final(
+    sfx_volume: float = typer.Option(0.25, "--sfx", "-s", help="SFX volume (0-1, default 0.25)"),
+    voice_volume: float = typer.Option(1.0, "--voice", "-v", help="Voice volume (0-1, default 1.0)"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Validate files only, don't process"),
+    keep_files: bool = typer.Option(False, "--keep", "-k", help="Keep intermediate files"),
+):
+    """Run final assembly stage (Stage 7) on current reel.
+    
+    Assembles the final video using FFmpeg:
+    1. Mixes voice (centered) + sound effects for each clip
+    2. Combines mixed audio with video clips
+    3. Concatenates all clips into final.mp4
+    
+    Requires FFmpeg to be installed.
+    """
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Final Assembly (Stage 7)")
+    
+    result = run_final_assembly(
+        reel_path,
+        sfx_volume=sfx_volume,
+        voice_volume=voice_volume,
+        dry_run=dry_run,
+        cleanup=not keep_files,
+    )
+    
+    if result.get("status") == "success":
+        final_info = result.get("final_video", {})
+        typer.echo(f"\n[OK] Final assembly complete!")
+        typer.echo(f"   Output: {final_info.get('path', 'N/A')}")
+        typer.echo(f"   Duration: {final_info.get('duration_seconds', 0):.1f}s")
+        typer.echo(f"   Size: {final_info.get('size_mb', 0):.2f} MB")
+    elif result.get("status") == "dry_run":
+        typer.echo(f"\n[DRY RUN] Would process {result.get('clips', 0)} clips")
+    else:
+        typer.echo(f"\n❌ Assembly failed: {result.get('error', 'Unknown error')}", err=True)
+        raise typer.Exit(1)
+
+
 @app.command()
 def assemble():
     """Run assembly stage (Stage 5) on current reel."""
@@ -743,11 +784,8 @@ def guide():
    [green]Stage 4:[/green] Assets       -> Generates image/video prompts
    [dim]$[/dim] uv run assets
    
-   [green]Stage 5:[/green] Assembly     -> Creates Remotion manifest
-   [dim]$[/dim] uv run assemble
-   
-   [green]Stage 6:[/green] Delivery     -> Renders final MP4
-   [dim]$[/dim] uv run deliver
+   [green]Stage 7:[/green] Final        -> Assembles video with FFmpeg
+   [dim]$[/dim] uv run final
 
 [bold]3. PREVIEW & EXPORT[/bold]
    
@@ -769,9 +807,14 @@ def guide():
     table.add_row("uv run research", "Run Stage 1 on current reel")
     table.add_row("uv run script", "Run Stage 2 on current reel")
     table.add_row("uv run plan", "Run Stage 3 on current reel")
-    table.add_row("uv run assets", "Run Stage 4 on current reel")
-    table.add_row("uv run assemble", "Run Stage 5 on current reel")
-    table.add_row("uv run deliver", "Run Stage 6 on current reel")
+    table.add_row("uv run assets", "Run Stage 3.5 on current reel")
+    table.add_row("uv run vidprompt", "Run Stage 4 on current reel")
+    table.add_row("uv run videos", "Run Stage 4.5 on current reel")
+    table.add_row("uv run voice", "Run Stage 5 on current reel")
+    table.add_row("uv run audio", "Run Stage 5.5 on current reel")
+    table.add_row("uv run sfx", "Run Stage 6 on current reel")
+    table.add_row("uv run sfxgen", "Run Stage 6.5 on current reel")
+    table.add_row("uv run final", "Run Stage 7 (final assembly)")
     table.add_row("uv run commit", "Git add + commit + push")
     
     console.print(table)
@@ -1107,6 +1150,15 @@ _sfxgen_app.command()(sfxgen)
 def _run_sfxgen():
     """Entry point for 'uv run sfxgen'."""
     _sfxgen_app()
+
+
+# Final
+_final_app = typer.Typer()
+_final_app.command()(final)
+
+def _run_final():
+    """Entry point for 'uv run final'."""
+    _final_app()
 
 
 # Assemble

@@ -24,11 +24,10 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 | 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate video clips | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate narrator audio | `renders/voice_*.mp3` |
+| 5.5 | Script | Generate narrator audio | `renders/voice/*.mp3` |
 | 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
 | 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
-| 7 | Agent | Music selection | `07_music.output.json` |
-| 8 | Script | Final assembly | `final/final.mp4` |
+| 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
 
 ---
 
@@ -238,7 +237,7 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Files:**
 - `05.5_audio_generation.input.md` (Execution log)
 - `05.5_audio_generation.output.json` (Audio file paths)
-- **Artifacts:** `renders/voice_full.mp3` or `renders/voice_01.mp3`, etc.
+- **Artifacts:** `renders/voice/voice_01.mp3`, `renders/voice/voice_02.mp3`, etc.
 
 ---
 
@@ -313,43 +312,60 @@ Sound effects are designed as background layer:
 
 ---
 
-## Stage 7: Music Selection
-**Type:** Smart Agent
-
-**Goal:** Select background music track.
-
-**Files:**
-- `07_music.input.md`
-- `07_music.output.json` (Selected track path)
-
----
-
-## Stage 8: Assembly & Rendering
+## Stage 7: Final Assembly
 **Type:** Dumb Script (Execution)
 
-**Goal:** Put it all together using Remotion.
+**Goal:** Assemble the final video using FFmpeg.
 
 **Script Action:**
-1. Orchestrator creates a "Manifest" for Remotion
-2. Combines video clips, narrator audio, sound effects, and music
-3. Remotion renders the final video with all layers
+1. Mixes voice (centered) + sound effects for each clip
+2. Combines mixed audio with video clips
+3. Concatenates all clips into final video
+
+**Two-Stage Process:**
+
+### Stage 7.1: Mix Individual Clips
+For each clip:
+1. Detect voice duration using ffprobe
+2. Calculate padding to center voice in 10-second timeline
+3. Create centered voice track (silence + voice + silence)
+4. Mix centered voice with SFX (voice 100%, SFX 25% default)
+5. Combine mixed audio with video
+
+### Stage 7.2: Concatenate All Clips
+Combine all mixed clips into one final video using FFmpeg concat demuxer.
 
 **Files:**
-- `08_assembly.input.md` (Execution log)
-- `08_assembly.output.json` (The Timeline/Manifest sent to Remotion)
+- `07_final.input.md` (Execution log)
+- `07_final.output.json` (Assembly results)
 
 **Final Output:**
 - `final/final.mp4`
-- `final/final.srt`
-- `final/metadata.json`
 
-**Audio Layers in Final Assembly:**
+**Audio Mixing Formula:**
 ```
-[Video Clip 01] (10 seconds)
-  ├── Audio Track 1: voice_01.mp3 (narrator ~8s) [100% volume]
-  ├── Audio Track 2: clip_01_sfx.mp3 (SFX 10s) [25% volume]
-  └── Audio Track 3: background_music.mp3 [15% volume]
+Final Audio = Centered Voice (100%) + Sound Effects (25%)
+
+Centering Formula:
+padding_seconds = (10.0 - voice_duration) / 2.0
+
+Example (8.2s voice):
+[0.9s silence] [8.2s voice] [0.9s silence] = 10.0s centered track
 ```
+
+**Command:**
+```bash
+uv run final              # Run with defaults
+uv run final --sfx 0.3    # SFX at 30% volume
+uv run final --dry-run    # Validate files only
+uv run final --keep       # Keep intermediate files
+```
+
+**Requirements:**
+- FFmpeg must be installed
+- All video clips in `renders/videos/clip_XX.mp4`
+- All voice files in `renders/voice/voice_XX.mp3`
+- All SFX files in `renders/sfx/clip_XX_sfx.mp3`
 
 ---
 
@@ -398,11 +414,8 @@ content/reels/2024-05-20-sunk-cost/
 ├── 06.5_sound_effects_generation.input.md
 ├── 06.5_sound_effects_generation.output.json
 │
-├── 07_music.input.md
-├── 07_music.output.json
-│
-├── 08_assembly.input.md
-├── 08_assembly.output.json
+├── 07_final.input.md                 ← Final assembly execution log
+├── 07_final.output.json              ← Assembly results
 │
 ├── renders/
 │   ├── images/
@@ -414,12 +427,12 @@ content/reels/2024-05-20-sunk-cost/
 │   ├── sfx/                          ← Sound effects from Stage 6.5
 │   │   ├── clip_01_sfx.mp3
 │   │   └── clip_02_sfx.mp3
-│   └── voice_full.mp3
+│   └── voice/                        ← Narrator audio from Stage 5.5
+│       ├── voice_01.mp3
+│       └── voice_02.mp3
 │
 └── final/
-    ├── final.mp4
-    ├── final.srt
-    └── metadata.json
+    └── final.mp4                     ← Final assembled video
 ```
 
 ---
@@ -447,3 +460,4 @@ content/reels/2024-05-20-sunk-cost/
 | 5 | `shared/prompts/05_voice_system.md` |
 | 6 | `shared/prompts/06_sound_effects_system.md` |
 | 6.5 | `shared/prompts/06.5_sound_effects_generation_system.md` |
+| 7 | N/A (FFmpeg-based, no LLM) |

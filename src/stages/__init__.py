@@ -10,6 +10,7 @@ from .s05_audio import run_audio_generation
 from .s06_sfx import run_sfx_prompting
 from .s06_sfx_gen import run_sfx_generation
 from .s06_delivery import run_music_selection, run_assembly, run_delivery
+from .s07_final import run_final_assembly
 
 __all__ = [
     "run_research",
@@ -25,5 +26,6 @@ __all__ = [
     "run_music_selection",
     "run_assembly",
     "run_delivery",
+    "run_final_assembly",
 ]
 

@@ -111,7 +111,7 @@ The pipeline follows a **granular audit trail** pattern. Every stage produces ex
 | **4** | Video Prompt Engineering | Image prompts | `04_video_prompt_engineering.output.md` | Define motion directives |
 | **4.5** | Video Generation | Motion prompts | `renders/bg_*.mp4` | Execute video API calls |
 | **5** | Voice Prompting | Script | `05_voice_prompt_engineer.output.md` | Annotate prosody/emotion |
-| **5.5** | Audio Generation | Voice prompts | `renders/voice_*.mp3` | Call ElevenLabs API |
+| **5.5** | Audio Generation | Voice prompts | `renders/voice/*.mp3` | Call ElevenLabs API |
 | **6** | Music & SFX | Config | `06_music.output.json` | Select background audio |
 | **7** | Assembly & Render | All assets | `final/final.mp4` | Remotion composition |
 
@@ -259,7 +259,9 @@ Each completed reel produces:
 content/reels/YYYY-MM-DD-slug/
 ├── renders/
 │   ├── bg_01.mp4, bg_02.mp4...    # Background video segments
-│   ├── voice_full.mp3             # Complete voiceover
+│   ├── voice/                     # Narrator audio from Stage 5.5
+│   │   ├── voice_01.mp3
+│   │   └── voice_02.mp3
 │   └── charts/                    # Optional chart cache
 └── final/
     ├── final.mp4                  # Production-ready video (9:16)
