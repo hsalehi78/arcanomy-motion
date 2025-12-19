@@ -6,6 +6,7 @@ from pathlib import Path
 from src.domain import Objective, Segment
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import json_path, prompt_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -49,12 +50,8 @@ def run_script(reel_path: Path, llm: LLMService) -> list[Segment]:
     system_prompt = load_system_prompt()
 
     # Load research if available
-    research_path = reel_path / "01_research.output.md"
+    research_path = prompt_path(reel_path, "01_research.output.md")
     research = read_file(research_path) if research_path.exists() else ""
-
-    # Load reel config for additional context
-    config_path = reel_path / "00_reel.yaml"
-    config_yaml = read_file(config_path) if config_path.exists() else ""
 
     user_prompt = f"""# Script Generation Request
 
@@ -62,7 +59,7 @@ def run_script(reel_path: Path, llm: LLMService) -> list[Segment]:
 - **Duration:** {objective.duration_blocks} blocks ({objective.duration_seconds} seconds)
 - **Type:** {objective.type}
 
-## Creative Brief (from 00_seed.md)
+## Creative Brief (from inputs/seed.md)
 
 ### Hook
 > {objective.hook}
@@ -113,7 +110,7 @@ Generate a {objective.duration_blocks}-block production script following the JSO
 Return ONLY valid JSON. No markdown code fences."""
 
     # Save input (both system + user for full audit trail)
-    input_path = reel_path / "02_story_generator.input.md"
+    input_path = prompt_path(reel_path, "02_story_generator.input.md")
     input_content = f"""# Script Stage Input
 
 ## System Prompt
@@ -136,7 +133,7 @@ Return ONLY valid JSON. No markdown code fences."""
     segments = [Segment.from_dict(s) for s in segments_data]
 
     # Save human-readable output
-    output_md_path = reel_path / "02_story_generator.output.md"
+    output_md_path = prompt_path(reel_path, "02_story_generator.output.md")
     title = response.get("title", "Untitled")
     total_duration = response.get("total_duration_seconds", objective.duration_seconds)
     
@@ -154,7 +151,7 @@ Return ONLY valid JSON. No markdown code fences."""
     write_file(output_md_path, f"# Generated Script\n\n{script_text}")
 
     # Save JSON output
-    output_json_path = reel_path / "02_story_generator.output.json"
+    output_json_path = json_path(reel_path, "02_story_generator.output.json")
     write_file(
         output_json_path,
         json.dumps(response, indent=2),

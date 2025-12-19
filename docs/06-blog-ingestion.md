@@ -2,7 +2,7 @@
 
 ## Overview
 
-Arcanomy Motion can automatically create reel projects from published Arcanomy blog posts. This workflow fetches blog content from the CDN, uses an LLM to extract the key elements (hook, core insight, visual vibe), and generates the required `00_seed.md` and `00_reel.yaml` files.
+Arcanomy Motion can automatically create reel projects from published Arcanomy blog posts. This workflow fetches blog content from the CDN, uses an LLM to extract the key elements (hook, core insight, visual vibe), and generates the required `inputs/seed.md` and `inputs/reel.yaml` files.
 
 ---
 
@@ -91,15 +91,15 @@ Selected: The Psychology of Money
    - Visual vibe (mood, colors, style)
    - Reel type and duration
 4. Creates `content/reels/{identifier}/` with:
-   - `00_seed.md` — Creative brief
-   - `00_reel.yaml` — Machine config
-   - `00_data/` — Empty data folder
+   - `inputs/seed.md` — Creative brief
+   - `inputs/reel.yaml` — Machine config
+   - `inputs/data/` — Empty data folder
 
 ---
 
 ## Generated Files
 
-### `00_seed.md`
+### `inputs/seed.md`
 
 ```markdown
 # Hook
@@ -117,7 +117,7 @@ Dark, moody, cinematic. Gold accents on black. Premium, minimalist typography.
 - (none - sourced from blog: 2025-08-10-knowledge-the-psychology-of-money)
 ```
 
-### `00_reel.yaml`
+### `inputs/reel.yaml`
 
 ```yaml
 title: The Psychology of Money
@@ -150,9 +150,9 @@ source_blog: 2025-08-10-knowledge-the-psychology-of-money
 │     └─▶ Fetch content.mdx from CDN                              │
 │     └─▶ LLM extracts hook, insight, vibe                        │
 │     └─▶ Create content/reels/{identifier}/                      │
-│         ├── 00_seed.md                                          │
-│         ├── 00_reel.yaml                                        │
-│         └── 00_data/                                            │
+│         ├── inputs/seed.md                                      │
+│         ├── inputs/reel.yaml                                    │
+│         └── inputs/data/                                        │
 │                                                                  │
 │  3. Review & edit generated files                                │
 │                                                                  │
@@ -181,11 +181,11 @@ No CDN authentication is required — blog content is publicly accessible.
 
 ## Tips
 
-1. **Review before running:** Always review the generated `00_seed.md` and `00_reel.yaml` before running the full pipeline. The LLM's interpretation may need tweaking.
+1. **Review before running:** Always review the generated `inputs/seed.md` and `inputs/reel.yaml` before running the full pipeline. The LLM's interpretation may need tweaking.
 
 2. **Adjust duration:** If the blog is complex, consider increasing `duration_blocks` from 2 to 3.
 
-3. **Add data:** If you want to include charts/data, add CSV files to `00_data/` and update `# Data Sources` in the seed file.
+3. **Add data:** If you want to include charts/data, add CSV files to `inputs/data/` and update `# Data Sources` in the seed file.
 
 4. **Change reel type:** The LLM infers the reel type, but you can override it:
    - `chart_explainer` — For data-driven content

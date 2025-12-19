@@ -3,7 +3,7 @@
 This is a Dumb Script stage that:
 1. Reads sound effect prompts from Stage 6
 2. Generates audio using ElevenLabs Sound Effects API
-3. Saves audio files to renders/sfx/
+3. Saves audio files to renders/audio/sfx/
 """
 
 import json
@@ -13,6 +13,7 @@ from pathlib import Path
 from src.services import ElevenLabsService
 from src.utils.io import write_file
 from src.utils.logger import get_logger
+from src.utils.paths import json_path, prompt_path, sfx_dir as reel_sfx_dir
 
 logger = get_logger()
 
@@ -29,9 +30,9 @@ def run_sfx_generation(
     """Generate sound effects for each clip using ElevenLabs.
 
     This stage:
-    1. Reads sound effect prompts from Stage 6 (06_sound_effects.output.json)
+    1. Reads sound effect prompts from Stage 6 (json/06_sound_effects.output.json)
     2. Generates audio using ElevenLabs Sound Effects API
-    3. Saves audio files to renders/sfx/
+    3. Saves audio files to renders/audio/sfx/
 
     Args:
         reel_path: Path to the reel folder
@@ -42,7 +43,7 @@ def run_sfx_generation(
         List of generation results
     """
     # Load sound effect prompts from Stage 6
-    sfx_prompts_path = reel_path / "06_sound_effects.output.json"
+    sfx_prompts_path = json_path(reel_path, "06_sound_effects.output.json")
 
     if not sfx_prompts_path.exists():
         logger.error("No sound effects prompts found. Run Stage 6 (sfx) first.")
@@ -58,7 +59,7 @@ def run_sfx_generation(
         return []
 
     # Prepare output directory
-    sfx_dir = reel_path / "renders" / "sfx"
+    sfx_dir = reel_sfx_dir(reel_path)
     sfx_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize ElevenLabs service
@@ -156,7 +157,7 @@ def run_sfx_generation(
             logger.error(f"[!!] Clip {clip_num:02d}: Failed - {e}")
 
     # Save execution log
-    input_log_path = reel_path / "06.5_sound_effects_generation.input.md"
+    input_log_path = prompt_path(reel_path, "06.5_sound_effects_generation.input.md")
     log_content = f"""# Sound Effects Generation Execution Log
 
 Generated: {datetime.now(timezone.utc).isoformat()}
@@ -182,7 +183,7 @@ Generated: {datetime.now(timezone.utc).isoformat()}
         "failed": sum(1 for r in results if r.get("status") == "failed"),
         "clips": results,
     }
-    output_path = reel_path / "06.5_sound_effects_generation.output.json"
+    output_path = json_path(reel_path, "06.5_sound_effects_generation.output.json")
     write_file(output_path, json.dumps(output_json, indent=2))
 
     # Print summary

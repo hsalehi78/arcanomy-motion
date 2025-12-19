@@ -8,6 +8,8 @@ import yaml
 
 from src.config import DEFAULT_PROVIDERS
 from src.domain import Objective
+from src.utils.paths import ensure_reel_layout, reel_yaml_path, seed_path
+from src.utils.paths import inputs_dir, json_dir, prompts_dir, renders_dir
 from src.services import (
     LLMService,
     fetch_featured_blogs,
@@ -125,7 +127,7 @@ def new(
         raise typer.Exit(1)
 
     reel_path.mkdir(parents=True)
-    (reel_path / "00_data").mkdir()
+    ensure_reel_layout(reel_path)
 
     # Create seed template
     seed_content = """# Hook
@@ -138,9 +140,9 @@ def new(
 [Describe the mood, colors, and visual style]
 
 # Data Sources
-- 00_data/your_data.csv
+- inputs/data/your_data.csv
 """
-    (reel_path / "00_seed.md").write_text(seed_content)
+    seed_path(reel_path).write_text(seed_content)
 
     # Create config template
     config_content = f"""title: "{slug.replace('-', ' ').title()}"
@@ -155,14 +157,14 @@ subtitles: "burned_in"
 
 audit_level: "strict"
 """
-    (reel_path / "00_reel.yaml").write_text(config_content)
+    reel_yaml_path(reel_path).write_text(config_content)
 
     # Auto-set as current reel
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
     typer.echo(f"[OK] Created new reel at: {reel_path}")
     typer.echo(f"   (Also set as current reel)")
-    typer.echo(f"\n   Edit {reel_path}/00_seed.md and 00_reel.yaml to get started")
+    typer.echo(f"\n   Edit {seed_path(reel_path)} and {reel_yaml_path(reel_path)} to get started")
 
 
 @app.command()
@@ -245,16 +247,18 @@ def status(
         raise typer.Exit(1)
 
     stages = [
-        ("00_seed.md", "Seed"),
-        ("00_reel.yaml", "Config"),
-        ("01_research.output.md", "Research"),
-        ("02_story_generator.output.json", "Script"),
-        ("03_visual_plan.output.json", "Visual Plan"),
-        ("03.5_asset_generation.output.json", "Images"),
-        ("04.5_video_generation.output.json", "Videos"),
-        ("05.5_generate_audio_agent.output.json", "Audio"),
-        ("06_music.output.json", "Music"),
-        ("07_assembly.output.json", "Manifest"),
+        ("inputs/seed.md", "Seed"),
+        ("inputs/reel.yaml", "Config"),
+        ("prompts/01_research.output.md", "Research"),
+        ("json/02_story_generator.output.json", "Script"),
+        ("json/03_visual_plan.output.json", "Visual Plan"),
+        ("json/03.5_asset_generation.output.json", "Images"),
+        ("json/04_video_prompt.output.json", "Video Prompts"),
+        ("json/04.5_video_generation.output.json", "Videos"),
+        ("json/05_voice.output.json", "Voice Direction"),
+        ("json/05.5_audio_generation.output.json", "Audio"),
+        ("json/06_sound_effects.output.json", "SFX Prompts"),
+        ("json/06.5_sound_effects_generation.output.json", "SFX"),
         ("final/final.mp4", "Final Video"),
     ]
 
@@ -427,14 +431,14 @@ def ingest_blog(
 
     # Create the reel folder structure
     reel_path.mkdir(parents=True)
-    (reel_path / "00_data").mkdir()
+    ensure_reel_layout(reel_path)
 
     # Write seed file
-    (reel_path / "00_seed.md").write_text(seed_content)
+    seed_path(reel_path).write_text(seed_content)
 
     # Write config file
     config_yaml = yaml.dump(config, default_flow_style=False, allow_unicode=True)
-    (reel_path / "00_reel.yaml").write_text(config_yaml)
+    reel_yaml_path(reel_path).write_text(config_yaml)
 
     # Auto-set as current reel
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
@@ -443,11 +447,116 @@ def ingest_blog(
     typer.echo(f"   (Auto-set as current reel)")
     typer.echo(f"  Source blog: {blog.title}")
     typer.echo(f"\n  Files created:")
-    typer.echo(f"    - {reel_path}/00_seed.md")
-    typer.echo(f"    - {reel_path}/00_reel.yaml")
+    typer.echo(f"    - {seed_path(reel_path)}")
+    typer.echo(f"    - {reel_yaml_path(reel_path)}")
     typer.echo(f"\n  Next steps:")
     typer.echo(f"    1. Review and edit the seed/config files")
     typer.echo(f"    2. Run: uv run full")
+
+
+@app.command("migrate-reel")
+def migrate_reel(
+    reel_path: Optional[str] = typer.Argument(
+        None,
+        help="Path or partial slug of reel to migrate (uses current reel if omitted)",
+    ),
+):
+    """Migrate an existing reel from the legacy flat layout into the new folder layout.
+
+    Legacy layout (root files): 00_seed.md, 00_reel.yaml, 00_data/, *.input.md, *.output.md, *.output.json,
+    renders/{voice,sfx}/.
+
+    New layout:
+    - inputs/{seed.md,reel.yaml,data/}
+    - prompts/*.md
+    - json/*.json
+    - renders/audio/{voice,sfx}/
+    """
+    import shutil
+
+    # Resolve reel path (supports partial match like `uv run set`)
+    if reel_path:
+        path = Path(reel_path)
+        if not path.exists():
+            reels_dir = Path("content/reels")
+            if reels_dir.exists():
+                matches = [d for d in reels_dir.iterdir() if d.is_dir() and reel_path in d.name]
+                if len(matches) == 1:
+                    path = matches[0]
+                elif len(matches) > 1:
+                    typer.echo("[ERROR] Multiple matches found:", err=True)
+                    for m in matches:
+                        typer.echo(f"   - {m.name}")
+                    raise typer.Exit(1)
+                else:
+                    typer.echo(f"[ERROR] No reel found matching: {reel_path}", err=True)
+                    raise typer.Exit(1)
+        reel = path
+    else:
+        reel = _get_current_reel()
+
+    if not reel.exists():
+        typer.echo(f"[ERROR] Reel not found: {reel}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"[Reel] {reel.name}")
+    typer.echo("Migrating to new layout...")
+
+    ensure_reel_layout(reel)
+
+    moved = {"files": 0, "dirs": 0, "skipped": 0}
+
+    def move_file(src: Path, dst: Path):
+        if not src.exists():
+            return
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists():
+            moved["skipped"] += 1
+            return
+        shutil.move(str(src), str(dst))
+        moved["files"] += 1
+
+    def merge_dir(src: Path, dst: Path):
+        if not src.exists() or not src.is_dir():
+            return
+        dst.mkdir(parents=True, exist_ok=True)
+        moved_any = False
+        for item in src.iterdir():
+            target = dst / item.name
+            if target.exists():
+                moved["skipped"] += 1
+                continue
+            shutil.move(str(item), str(target))
+            moved_any = True
+        # remove old dir if empty
+        try:
+            if not any(src.iterdir()):
+                src.rmdir()
+        except Exception:
+            pass
+        if moved_any:
+            moved["dirs"] += 1
+
+    # Legacy root inputs -> inputs/
+    move_file(reel / "00_seed.md", seed_path(reel))
+    move_file(reel / "00_reel.yaml", reel_yaml_path(reel))
+    merge_dir(reel / "00_data", inputs_dir(reel) / "data")
+
+    # Root md prompts -> prompts/
+    for md in reel.glob("*.input.md"):
+        move_file(md, prompts_dir(reel) / md.name)
+    for md in reel.glob("*.output.md"):
+        move_file(md, prompts_dir(reel) / md.name)
+
+    # Root json outputs -> json/
+    for j in reel.glob("*.output.json"):
+        move_file(j, json_dir(reel) / j.name)
+
+    # Legacy renders audio folders -> renders/audio/
+    merge_dir(renders_dir(reel) / "voice", renders_dir(reel) / "audio" / "voice")
+    merge_dir(renders_dir(reel) / "sfx", renders_dir(reel) / "audio" / "sfx")
+
+    typer.echo(f"[OK] Migration complete: {moved['files']} files moved, {moved['dirs']} dirs merged, {moved['skipped']} skipped")
 
 
 # =============================================================================
@@ -782,62 +891,62 @@ def full_pipeline(
         {
             "name": "Research",
             "stage": "1",
-            "check_file": "01_research.output.md",
+            "check_file": "prompts/01_research.output.md",
             "run": lambda: run_research(reel, LLMService(provider=get_llm_provider("research"))),
         },
         {
             "name": "Script",
             "stage": "2", 
-            "check_file": "02_story_generator.output.json",
+            "check_file": "json/02_story_generator.output.json",
             "run": lambda: run_script(reel, LLMService(provider=get_llm_provider("script"))),
         },
         {
             "name": "Visual Plan",
             "stage": "3",
-            "check_file": "03_visual_plan.output.json",
+            "check_file": "json/03_visual_plan.output.json",
             "run": lambda: run_visual_plan(reel, LLMService(provider=get_llm_provider("plan"))),
         },
         {
             "name": "Assets",
             "stage": "3.5",
-            "check_file": "03.5_asset_generation.output.json",
+            "check_file": "json/03.5_asset_generation.output.json",
             "run": lambda: run_asset_generation(reel, provider=DEFAULT_PROVIDERS["assets"], dry_run=dry_run),
         },
         {
             "name": "Video Prompts",
             "stage": "4",
-            "check_file": "04_video_prompt.output.json",
+            "check_file": "json/04_video_prompt.output.json",
             "run": lambda: run_vidprompt(reel, LLMService(provider=get_llm_provider("vidprompt"))),
         },
         {
             "name": "Videos",
             "stage": "4.5",
-            "check_file": "04.5_video_generation.output.json",
+            "check_file": "json/04.5_video_generation.output.json",
             "run": lambda: run_video_generation(reel, provider=DEFAULT_PROVIDERS["videos"], dry_run=dry_run),
             "skip": skip_videos,
         },
         {
             "name": "Voice Direction",
             "stage": "5",
-            "check_file": "05_voice.output.md",
+            "check_file": "prompts/05_voice.output.md",
             "run": lambda: run_voice_prompting(reel, LLMService(provider=get_llm_provider("voice"))),
         },
         {
             "name": "Audio",
             "stage": "5.5",
-            "check_file": "05.5_audio_generation.output.json",
+            "check_file": "json/05.5_audio_generation.output.json",
             "run": lambda: run_audio_generation(reel, dry_run=dry_run),
         },
         {
             "name": "SFX Prompts",
             "stage": "6",
-            "check_file": "06_sound_effects.output.json",
+            "check_file": "json/06_sound_effects.output.json",
             "run": lambda: run_sfx_prompting(reel, LLMService(provider=get_llm_provider("sfx"))),
         },
         {
             "name": "SFX Generation",
             "stage": "6.5",
-            "check_file": "06.5_sound_effects_generation.output.json",
+            "check_file": "json/06.5_sound_effects_generation.output.json",
             "run": lambda: run_sfx_generation(reel, dry_run=dry_run),
         },
         {
@@ -984,17 +1093,17 @@ def current():
     # Show quick status
     typer.echo(f"\n   Status:")
     stages = [
-        ("00_seed.md", "Seed"),
-        ("01_research.output.md", "Research"),
-        ("02_story_generator.output.json", "Script"),
-        ("03_visual_plan.output.json", "Plan"),
-        ("03.5_asset_generation.output.json", "Images"),
-        ("04_video_prompt.output.json", "Vidprompt"),
-        ("04.5_video_generation.output.json", "Videos"),
-        ("05_voice.output.md", "Voice"),
-        ("05.5_audio_generation.output.json", "Audio"),
-        ("06_sound_effects.output.json", "SFX"),
-        ("06.5_sound_effects_generation.output.json", "SFXGen"),
+        ("inputs/seed.md", "Seed"),
+        ("prompts/01_research.output.md", "Research"),
+        ("json/02_story_generator.output.json", "Script"),
+        ("json/03_visual_plan.output.json", "Plan"),
+        ("json/03.5_asset_generation.output.json", "Images"),
+        ("json/04_video_prompt.output.json", "Vidprompt"),
+        ("json/04.5_video_generation.output.json", "Videos"),
+        ("prompts/05_voice.output.md", "Voice"),
+        ("json/05.5_audio_generation.output.json", "Audio"),
+        ("json/06_sound_effects.output.json", "SFX"),
+        ("json/06.5_sound_effects_generation.output.json", "SFXGen"),
         ("final/final.mp4", "Final"),
     ]
     for filename, name in stages:
@@ -1042,7 +1151,7 @@ def reels():
     
     for i, reel in enumerate(reel_dirs, 1):
         # Determine status
-        has_seed = (reel / "00_seed.md").exists()
+        has_seed = (reel / "inputs" / "seed.md").exists()
         has_final = (reel / "final" / "final.mp4").exists()
         
         if has_final:
@@ -1050,10 +1159,10 @@ def reels():
         elif has_seed:
             # Count completed stages
             stage_files = [
-                "01_research.output.md",
-                "02_story_generator.output.json",
-                "03_visual_plan.output.json",
-                "05.5_audio_generation.output.json",
+                "prompts/01_research.output.md",
+                "json/02_story_generator.output.json",
+                "json/03_visual_plan.output.json",
+                "json/05.5_audio_generation.output.json",
             ]
             done = sum(1 for f in stage_files if (reel / f).exists())
             status = f"Stage {done}/4"
@@ -1083,6 +1192,55 @@ def reels():
                 typer.echo(f"[ERROR] Invalid selection. Enter 1-{len(reel_dirs)}", err=True)
         except ValueError:
             typer.echo("[ERROR] Enter a number", err=True)
+
+
+@app.command("kie-credits")
+def kie_credits():
+    """Check remaining KIE.ai API credits."""
+    import requests
+    from dotenv import load_dotenv
+    from src.config import get_media_api_key
+    
+    load_dotenv()
+    
+    try:
+        api_key = get_media_api_key("kie")
+    except RuntimeError as e:
+        typer.echo(f"[ERROR] {e}", err=True)
+        typer.echo("\nSet your KIE_API_KEY in .env file:", err=True)
+        typer.echo("  KIE_API_KEY=your_api_key_here", err=True)
+        raise typer.Exit(1)
+    
+    typer.echo("Checking KIE.ai credits...")
+    
+    try:
+        response = requests.get(
+            "https://api.kie.ai/api/v1/chat/credit",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get("code") == 200:
+            credits = data.get("data", 0)
+            typer.echo(f"\n[OK] KIE.ai Credits Remaining: {credits}")
+            
+            # Color-code based on credit level
+            if credits < 10:
+                typer.echo("   [WARNING] Low credits! Consider topping up.")
+            elif credits < 50:
+                typer.echo("   [INFO] Credits are running low.")
+            else:
+                typer.echo("   [OK] Credit balance is healthy.")
+        else:
+            typer.echo(f"[ERROR] API returned code {data.get('code')}: {data.get('msg')}", err=True)
+            raise typer.Exit(1)
+            
+    except requests.exceptions.RequestException as e:
+        typer.echo(f"[ERROR] Failed to check credits: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -1164,6 +1322,7 @@ def guide():
     table.add_row("uv run sfx", "Run Stage 6 on current reel")
     table.add_row("uv run sfxgen", "Run Stage 6.5 on current reel")
     table.add_row("uv run final", "Run Stage 7 (final assembly)")
+    table.add_row("uv run credits", "Check KIE.ai API credits")
     table.add_row("uv run commit", "Git add + commit + push")
     
     console.print(table)
@@ -1184,6 +1343,7 @@ def guide():
     table2.add_row("uv run arcanomy run <path> -s 2", "Run specific stage only")
     table2.add_row("uv run arcanomy status <path>", "Show pipeline status")
     table2.add_row("uv run arcanomy preview", "Start Remotion dev server")
+    table2.add_row("uv run arcanomy kie-credits", "Check KIE.ai API credits")
     table2.add_row("uv run arcanomy guide", "Show this guide")
     
     console.print(table2)
@@ -1194,12 +1354,12 @@ def guide():
     
     structure = """
 [dim]content/reels/2025-12-15-my-reel/[/dim]
-+-- [cyan]00_seed.md[/cyan]           [dim]<- Your creative brief (edit this)[/dim]
-+-- [cyan]00_reel.yaml[/cyan]         [dim]<- Config: duration, voice, type[/dim]
-+-- [cyan]00_data/[/cyan]             [dim]<- CSV files for charts[/dim]
-+-- [green]01_research.output.md[/green]  [dim]<- Stage 1 output[/dim]
-+-- [green]02_story_generator.output.json[/green]  [dim]<- Stage 2 segments[/dim]
-+-- [green]03_visual_plan.output.md[/green]  [dim]<- Stage 3 plan[/dim]
++-- [cyan]inputs/seed.md[/cyan]           [dim]<- Your creative brief (edit this)[/dim]
++-- [cyan]inputs/reel.yaml[/cyan]         [dim]<- Config: duration, voice, type[/dim]
++-- [cyan]inputs/data/[/cyan]             [dim]<- CSV files for charts[/dim]
++-- [green]prompts/01_research.output.md[/green]  [dim]<- Stage 1 output[/dim]
++-- [green]json/02_story_generator.output.json[/green]  [dim]<- Stage 2 segments[/dim]
++-- [green]prompts/03_visual_plan.output.md[/green]  [dim]<- Stage 3 plan[/dim]
 +-- [blue]renders/[/blue]             [dim]<- Generated media assets[/dim]
 +-- [yellow]final/[/yellow]
     +-- final.mp4         [dim]<- The output video[/dim]
@@ -1546,6 +1706,15 @@ def _run_guide():
     _guide_app()
 
 
+# Migrate (shorthand)
+_migrate_app = typer.Typer()
+_migrate_app.command()(migrate_reel)
+
+def _run_migrate():
+    """Entry point for standalone 'uv run migrate' command."""
+    _migrate_app()
+
+
 # Reels
 _reels_app = typer.Typer()
 _reels_app.command()(reels)
@@ -1562,6 +1731,15 @@ _full_app.command()(full_pipeline)
 def _run_full():
     """Entry point for 'uv run full'."""
     _full_app()
+
+
+# KIE Credits
+_credits_app = typer.Typer()
+_credits_app.command()(kie_credits)
+
+def _run_credits():
+    """Entry point for 'uv run credits'."""
+    _credits_app()
 
 
 if __name__ == "__main__":

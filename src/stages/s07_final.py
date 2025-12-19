@@ -15,6 +15,7 @@ from pathlib import Path
 
 from src.utils.io import write_file
 from src.utils.logger import get_logger
+from src.utils.paths import json_path, prompt_path, sfx_dir as reel_sfx_dir, videos_dir as reel_videos_dir, voice_dir as reel_voice_dir
 
 logger = get_logger()
 
@@ -325,9 +326,9 @@ def run_final_assembly(
     # Step 2: Scan for required files
     execution_log.append("\n## File Scan")
     
-    videos_dir = reel_path / "renders" / "videos"
-    voice_dir = reel_path / "renders" / "voice"
-    sfx_dir = reel_path / "renders" / "sfx"
+    videos_dir = reel_videos_dir(reel_path)
+    voice_dir = reel_voice_dir(reel_path)
+    sfx_dir = reel_sfx_dir(reel_path)
     
     # Find video clips
     video_files = sorted(videos_dir.glob("clip_*.mp4"))
@@ -494,8 +495,7 @@ def run_final_assembly(
         })
         return {"status": "failed", "error": "No clips were successfully mixed"}
     
-    # Get title from config for final filename
-    config_path = reel_path / "00_reel.yaml"
+    # Final output filename is fixed (final/final.mp4). Keep reel_name for logs/UI.
     reel_name = reel_path.name
     
     final_video_path = final_dir / "final.mp4"
@@ -588,7 +588,7 @@ def _save_execution_log(
 ) -> None:
     """Save execution log and result files."""
     # Save input/execution log
-    input_path = reel_path / "07_final.input.md"
+    input_path = prompt_path(reel_path, "07_final.input.md")
     log_content = f"""# Final Assembly Execution Log
 
 Generated: {datetime.now(timezone.utc).isoformat()}
@@ -599,6 +599,6 @@ Mode: {"Dry Run" if dry_run else "Live Execution"}
     write_file(input_path, log_content)
     
     # Save output JSON
-    output_path = reel_path / "07_final.output.json"
+    output_path = json_path(reel_path, "07_final.output.json")
     write_file(output_path, json.dumps(result, indent=2))
 

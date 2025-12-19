@@ -31,17 +31,17 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 
 | Stage | Type | Goal | Key Output |
 |-------|------|------|------------|
-| 0 | Manual | Initialize reel | `00_seed.md`, `00_reel.yaml` |
-| 1 | Agent | Research & fact-check | `01_research.output.md` |
-| 2 | Agent | Write script & segment | `02_story_generator.output.json` |
-| 3 | Agent | Visual plan + image prompts | `03_visual_plan.output.json` |
+| 0 | Manual | Initialize reel | `inputs/seed.md`, `inputs/reel.yaml` |
+| 1 | Agent | Research & fact-check | `prompts/01_research.output.md` |
+| 2 | Agent | Write script & segment | `json/02_story_generator.output.json` |
+| 3 | Agent | Visual plan + image prompts | `json/03_visual_plan.output.json` |
 | 3.5 | Script | Generate images | `renders/images/*.png` |
-| 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
+| 4 | Agent | Refine video motion prompts | `json/04_video_prompt.output.json` |
 | 4.5 | Script | Generate video clips | `renders/videos/*.mp4` |
-| 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate narrator audio | `renders/voice/*.mp3` |
-| 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
-| 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
+| 5 | Agent | Voice direction | `prompts/05_voice.output.md` |
+| 5.5 | Script | Generate narrator audio | `renders/audio/voice/*.mp3` |
+| 6 | Agent | Sound effects prompts | `json/06_sound_effects.output.json` |
+| 6.5 | Script | Generate sound effects | `renders/audio/sfx/*.mp3` |
 | 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
 
 ---
@@ -52,9 +52,9 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Goal:** Define the reel concept and configuration.
 
 **Files:**
-- `00_seed.md`: The creative spark, concept, or raw notes.
-- `00_reel.yaml`: Configuration (Duration, Voice ID, Music Vibe, Aspect Ratio).
-- `00_data/`: Optional CSV files for data-driven reels.
+- `inputs/seed.md`: The creative spark, concept, or raw notes.
+- `inputs/reel.yaml`: Configuration (Duration, Voice ID, Music Vibe, Aspect Ratio).
+- `inputs/data/`: Optional CSV files for data-driven reels.
 
 ---
 
@@ -66,8 +66,8 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Agent Action:** Reads seed + data. Browses web (if enabled). Generates a research summary.
 
 **Files:**
-- `01_research.input.md` (The prompt sent to the LLM)
-- `01_research.output.md` (The research notes and key takeaways)
+- `prompts/01_research.input.md` (The prompt sent to the LLM)
+- `prompts/01_research.output.md` (The research notes and key takeaways)
 
 **System Prompt:** `shared/prompts/01_research_system.md`
 
@@ -81,9 +81,9 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Agent Action:** Writes a voiceover script and splits it into strict time blocks, each with a `visual_intent` description.
 
 **Files:**
-- `02_story_generator.input.md`
-- `02_story_generator.output.md` (Human-readable script)
-- `02_story_generator.output.json` **(CRITICAL)**: Structured list of segments.
+- `prompts/02_story_generator.input.md`
+- `prompts/02_story_generator.output.md` (Human-readable script)
+- `json/02_story_generator.output.json` **(CRITICAL)**: Structured list of segments.
 
 ```json
 {
@@ -114,9 +114,9 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 6. Writes video motion prompts (ready for Kling/Runway)
 
 **Files:**
-- `03_visual_plan.input.md`
-- `03_visual_plan.output.md` (Human-readable plan with all prompts)
-- `03_visual_plan.output.json` **(CRITICAL)**: Machine-readable asset manifest.
+- `prompts/03_visual_plan.input.md`
+- `prompts/03_visual_plan.output.md` (Human-readable plan with all prompts)
+- `json/03_visual_plan.output.json` **(CRITICAL)**: Machine-readable asset manifest.
 
 ```json
 {
@@ -150,15 +150,15 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Goal:** Generate all images by executing the prompts from Stage 3.
 
 **Script Action:**
-1. Reads `03_visual_plan.output.json`
+1. Reads `json/03_visual_plan.output.json`
 2. For each asset: combines `global_atmosphere` + `image_prompt`
 3. Calls image generation API (DALL-E, Midjourney, Gemini, etc.)
 4. Saves images to `renders/images/`
 
 **Files:**
-- `03.5_asset_generation.input.md` (Execution log)
-- `03.5_asset_generation.output.json` (Generation results)
-- **Artifacts:** `renders/images/object_clock_chart.png`, etc.
+- `prompts/03.5_asset_generation.input.md` (Execution log)
+- `json/03.5_asset_generation.output.json` (Generation results)
+- **Artifacts:** `renders/images/composites/object_clock_chart.png`, etc.
 
 **System Prompt:** `shared/prompts/03.5_asset_generation_system.md`
 
@@ -170,15 +170,15 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Goal:** Refine the basic motion prompts from Stage 3 into production-ready video prompts optimized for Kling/Runway.
 
 **Agent Action:**
-1. Analyzes motion prompts from `03_visual_plan.output.json`
+1. Analyzes motion prompts from `json/03_visual_plan.output.json`
 2. Rewrites prompts following video AI best practices (priority hierarchy, plain language, single camera movement)
 3. Creates a "Video Shot List" mapping each segment to its optimized prompt
 4. Identifies action shots vs. micro-movement shots
 
 **Files:**
-- `04_video_prompt.input.md`
-- `04_video_prompt.output.md` (Human-readable shot list with all prompts)
-- `04_video_prompt.output.json` **(CRITICAL)**: Machine-readable clips array
+- `prompts/04_video_prompt.input.md`
+- `prompts/04_video_prompt.output.md` (Human-readable shot list with all prompts)
+- `json/04_video_prompt.output.json` **(CRITICAL)**: Machine-readable clips array
 
 ```json
 {
@@ -213,14 +213,14 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Goal:** Animate the static images into 10-second video clips.
 
 **Script Action:**
-1. Reads `04_video_prompt.output.json` for optimized prompts (fallback: `03_visual_plan.output.json`)
-2. Reads images from `renders/images/`
+1. Reads `json/04_video_prompt.output.json` for optimized prompts (fallback: `json/03_visual_plan.output.json`)
+2. Reads images from `renders/images/composites/`
 3. Calls video generation API (Kling AI, Runway, etc.)
 4. Downloads/saves video clips to `renders/videos/`
 
 **Files:**
-- `04.5_video_generation.input.md` (Execution log)
-- `04.5_video_generation.output.json` (Map of clip numbers to file paths)
+- `prompts/04.5_video_generation.input.md` (Execution log)
+- `json/04.5_video_generation.output.json` (Map of clip numbers to file paths)
 - **Artifacts:** `renders/videos/clip_01.mp4`, `renders/videos/clip_02.mp4`, etc.
 
 **System Prompt:** `shared/prompts/04.5_video_generation_system.md`
@@ -235,8 +235,8 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Agent Action:** Annotates the script with direction tags for ElevenLabs.
 
 **Files:**
-- `05_voice.input.md`
-- `05_voice.output.md` (Annotated script with voice direction)
+- `prompts/05_voice.input.md`
+- `prompts/05_voice.output.md` (Annotated script with voice direction)
 
 **System Prompt:** `shared/prompts/05_voice_system.md`
 
@@ -250,9 +250,9 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Script Action:** Calls ElevenLabs API with voice direction.
 
 **Files:**
-- `05.5_audio_generation.input.md` (Execution log)
-- `05.5_audio_generation.output.json` (Audio file paths)
-- **Artifacts:** `renders/voice/voice_01.mp3`, `renders/voice/voice_02.mp3`, etc.
+- `prompts/05.5_audio_generation.input.md` (Execution log)
+- `json/05.5_audio_generation.output.json` (Audio file paths)
+- **Artifacts:** `renders/audio/voice/voice_01.mp3`, `renders/audio/voice/voice_02.mp3`, etc.
 
 ---
 
@@ -268,9 +268,9 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 4. Ensures continuous ambient bed with action sounds layered on top
 
 **Files:**
-- `06_sound_effects.input.md` (The prompt sent to the LLM)
-- `06_sound_effects.output.md` (Human-readable SFX prompts with table)
-- `06_sound_effects.output.json` **(CRITICAL)**: Machine-readable SFX prompts
+- `prompts/06_sound_effects.input.md` (The prompt sent to the LLM)
+- `prompts/06_sound_effects.output.md` (Human-readable SFX prompts with table)
+- `json/06_sound_effects.output.json` **(CRITICAL)**: Machine-readable SFX prompts
 
 ```json
 {
@@ -308,14 +308,14 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 **Goal:** Generate sound effect audio using ElevenLabs Sound Effects API.
 
 **Script Action:**
-1. Reads `06_sound_effects.output.json`
+1. Reads `json/06_sound_effects.output.json`
 2. For each clip: calls ElevenLabs Sound Effects API with the prompt
-3. Saves audio to `renders/sfx/clip_XX_sfx.mp3`
+3. Saves audio to `renders/audio/sfx/clip_XX_sfx.mp3`
 
 **Files:**
-- `06.5_sound_effects_generation.input.md` (Execution log)
-- `06.5_sound_effects_generation.output.json` (Generation results)
-- **Artifacts:** `renders/sfx/clip_01_sfx.mp3`, `renders/sfx/clip_02_sfx.mp3`, etc.
+- `prompts/06.5_sound_effects_generation.input.md` (Execution log)
+- `json/06.5_sound_effects_generation.output.json` (Generation results)
+- **Artifacts:** `renders/audio/sfx/clip_01_sfx.mp3`, `renders/audio/sfx/clip_02_sfx.mp3`, etc.
 
 **System Prompt:** `shared/prompts/06.5_sound_effects_generation_system.md`
 
@@ -351,8 +351,8 @@ For each clip:
 Combine all mixed clips into one final video using FFmpeg concat demuxer.
 
 **Files:**
-- `07_final.input.md` (Execution log)
-- `07_final.output.json` (Assembly results)
+- `prompts/07_final.input.md` (Execution log)
+- `json/07_final.output.json` (Assembly results)
 
 **Final Output:**
 - `final/final.mp4`
@@ -379,8 +379,8 @@ uv run final --keep       # Keep intermediate files
 **Requirements:**
 - FFmpeg must be installed
 - All video clips in `renders/videos/clip_XX.mp4`
-- All voice files in `renders/voice/voice_XX.mp3`
-- All SFX files in `renders/sfx/clip_XX_sfx.mp3`
+- All voice files in `renders/audio/voice/voice_XX.mp3`
+- All SFX files in `renders/audio/sfx/clip_XX_sfx.mp3`
 
 ---
 
@@ -390,61 +390,61 @@ After full pipeline execution:
 
 ```
 content/reels/2024-05-20-sunk-cost/
-├── 00_seed.md
-├── 00_reel.yaml
-├── 00_data/
-│   └── trading.csv
+├── inputs/
+│   ├── seed.md
+│   ├── reel.yaml
+│   └── data/
+│       └── trading.csv
 │
-├── 01_research.input.md
-├── 01_research.output.md
+├── prompts/
+│   ├── 01_research.input.md
+│   ├── 01_research.output.md
+│   ├── 02_story_generator.input.md
+│   ├── 02_story_generator.output.md
+│   ├── 03_visual_plan.input.md
+│   ├── 03_visual_plan.output.md
+│   ├── 03.5_asset_generation.input.md
+│   ├── 04_video_prompt.input.md
+│   ├── 04_video_prompt.output.md
+│   ├── 04.5_video_generation.input.md
+│   ├── 05_voice.input.md
+│   ├── 05_voice.output.md
+│   ├── 05.5_audio_generation.input.md
+│   ├── 06_sound_effects.input.md
+│   ├── 06_sound_effects.output.md
+│   ├── 06.5_sound_effects_generation.input.md
+│   └── 07_final.input.md
 │
-├── 02_story_generator.input.md
-├── 02_story_generator.output.md
-├── 02_story_generator.output.json    ← Segments with visual_intent
-│
-├── 03_visual_plan.input.md
-├── 03_visual_plan.output.md
-├── 03_visual_plan.output.json        ← Asset manifest with prompts
-│
-├── 03.5_asset_generation.input.md
-├── 03.5_asset_generation.output.json
-│
-├── 04_video_prompt.input.md
-├── 04_video_prompt.output.md
-├── 04_video_prompt.output.json        ← Video shot list with optimized prompts
-│
-├── 04.5_video_generation.input.md
-├── 04.5_video_generation.output.json
-│
-├── 05_voice.input.md
-├── 05_voice.output.md
-│
-├── 05.5_audio_generation.input.md
-├── 05.5_audio_generation.output.json
-│
-├── 06_sound_effects.input.md
-├── 06_sound_effects.output.md
-├── 06_sound_effects.output.json      ← SFX prompts per clip
-│
-├── 06.5_sound_effects_generation.input.md
-├── 06.5_sound_effects_generation.output.json
-│
-├── 07_final.input.md                 ← Final assembly execution log
-├── 07_final.output.json              ← Assembly results
+├── json/
+│   ├── 02_story_generator.output.json    ← Segments with visual_intent
+│   ├── 03_visual_plan.output.json        ← Asset manifest with prompts
+│   ├── 03.5_asset_generation.output.json
+│   ├── 04_video_prompt.output.json       ← Video shot list with optimized prompts
+│   ├── 04.5_video_generation.output.json
+│   ├── 05_voice.output.json
+│   ├── 05.5_audio_generation.output.json
+│   ├── 06_sound_effects.output.json      ← SFX prompts per clip
+│   ├── 06.5_sound_effects_generation.output.json
+│   └── 07_final.output.json              ← Assembly results
 │
 ├── renders/
 │   ├── images/
-│   │   ├── object_clock_spinning.png
-│   │   └── character_professional_stride.png
+│   │   ├── composites/
+│   │   │   ├── object_clock_spinning.png
+│   │   │   └── character_professional_stride.png
+│   │   ├── characters/
+│   │   ├── backgrounds/
+│   │   └── objects/
 │   ├── videos/
 │   │   ├── clip_01.mp4
 │   │   └── clip_02.mp4
-│   ├── sfx/                          ← Sound effects from Stage 6.5
-│   │   ├── clip_01_sfx.mp3
-│   │   └── clip_02_sfx.mp3
-│   └── voice/                        ← Narrator audio from Stage 5.5
-│       ├── voice_01.mp3
-│       └── voice_02.mp3
+│   └── audio/
+│       ├── sfx/                      ← Sound effects from Stage 6.5
+│       │   ├── clip_01_sfx.mp3
+│       │   └── clip_02_sfx.mp3
+│       └── voice/                    ← Narrator audio from Stage 5.5
+│           ├── voice_01.mp3
+│           └── voice_02.mp3
 │
 └── final/
     └── final.mp4                     ← Final assembled video
@@ -456,7 +456,7 @@ content/reels/2024-05-20-sunk-cost/
 
 - **To Debug:** Open any `.input.md` file to see exactly what the agent was asked. Open `.output.md`/`.output.json` to see what it produced.
 
-- **To Resume:** The system looks for the last existing `.output.json`. If `03_visual_plan.output.json` exists but `03.5_asset_generation.output.json` does not, it starts at Stage 3.5.
+- **To Resume:** The system looks for the last existing stage output file. If `json/03_visual_plan.output.json` exists but `json/03.5_asset_generation.output.json` does not, it starts at Stage 3.5.
 
 - **To Retry:** Delete the `.output.*` files of the stage you want to re-run.
 

@@ -53,6 +53,16 @@ LLM_API_KEY_ENV_VARS: dict[str, tuple[str, ...]] = {
 }
 
 
+# =============================================================================
+# MEDIA GENERATION API KEYS (for image, video, audio generation)
+# =============================================================================
+
+MEDIA_API_KEY_ENV_VARS: dict[str, tuple[str, ...]] = {
+    "kie": ("KIE_API_KEY",),
+    "elevenlabs": ("ELEVENLABS_API_KEY",),
+}
+
+
 def get_llm_api_key(provider: str) -> str:
     """Return the API key for an LLM provider from the environment.
 
@@ -63,6 +73,27 @@ def get_llm_api_key(provider: str) -> str:
     env_names = LLM_API_KEY_ENV_VARS.get(provider)
     if not env_names:
         raise ValueError(f"Unknown LLM provider for API key lookup: {provider}")
+
+    for env_name in env_names:
+        value = os.getenv(env_name)
+        if value:
+            return value
+
+    raise RuntimeError(
+        f"Missing API key for provider '{provider}'. Set one of: {', '.join(env_names)}"
+    )
+
+
+def get_media_api_key(provider: str) -> str:
+    """Return the API key for a media generation provider from the environment.
+
+    Raises:
+        ValueError: unknown provider
+        RuntimeError: key missing
+    """
+    env_names = MEDIA_API_KEY_ENV_VARS.get(provider)
+    if not env_names:
+        raise ValueError(f"Unknown media provider for API key lookup: {provider}")
 
     for env_name in env_names:
         value = os.getenv(env_name)

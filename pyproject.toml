@@ -48,6 +48,8 @@ deliver = "src.commands:_run_deliver"
 current = "src.commands:_run_current"
 guide = "src.commands:_run_guide"
 reels = "src.commands:_run_reels"
+migrate = "src.commands:_run_migrate"
+credits = "src.commands:_run_credits"
 
 [build-system]
 requires = ["hatchling"]

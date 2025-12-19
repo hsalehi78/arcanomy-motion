@@ -8,6 +8,7 @@ from src.config import MODELS, DEFAULT_PROVIDERS, get_model
 from src.domain import Manifest, Objective, Segment
 from src.services import RemotionCLI
 from src.utils.io import read_file, write_file
+from src.utils.paths import json_path, prompt_path
 
 
 def run_music_selection(reel_path: Path) -> dict:
@@ -31,7 +32,7 @@ def run_music_selection(reel_path: Path) -> dict:
     }
 
     # Save input/output
-    input_path = reel_path / "06_music.input.md"
+    input_path = prompt_path(reel_path, "06_music.input.md")
     input_content = f"""# Music Selection Stage Input
 
 ## Configuration
@@ -51,7 +52,7 @@ Search for a track matching:
 """
     write_file(input_path, input_content)
 
-    output_path = reel_path / "06_music.output.json"
+    output_path = json_path(reel_path, "06_music.output.json")
     write_file(output_path, json.dumps(result, indent=2))
 
     return result
@@ -69,7 +70,7 @@ def run_assembly(reel_path: Path) -> Path:
     objective = Objective.from_reel_folder(reel_path)
 
     # Load segments with all assets from visual plan
-    segments_path = reel_path / "03_visual_plan.output.json"
+    segments_path = json_path(reel_path, "03_visual_plan.output.json")
     with open(segments_path, "r", encoding="utf-8") as f:
         visual_plan = json.load(f)
     
@@ -78,7 +79,7 @@ def run_assembly(reel_path: Path) -> Path:
     segments = []
     
     # Also load the original script segments for text
-    script_path = reel_path / "02_story_generator.output.json"
+    script_path = json_path(reel_path, "02_story_generator.output.json")
     if script_path.exists():
         with open(script_path, "r", encoding="utf-8") as f:
             script_data = json.load(f)
@@ -86,25 +87,27 @@ def run_assembly(reel_path: Path) -> Path:
         segments = [Segment.from_dict(s) for s in script_segments]
 
     # Load audio paths
-    audio_path = reel_path / "05.5_generate_audio_agent.output.json"
+    audio_path = json_path(reel_path, "05.5_audio_generation.output.json")
     if audio_path.exists():
         with open(audio_path, "r", encoding="utf-8") as f:
             audio_data = json.load(f)
-        audio_by_id = {a["segment_id"]: a.get("audio_path") for a in audio_data}
+        audio_clips = audio_data.get("clips", audio_data if isinstance(audio_data, list) else [])
+        audio_by_id = {a["segment_id"]: a.get("audio_path") for a in audio_clips if isinstance(a, dict) and "segment_id" in a}
         for segment in segments:
             segment.audio_path = audio_by_id.get(segment.id)
 
     # Load video paths
-    video_path = reel_path / "04.5_video_generation.output.json"
+    video_path = json_path(reel_path, "04.5_video_generation.output.json")
     if video_path.exists():
         with open(video_path, "r", encoding="utf-8") as f:
             video_data = json.load(f)
-        video_by_id = {v["segment_id"]: v.get("output_path") for v in video_data}
+        video_clips = video_data.get("clips", video_data if isinstance(video_data, list) else [])
+        video_by_id = {v["segment_id"]: v.get("output_path") for v in video_clips if isinstance(v, dict) and "segment_id" in v}
         for segment in segments:
             segment.video_path = video_by_id.get(segment.id)
 
     # Load music
-    music_path = reel_path / "06_music.output.json"
+    music_path = json_path(reel_path, "06_music.output.json")
     music_track = None
     if music_path.exists():
         with open(music_path, "r", encoding="utf-8") as f:
@@ -115,7 +118,7 @@ def run_assembly(reel_path: Path) -> Path:
     manifest = Manifest.from_segments(segments, fps=30, music_path=music_track)
 
     # Save input for audit
-    input_path = reel_path / "07_assembly.input.md"
+    input_path = prompt_path(reel_path, "07_assembly.input.md")
     input_content = f"""# Assembly Stage Input
 
 ## Configuration
@@ -140,7 +143,7 @@ Segments to assemble:
     write_file(input_path, input_content)
 
     # Save manifest
-    manifest_path = reel_path / "07_assembly.output.json"
+    manifest_path = json_path(reel_path, "07_assembly.output.json")
     write_file(manifest_path, json.dumps(manifest.to_dict(), indent=2))
 
     # Create final directory

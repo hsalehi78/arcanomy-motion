@@ -15,6 +15,7 @@ from pathlib import Path
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import json_path, prompt_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -73,7 +74,7 @@ def run_sfx_prompting(reel_path: Path, llm: LLMService) -> Path:
     system_prompt = load_sfx_system_prompt()
 
     # Load script segments
-    segments_json_path = reel_path / "02_story_generator.output.json"
+    segments_json_path = json_path(reel_path, "02_story_generator.output.json")
     segments_json = ""
     segments_data = None
     if segments_json_path.exists():
@@ -84,13 +85,13 @@ def run_sfx_prompting(reel_path: Path, llm: LLMService) -> Path:
             pass
 
     # Load visual plan for scene context
-    visual_plan_path = reel_path / "03_visual_plan.output.json"
+    visual_plan_path = json_path(reel_path, "03_visual_plan.output.json")
     visual_plan_json = ""
     if visual_plan_path.exists():
         visual_plan_json = read_file(visual_plan_path)
 
     # Also load human-readable visual plan for context
-    visual_plan_md_path = reel_path / "03_visual_plan.output.md"
+    visual_plan_md_path = prompt_path(reel_path, "03_visual_plan.output.md")
     visual_plan_md = ""
     if visual_plan_md_path.exists():
         visual_plan_md = read_file(visual_plan_md_path)
@@ -180,7 +181,7 @@ Provide:
 """
 
     # Save input for audit trail
-    input_path = reel_path / "06_sound_effects.input.md"
+    input_path = prompt_path(reel_path, "06_sound_effects.input.md")
     input_content = f"""# Sound Effects Prompt Engineering Stage Input
 
 ## System Prompt
@@ -199,12 +200,12 @@ Provide:
     response = llm.complete(user_prompt, system=system_prompt, stage="sfx")
 
     # Save human-readable output
-    output_md_path = reel_path / "06_sound_effects.output.md"
+    output_md_path = prompt_path(reel_path, "06_sound_effects.output.md")
     write_file(output_md_path, f"# Sound Effects Prompts\n\n{response}")
 
     # Extract and save JSON output
     json_data = extract_json_from_response(response)
-    output_json_path = reel_path / "06_sound_effects.output.json"
+    output_json_path = json_path(reel_path, "06_sound_effects.output.json")
 
     if json_data:
         # Ensure metadata is present

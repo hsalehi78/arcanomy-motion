@@ -4,18 +4,18 @@
 
 In the new architecture, the "Objective" is split into two distinct user-input files:
 
-1.  **`00_seed.md`**: The creative brief (Markdown).
-2.  **`00_reel.yaml`**: The machine configuration (YAML).
+1.  **`inputs/seed.md`**: The creative brief (Markdown).
+2.  **`inputs/reel.yaml`**: The machine configuration (YAML).
 
 These are the **only** files a user must create to start a reel.
 
 ---
 
-## 1. `00_seed.md` (Creative Brief)
+## 1. `inputs/seed.md` (Creative Brief)
 
 This file captures the *idea*. It is free-text but follows a structure to guide the Agent in Stage 1 & 2.
 
-**Location:** `content/reels/YYYY-MM-DD-slug/00_seed.md`
+**Location:** `content/reels/YYYY-MM-DD-slug/inputs/seed.md`
 
 ### Required Headers
 
@@ -32,17 +32,17 @@ This file captures the *idea*. It is free-text but follows a structure to guide 
 > **Example:** "Dark, moody, cinematic. Red and black color palette. Use abstract geometric shapes to represent data."
 
 #### `# Data Sources`
-*The "Proof". List any CSV files in `00_data/`.*
+*The "Proof". List any CSV files in `inputs/data/`.*
 > **Example:**
-> - `00_data/trading_psych.csv`
+> - `inputs/data/trading_psych.csv`
 
 ---
 
-## 2. `00_reel.yaml` (Machine Config)
+## 2. `inputs/reel.yaml` (Machine Config)
 
 This file controls the "mechanical" settings for the pipeline.
 
-**Location:** `content/reels/YYYY-MM-DD-slug/00_reel.yaml`
+**Location:** `content/reels/YYYY-MM-DD-slug/inputs/reel.yaml`
 
 ### Schema
 

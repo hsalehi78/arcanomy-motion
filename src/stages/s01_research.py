@@ -5,6 +5,7 @@ from pathlib import Path
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import data_dir, prompt_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -32,11 +33,11 @@ def run_research(reel_path: Path, llm: LLMService) -> Path:
     objective = Objective.from_reel_folder(reel_path)
     system_prompt = load_system_prompt()
 
-    # Load any CSV data from 00_data folder
-    data_dir = reel_path / "00_data"
+    # Load any CSV data from inputs/data folder
+    csv_dir = data_dir(reel_path)
     data_context = ""
-    if data_dir.exists():
-        csv_files = list(data_dir.glob("*.csv"))
+    if csv_dir.exists():
+        csv_files = list(csv_dir.glob("*.csv"))
         if csv_files:
             data_snippets = []
             for csv_file in csv_files:
@@ -76,7 +77,7 @@ Generate a complete research document following the 7-section structure in your 
 """
 
     # Save input prompt (both system + user for full audit trail)
-    input_path = reel_path / "01_research.input.md"
+    input_path = prompt_path(reel_path, "01_research.input.md")
     input_content = f"""# Research Stage Input
 
 ## System Prompt
@@ -95,7 +96,7 @@ Generate a complete research document following the 7-section structure in your 
     response = llm.complete(user_prompt, system=system_prompt, stage="research")
 
     # Save output
-    output_path = reel_path / "01_research.output.md"
+    output_path = prompt_path(reel_path, "01_research.output.md")
     write_file(output_path, f"# Research Output\n\n{response}")
 
     return output_path

@@ -67,9 +67,11 @@ class TestObjective:
     def test_from_reel_folder(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             reel_path = Path(tmpdir)
+            (reel_path / "inputs").mkdir(parents=True, exist_ok=True)
+            (reel_path / "inputs" / "data").mkdir(parents=True, exist_ok=True)
             
             # Create test files
-            (reel_path / "00_reel.yaml").write_text("""
+            (reel_path / "inputs" / "reel.yaml").write_text("""
 title: "Test Reel"
 type: "chart_explainer"
 duration_blocks: 2
@@ -77,7 +79,7 @@ voice_id: "test_voice"
 music_mood: "dramatic"
 """)
             
-            (reel_path / "00_seed.md").write_text("""
+            (reel_path / "inputs" / "seed.md").write_text("""
 # Hook
 Test hook line
 
@@ -88,7 +90,7 @@ Test insight
 Dark and moody
 
 # Data Sources
-- 00_data/test.csv
+- inputs/data/test.csv
 """)
             
             obj = Objective.from_reel_folder(reel_path)
@@ -98,7 +100,7 @@ Dark and moody
             assert obj.duration_blocks == 2
             assert obj.hook == "Test hook line"
             assert obj.core_insight == "Test insight"
-            assert "00_data/test.csv" in obj.data_sources
+            assert "inputs/data/test.csv" in obj.data_sources
 
     def test_duration_seconds(self):
         obj = Objective(

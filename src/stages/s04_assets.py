@@ -9,6 +9,12 @@ from pathlib import Path
 
 from src.utils.io import read_file, write_file
 from src.config import get_default_provider
+from src.utils.paths import (
+    images_composites_dir,
+    json_path,
+    prompt_path,
+    videos_dir as reel_videos_dir,
+)
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -34,7 +40,7 @@ def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: 
     """
     provider = provider or get_default_provider("assets")
     # Load the visual plan JSON
-    visual_plan_path = reel_path / "03_visual_plan.output.json"
+    visual_plan_path = json_path(reel_path, "03_visual_plan.output.json")
     
     if not visual_plan_path.exists():
         raise FileNotFoundError(
@@ -55,8 +61,7 @@ def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: 
         )
     
     # Create renders directory structure
-    renders_dir = reel_path / "renders"
-    images_dir = renders_dir / "images"
+    images_dir = images_composites_dir(reel_path)
     images_dir.mkdir(parents=True, exist_ok=True)
     
     # Prepare execution log
@@ -75,7 +80,7 @@ def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: 
     }
     
     # Save input/execution plan
-    input_path = reel_path / "03.5_asset_generation.input.md"
+    input_path = prompt_path(reel_path, "03.5_asset_generation.input.md")
     input_content = f"""# Asset Generation Stage Input
 
 ## Source File
@@ -237,7 +242,7 @@ For each asset:
     print(f"{'='*60}\n")
     
     # Save output
-    output_json_path = reel_path / "03.5_asset_generation.output.json"
+    output_json_path = json_path(reel_path, "03.5_asset_generation.output.json")
     write_file(output_json_path, json.dumps(execution_log, indent=2))
     
     return execution_log["assets"]
@@ -261,8 +266,8 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
     """
     provider = provider or get_default_provider("videos")
     # Try to load video prompts (Stage 4 output) first, fall back to visual plan
-    video_prompts_path = reel_path / "04_video_prompt.output.json"
-    visual_plan_path = reel_path / "03_visual_plan.output.json"
+    video_prompts_path = json_path(reel_path, "04_video_prompt.output.json")
+    visual_plan_path = json_path(reel_path, "03_visual_plan.output.json")
     
     clips = []
     source_file = None
@@ -284,7 +289,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
                 clips.append({
                     "clip_number": clip_num,
                     "segment_id": seg_id,
-                    "seed_image": f"renders/images/{asset.get('suggested_filename', asset.get('id') + '.png')}",
+                    "seed_image": f"renders/images/composites/{asset.get('suggested_filename', asset.get('id') + '.png')}",
                     "video_prompt": asset.get("motion_prompt", ""),
                     "duration_seconds": 10,
                 })
@@ -299,8 +304,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
         raise ValueError("No clips found in source file. The output may be incomplete.")
     
     # Create renders directory structure
-    renders_dir = reel_path / "renders"
-    videos_dir = renders_dir / "videos"
+    videos_dir = reel_videos_dir(reel_path)
     videos_dir.mkdir(parents=True, exist_ok=True)
     
     # Get the CLI script path
@@ -444,7 +448,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
         execution_log["clips"].append(clip_entry)
     
     # Save execution input log
-    input_path = reel_path / "04.5_video_generation.input.md"
+    input_path = prompt_path(reel_path, "04.5_video_generation.input.md")
     input_content = f"""# Video Generation Stage Input
 
 ## Source
@@ -476,7 +480,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
     print(f"{'='*60}\n")
     
     # Save output
-    output_json_path = reel_path / "04.5_video_generation.output.json"
+    output_json_path = json_path(reel_path, "04.5_video_generation.output.json")
     write_file(output_json_path, json.dumps(execution_log, indent=2))
     
     return execution_log["clips"]

@@ -15,6 +15,7 @@ from src.config import get_default_voice_id
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import json_path, prompt_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -71,7 +72,7 @@ def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
     system_prompt = load_voice_system_prompt()
 
     # Load script segments
-    segments_json_path = reel_path / "02_story_generator.output.json"
+    segments_json_path = json_path(reel_path, "02_story_generator.output.json")
     segments_json = ""
     segments_data = None
     if segments_json_path.exists():
@@ -82,7 +83,7 @@ def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
             pass
 
     # Also load human-readable script for context
-    script_md_path = reel_path / "02_story_generator.output.md"
+    script_md_path = prompt_path(reel_path, "02_story_generator.output.md")
     script_md = ""
     if script_md_path.exists():
         script_md = read_file(script_md_path)
@@ -136,7 +137,7 @@ Provide:
 """
 
     # Save input for audit trail
-    input_path = reel_path / "05_voice.input.md"
+    input_path = prompt_path(reel_path, "05_voice.input.md")
     input_content = f"""# Voice Direction Stage Input
 
 ## System Prompt
@@ -155,12 +156,12 @@ Provide:
     response = llm.complete(user_prompt, system=system_prompt, stage="voice")
 
     # Save human-readable output
-    output_md_path = reel_path / "05_voice.output.md"
+    output_md_path = prompt_path(reel_path, "05_voice.output.md")
     write_file(output_md_path, f"# Voice Direction & Audio Generation Table\n\n{response}")
 
     # Extract and save JSON output
     json_data = extract_json_from_response(response)
-    output_json_path = reel_path / "05_voice.output.json"
+    output_json_path = json_path(reel_path, "05_voice.output.json")
 
     if json_data:
         # Ensure metadata is present

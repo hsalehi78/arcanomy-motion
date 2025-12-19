@@ -7,6 +7,7 @@ from pathlib import Path
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import json_path, prompt_path, seed_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -66,8 +67,8 @@ def run_visual_plan(reel_path: Path, llm: LLMService) -> Path:
     system_prompt = load_system_prompt()
 
     # Load script segments (JSON for structured data)
-    segments_json_path = reel_path / "02_story_generator.output.json"
-    segments_md_path = reel_path / "02_story_generator.output.md"
+    segments_json_path = json_path(reel_path, "02_story_generator.output.json")
+    segments_md_path = prompt_path(reel_path, "02_story_generator.output.md")
     
     segments_json = ""
     segments_md = ""
@@ -78,8 +79,8 @@ def run_visual_plan(reel_path: Path, llm: LLMService) -> Path:
         segments_md = read_file(segments_md_path)
 
     # Load seed for visual vibe context
-    seed_path = reel_path / "00_seed.md"
-    seed_content = read_file(seed_path) if seed_path.exists() else ""
+    s_path = seed_path(reel_path)
+    seed_content = read_file(s_path) if s_path.exists() else ""
 
     user_prompt = f"""# Visual Plan Generation Request
 
@@ -89,7 +90,7 @@ def run_visual_plan(reel_path: Path, llm: LLMService) -> Path:
 - **Duration:** {objective.duration_blocks} blocks ({objective.duration_seconds} seconds)
 - **Aspect Ratio:** 9:16 (vertical for Reels/TikTok)
 
-## Seed Document (00_seed.md)
+## Seed Document (inputs/seed.md)
 {seed_content}
 
 ## Production Script (02_story_generator.output.json)
@@ -135,7 +136,7 @@ Generate the complete Visual Plan following the structure in your system prompt:
 This JSON is required for the automated asset generation pipeline to work."""
 
     # Save input (both system + user for full audit trail)
-    input_path = reel_path / "03_visual_plan.input.md"
+    input_path = prompt_path(reel_path, "03_visual_plan.input.md")
     input_content = f"""# Visual Plan Stage Input
 
 ## System Prompt
@@ -154,12 +155,12 @@ This JSON is required for the automated asset generation pipeline to work."""
     response = llm.complete(user_prompt, system=system_prompt, stage="plan")
 
     # Save human-readable output
-    output_md_path = reel_path / "03_visual_plan.output.md"
+    output_md_path = prompt_path(reel_path, "03_visual_plan.output.md")
     write_file(output_md_path, f"# Visual Plan\n\n{response}")
 
     # Extract and save JSON output
     json_data = extract_json_from_response(response)
-    output_json_path = reel_path / "03_visual_plan.output.json"
+    output_json_path = json_path(reel_path, "03_visual_plan.output.json")
     
     if json_data:
         write_file(output_json_path, json.dumps(json_data, indent=2))

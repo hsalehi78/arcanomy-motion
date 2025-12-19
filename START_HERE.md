@@ -64,9 +64,9 @@ uv run full                   # Runs all stages on current reel
 | 4     | `uv run vidprompt`| Refine motion prompts for video AI                  | `04_video_prompt.output.json`       |
 | 4.5   | `uv run videos`   | Generate video clips from images (Kling/Runway)     | `renders/videos/*.mp4`              |
 | 5     | `uv run voice`    | Voice direction (optimize narration)                | `05_voice.output.json`              |
-| 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/voice/*.mp3`               |
+| 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/audio/voice/*.mp3`         |
 | 6     | `uv run sfx`      | Create sound effect prompts per clip                | `06_sound_effects.output.json`      |
-| 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/sfx/*.mp3`                 |
+| 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/audio/sfx/*.mp3`           |
 | 7     | `uv run final`    | Combine all assets into final video                 | `final/final.mp4`                   |
 
 ---
@@ -123,49 +123,81 @@ uv run arcanomy status <path>     # Check pipeline progress
 
 ```
 content/reels/2025-12-15-my-reel/
-├── 00_seed.md                          <- Your creative brief (edit this)
-├── 00_reel.yaml                        <- Config: duration, voice, type
-├── 00_data/                            <- CSV files for charts
+├── inputs/
+│   ├── seed.md                          <- Your creative brief (edit this)
+│   ├── reel.yaml                        <- Config: duration, voice, type
+│   └── data/                            <- CSV files for charts
 │
-├── 01_research.input.md                <- Prompt sent to LLM
-├── 01_research.output.md               <- Stage 1: Research notes
+├── prompts/
+│   ├── 01_research.input.md             <- Prompt sent to LLM
+│   └── 01_research.output.md            <- Stage 1: Research notes
 │
-├── 02_story_generator.input.md
-├── 02_story_generator.output.md        <- Stage 2: Human-readable script
-├── 02_story_generator.output.json      <- Stage 2: Segments with visual_intent
+├── prompts/
+│   ├── 02_story_generator.input.md
+│   └── 02_story_generator.output.md     <- Stage 2: Human-readable script
+├── json/
+│   └── 02_story_generator.output.json   <- Stage 2: Segments with visual_intent
 │
-├── 03_visual_plan.input.md
-├── 03_visual_plan.output.md            <- Stage 3: Visual plan + prompts
-├── 03_visual_plan.output.json          <- Stage 3: Asset manifest (machine-readable)
+├── prompts/
+│   ├── 03_visual_plan.input.md
+│   └── 03_visual_plan.output.md         <- Stage 3: Visual plan + prompts
+├── json/
+│   └── 03_visual_plan.output.json       <- Stage 3: Asset manifest (machine-readable)
 │
-├── 03.5_asset_generation.output.json   <- Stage 3.5: Image generation results
+├── prompts/
+│   └── 03.5_asset_generation.input.md
+├── json/
+│   └── 03.5_asset_generation.output.json <- Stage 3.5: Image generation results
 │
-├── 04_video_prompt.input.md
-├── 04_video_prompt.output.md           <- Stage 4: Refined video prompts
-├── 04_video_prompt.output.json         <- Stage 4: Video shot list (machine-readable)
+├── prompts/
+│   ├── 04_video_prompt.input.md
+│   └── 04_video_prompt.output.md        <- Stage 4: Refined video prompts
+├── json/
+│   └── 04_video_prompt.output.json      <- Stage 4: Video shot list (machine-readable)
 │
-├── 04.5_video_generation.output.json   <- Stage 4.5: Video generation results
+├── prompts/
+│   └── 04.5_video_generation.input.md
+├── json/
+│   └── 04.5_video_generation.output.json <- Stage 4.5: Video generation results
 │
-├── 05_voice.output.md                  <- Stage 5: Voice direction
-├── 05.5_audio_generation.output.json   <- Stage 5.5: Audio generation results
+├── prompts/
+│   ├── 05_voice.input.md
+│   └── 05_voice.output.md               <- Stage 5: Voice direction (human-readable)
+├── json/
+│   └── 05_voice.output.json             <- Stage 5: Voice direction (machine-readable)
+├── prompts/
+│   └── 05.5_audio_generation.input.md
+├── json/
+│   └── 05.5_audio_generation.output.json <- Stage 5.5: Audio generation results
 │
-├── 06_sound_effects.output.md          <- Stage 6: SFX prompts (human-readable)
-├── 06_sound_effects.output.json        <- Stage 6: SFX prompts (machine-readable)
-├── 06.5_sound_effects_generation.output.json <- Stage 6.5: SFX generation results
+├── prompts/
+│   ├── 06_sound_effects.input.md
+│   └── 06_sound_effects.output.md       <- Stage 6: SFX prompts (human-readable)
+├── json/
+│   └── 06_sound_effects.output.json     <- Stage 6: SFX prompts (machine-readable)
+├── prompts/
+│   └── 06.5_sound_effects_generation.input.md
+├── json/
+│   └── 06.5_sound_effects_generation.output.json <- Stage 6.5: SFX generation results
 │
 ├── renders/                            <- Generated media assets
 │   ├── images/                         <- Static images (from Stage 3.5)
-│   │   ├── object_clock_chart.png
-│   │   └── character_professional.png
+│   │   ├── composites/                  <- Anchor images for video gen
+│   │   │   ├── object_clock_chart.png
+│   │   │   └── character_professional.png
+│   │   ├── characters/                  <- Optional (future split)
+│   │   ├── backgrounds/                 <- Optional (future split)
+│   │   └── objects/                     <- Optional (future split)
 │   ├── videos/                         <- Video clips (from Stage 4.5)
 │   │   ├── clip_01.mp4
 │   │   └── clip_02.mp4
-│   ├── sfx/                            <- Sound effects (from Stage 6.5)
-│   │   ├── clip_01_sfx.mp3
-│   │   └── clip_02_sfx.mp3
-│   └── voice/                          <- Audio (from Stage 5.5)
-│       ├── voice_01.mp3
-│       └── voice_02.mp3
+│   └── audio/
+│       ├── sfx/                         <- Sound effects (from Stage 6.5)
+│       │   ├── clip_01_sfx.mp3
+│       │   └── clip_02_sfx.mp3
+│       └── voice/                       <- Audio (from Stage 5.5)
+│           ├── voice_01.mp3
+│           └── voice_02.mp3
 │
 └── final/
     ├── final.mp4                       <- The output video

@@ -17,6 +17,7 @@ from src.config import get_default_voice_id
 from src.services import ElevenLabsService
 from src.utils.io import write_file
 from src.utils.logger import get_logger
+from src.utils.paths import json_path, prompt_path, voice_dir as reel_voice_dir
 
 logger = get_logger()
 
@@ -180,8 +181,8 @@ def run_audio_generation(
             logger.warning(f"No voice_id configured, using default: {voice_id}")
 
     # Try to load Stage 5 output first
-    voice_output_path = reel_path / "05_voice.output.json"
-    segments_path = reel_path / "02_story_generator.output.json"
+    voice_output_path = json_path(reel_path, "05_voice.output.json")
+    segments_path = json_path(reel_path, "02_story_generator.output.json")
 
     narrations = []
     voice_config = {
@@ -222,10 +223,8 @@ def run_audio_generation(
         return []
 
     # Prepare output directory
-    renders_dir = reel_path / "renders"
-    renders_dir.mkdir(exist_ok=True)
-    voice_dir = renders_dir / "voice"
-    voice_dir.mkdir(exist_ok=True)
+    voice_dir = reel_voice_dir(reel_path)
+    voice_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize ElevenLabs service
     elevenlabs = None
@@ -337,7 +336,7 @@ def run_audio_generation(
         )
 
     # Save execution log
-    input_log_path = reel_path / "05.5_audio_generation.input.md"
+    input_log_path = prompt_path(reel_path, "05.5_audio_generation.input.md")
     log_content = f"""# Audio Generation Execution Log
 
 Generated: {datetime.now(timezone.utc).isoformat()}
@@ -365,7 +364,7 @@ Generated: {datetime.now(timezone.utc).isoformat()}
         "successful": sum(1 for r in results if r.get("status") in ("success", "success_no_duration_check")),
         "clips": results,
     }
-    output_path = reel_path / "05.5_audio_generation.output.json"
+    output_path = json_path(reel_path, "05.5_audio_generation.output.json")
     write_file(output_path, json.dumps(output_json, indent=2))
 
     # Print summary

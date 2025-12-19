@@ -7,6 +7,7 @@ from pathlib import Path
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
+from src.utils.paths import images_composites_dir, json_path, prompt_path
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
@@ -66,8 +67,8 @@ def run_video_prompting(reel_path: Path, llm: LLMService) -> Path:
     system_prompt = load_system_prompt()
 
     # Load visual plan (Stage 3 output)
-    visual_plan_json_path = reel_path / "03_visual_plan.output.json"
-    visual_plan_md_path = reel_path / "03_visual_plan.output.md"
+    visual_plan_json_path = json_path(reel_path, "03_visual_plan.output.json")
+    visual_plan_md_path = prompt_path(reel_path, "03_visual_plan.output.md")
     
     visual_plan_json = ""
     visual_plan_md = ""
@@ -78,13 +79,13 @@ def run_video_prompting(reel_path: Path, llm: LLMService) -> Path:
         visual_plan_md = read_file(visual_plan_md_path)
 
     # Load script segments (for context on segment-to-asset mapping)
-    segments_json_path = reel_path / "02_story_generator.output.json"
+    segments_json_path = json_path(reel_path, "02_story_generator.output.json")
     segments_json = ""
     if segments_json_path.exists():
         segments_json = read_file(segments_json_path)
 
     # Check which assets have been generated
-    renders_path = reel_path / "renders" / "images"
+    renders_path = images_composites_dir(reel_path)
     existing_assets = []
     if renders_path.exists():
         existing_assets = [f.name for f in renders_path.iterdir() if f.suffix == ".png"]
@@ -112,7 +113,7 @@ def run_video_prompting(reel_path: Path, llm: LLMService) -> Path:
 ```
 
 ## Generated Assets
-The following images exist in `renders/images/`:
+The following images exist in `renders/images/composites/`:
 {chr(10).join(f"- {asset}" for asset in existing_assets) if existing_assets else "- No assets generated yet"}
 
 ---
@@ -142,7 +143,7 @@ Generate the complete Video Shot List following the structure in your system pro
     {{
       "clip_number": 1,
       "segment_id": 1,
-      "seed_image": "renders/images/object_clock_spinning.png",
+      "seed_image": "renders/images/composites/object_clock_spinning.png",
       "video_prompt": "Clock face glows in dim light. Second hand ticks forward slowly. Red and blue light flickers on glass surface. Screen reflection pulses in background. Slow push in.",
       "camera_movement": "Slow push in",
       "duration_seconds": 10,
@@ -156,7 +157,7 @@ Generate the complete Video Shot List following the structure in your system pro
 This JSON is required for the automated video generation pipeline (Stage 4.5) to work."""
 
     # Save input (both system + user for full audit trail)
-    input_path = reel_path / "04_video_prompt.input.md"
+    input_path = prompt_path(reel_path, "04_video_prompt.input.md")
     input_content = f"""# Video Prompt Stage Input
 
 ## System Prompt
@@ -175,12 +176,12 @@ This JSON is required for the automated video generation pipeline (Stage 4.5) to
     response = llm.complete(user_prompt, system=system_prompt, stage="vidprompt")
 
     # Save human-readable output
-    output_md_path = reel_path / "04_video_prompt.output.md"
+    output_md_path = prompt_path(reel_path, "04_video_prompt.output.md")
     write_file(output_md_path, f"# Video Shot List\n\n{response}")
 
     # Extract and save JSON output
     json_data = extract_json_from_response(response)
-    output_json_path = reel_path / "04_video_prompt.output.json"
+    output_json_path = json_path(reel_path, "04_video_prompt.output.json")
     
     if json_data:
         write_file(output_json_path, json.dumps(json_data, indent=2))

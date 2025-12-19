@@ -19,7 +19,7 @@ Imagine you are making a LEGO movie. Here is how our robot factory does it:
 ### 1. The Idea (The Seed)
 You tell the robot **"Make a movie about Bitcoin."**
 You also give it a rules list: **"Use a serious man's voice"** and **"Make it 30 seconds long."**
-*(This is `00_seed.md` and `00_reel.yaml`)*
+*(This is `inputs/seed.md` and `inputs/reel.yaml`)*
 
 ### 2. The Writer (Story & Research)
 The robot reads your idea. It goes to the library (Google) to check facts.
@@ -54,12 +54,12 @@ The robot takes each picture and makes it "breathe" for **10 seconds**.
 ### 7. The Voice Actor (Audio Gen)
 The robot reads the script out loud using a tool called **ElevenLabs**.
 It makes sure the voice matches the video timing.
-*(Now we have `renders/voice/voice_01.mp3`, etc.)*
+*(Now we have `renders/audio/voice/voice_01.mp3`, etc.)*
 
 ### 8. The Sound Effects Designer (SFX)
 The robot creates atmospheric sound effects for each scene.
 It uses **ElevenLabs Sound Effects API** to generate ambient audio.
-*(Now we have `renders/sfx/clip_01_sfx.mp3`, etc.)*
+*(Now we have `renders/audio/sfx/clip_01_sfx.mp3`, etc.)*
 
 ### 9. The Editor (Final Assembly)
 Now the robot has a pile of stuff:
@@ -170,64 +170,62 @@ This is where the magic happens. We follow a granular, step-by-step file structu
 content/
 └── reels/
     └── 2024-05-20-sunk-cost/        # Unique Reel Slug
-        ├── 00_seed.md               # [Input] The initial user concept/brief
-        ├── 00_reel.yaml             # [Input] Machine settings (voice, music, etc.)
-        ├── 00_data/                 # [Input] Local CSVs for charts
-        │   └── trading.csv
+        ├── inputs/
+        │   ├── seed.md               # [Input] The initial user concept/brief
+        │   ├── reel.yaml             # [Input] Machine settings (voice, etc.)
+        │   └── data/                 # [Input] Local CSVs for charts
+        │       └── trading.csv
         │
-        ├── 01_research.input.md     # [Gen] Exact prompt sent to research agent
-        ├── 01_research.output.md    # [Gen] Research findings
+        ├── prompts/                  # [Audit] Human-readable prompts + outputs
+        │   ├── 01_research.input.md
+        │   ├── 01_research.output.md
+        │   ├── 02_story_generator.input.md
+        │   ├── 02_story_generator.output.md
+        │   ├── 03_visual_plan.input.md
+        │   ├── 03_visual_plan.output.md
+        │   ├── 03.5_asset_generation.input.md
+        │   ├── 04_video_prompt.input.md
+        │   ├── 04_video_prompt.output.md
+        │   ├── 04.5_video_generation.input.md
+        │   ├── 05_voice.input.md
+        │   ├── 05_voice.output.md
+        │   ├── 05.5_audio_generation.input.md
+        │   ├── 06_sound_effects.input.md
+        │   ├── 06_sound_effects.output.md
+        │   ├── 06.5_sound_effects_generation.input.md
+        │   └── 07_final.input.md
         │
-        ├── 02_story_generator.input.md
-        ├── 02_story_generator.output.md
-        ├── 02_story_generator.output.json  # [Key] Segments with visual_intent
+        ├── json/                     # [Contracts] Machine-readable outputs per stage
+        │   ├── 02_story_generator.output.json
+        │   ├── 03_visual_plan.output.json
+        │   ├── 03.5_asset_generation.output.json
+        │   ├── 04_video_prompt.output.json
+        │   ├── 04.5_video_generation.output.json
+        │   ├── 05_voice.output.json
+        │   ├── 05.5_audio_generation.output.json
+        │   ├── 06_sound_effects.output.json
+        │   ├── 06.5_sound_effects_generation.output.json
+        │   └── 07_final.output.json
         │
-        ├── 03_visual_plan.input.md
-        ├── 03_visual_plan.output.md        # Human-readable plan + prompts
-        ├── 03_visual_plan.output.json      # [Key] Asset manifest with prompts
-        │
-        ├── 03.5_asset_generation.input.md
-        ├── 03.5_asset_generation.output.json  # Image generation results
-        │
-        ├── 04_video_prompt.input.md
-        ├── 04_video_prompt.output.md          # Refined video prompts
-        ├── 04_video_prompt.output.json        # Video shot list
-        │
-        ├── 04.5_video_generation.input.md
-        ├── 04.5_video_generation.output.json  # Video generation results
-        │
-        ├── 05_voice.input.md
-        ├── 05_voice.output.md              # Voice direction annotations
-        │
-        ├── 05.5_audio_generation.input.md
-        ├── 05.5_audio_generation.output.json  # Audio file paths
-        │
-        ├── 06_sound_effects.input.md
-        ├── 06_sound_effects.output.md        # Human-readable SFX prompts
-        ├── 06_sound_effects.output.json      # SFX prompts for generation
-        │
-        ├── 06.5_sound_effects_generation.input.md
-        ├── 06.5_sound_effects_generation.output.json  # SFX file paths
-        │
-        ├── 07_final.input.md                 # Final assembly execution log
-        ├── 07_final.output.json              # Assembly results
-        │
-        ├── renders/                 # [Assets] Generated media files
-        │   ├── images/              # Static images from Stage 3.5
-        │   │   ├── object_clock_chart.png
-        │   │   └── character_professional.png
-        │   ├── videos/              # Video clips from Stage 4.5
+        ├── renders/                  # [Assets] Generated media files
+        │   ├── images/
+        │   │   ├── composites/        # Anchor images for video gen
+        │   │   ├── characters/        # Optional (future split)
+        │   │   ├── backgrounds/       # Optional (future split)
+        │   │   └── objects/           # Optional (future split)
+        │   ├── videos/                # Video clips from Stage 4.5
         │   │   ├── clip_01.mp4
         │   │   └── clip_02.mp4
-        │   ├── sfx/                 # Sound effects from Stage 6.5
-        │   │   ├── clip_01_sfx.mp3
-        │   │   └── clip_02_sfx.mp3
-        │   └── voice/               # Audio from Stage 5.5
-        │       ├── voice_01.mp3
-        │       └── voice_02.mp3
+        │   └── audio/
+        │       ├── voice/             # Audio from Stage 5.5
+        │       │   ├── voice_01.mp3
+        │       │   └── voice_02.mp3
+        │       └── sfx/               # Sound effects from Stage 6.5
+        │           ├── clip_01_sfx.mp3
+        │           └── clip_02_sfx.mp3
         │
-        └── final/                   # [Delivery] Final output
-            └── final.mp4            # Assembled video from Stage 7
+        └── final/                    # [Delivery] Final output
+            └── final.mp4             # Assembled video from Stage 7
 ```
 
 ### Philosophy: Explicit State
@@ -274,7 +272,7 @@ shared/
 
 | Stage | Type | What Happens | Key Output |
 |-------|------|--------------|------------|
-| 0 | Manual | User creates seed + config | `00_seed.md`, `00_reel.yaml` |
+| 0 | Manual | User creates seed + config | `inputs/seed.md`, `inputs/reel.yaml` |
 | 1 | Agent | Research & fact-check | `01_research.output.md` |
 | 2 | Agent | Write script + segment | `02_story_generator.output.json` |
 | 3 | Agent | Visual plan + all prompts | `03_visual_plan.output.json` |
@@ -282,16 +280,16 @@ shared/
 | 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate videos | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate narrator audio | `renders/voice/*.mp3` |
+| 5.5 | Script | Generate narrator audio | `renders/audio/voice/*.mp3` |
 | 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
-| 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
+| 6.5 | Script | Generate sound effects | `renders/audio/sfx/*.mp3` |
 | 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
 
 ---
 
 ## Workflow Summary
 
-1.  **User** creates `00_seed.md` and `00_reel.yaml`.
+1.  **User** creates `inputs/seed.md` and `inputs/reel.yaml`.
 2.  **Orchestrator** runs step-by-step:
     -   Reads inputs.
     -   Generates `.input.md` (prompt).

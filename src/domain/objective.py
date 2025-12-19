@@ -1,4 +1,4 @@
-"""Objective model - Parses 00_seed.md and 00_reel.yaml into a unified config."""
+"""Objective model - Parses inputs/seed.md and inputs/reel.yaml into a unified config."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -6,12 +6,14 @@ from typing import Literal, Optional
 
 import yaml
 
+from src.utils.paths import reel_yaml_path, seed_path
+
 
 @dataclass
 class Objective:
     """Represents the complete reel objective from seed + config."""
 
-    # From 00_reel.yaml
+    # From inputs/reel.yaml
     title: str
     type: Literal["chart_explainer", "text_cinematic", "story_essay"]
     duration_blocks: int
@@ -21,7 +23,7 @@ class Objective:
     subtitles: str = "burned_in"
     audit_level: Literal["strict", "loose"] = "strict"
 
-    # From 00_seed.md
+    # From inputs/seed.md
     hook: str = ""
     core_insight: str = ""
     visual_vibe: str = ""
@@ -32,11 +34,11 @@ class Objective:
 
     @classmethod
     def from_reel_folder(cls, reel_path: Path) -> "Objective":
-        """Load objective from a reel folder containing seed.md and reel.yaml."""
+        """Load objective from a reel folder containing inputs/seed.md and inputs/reel.yaml."""
         reel_path = Path(reel_path)
 
         # Load YAML config
-        yaml_path = reel_path / "00_reel.yaml"
+        yaml_path = reel_yaml_path(reel_path)
         if not yaml_path.exists():
             raise FileNotFoundError(f"Config not found: {yaml_path}")
 
@@ -44,8 +46,8 @@ class Objective:
             config = yaml.safe_load(f)
 
         # Load seed markdown
-        seed_path = reel_path / "00_seed.md"
-        seed_data = cls._parse_seed(seed_path) if seed_path.exists() else {}
+        s_path = seed_path(reel_path)
+        seed_data = cls._parse_seed(s_path) if s_path.exists() else {}
 
         return cls(
             title=config.get("title", "Untitled"),
@@ -65,7 +67,7 @@ class Objective:
 
     @staticmethod
     def _parse_seed(seed_path: Path) -> dict:
-        """Parse 00_seed.md into structured sections."""
+        """Parse inputs/seed.md into structured sections."""
         with open(seed_path, "r", encoding="utf-8") as f:
             content = f.read()
 
