@@ -17,6 +17,7 @@ from src.stages import (
     run_research,
     run_script,
     run_visual_plan,
+    run_vidprompt,
     run_asset_generation,
     run_assembly,
     run_delivery,
@@ -192,7 +193,7 @@ def run(
         1: ("Research", lambda: run_research(reel_path, llm)),
         2: ("Script", lambda: run_script(reel_path, llm)),
         3: ("Visual Plan", lambda: run_visual_plan(reel_path, llm)),
-        4: ("Assets", lambda: run_asset_generation(reel_path, llm)),
+        4: ("Assets", lambda: run_asset_generation(reel_path, provider="kie")),
         5: ("Assembly", lambda: run_assembly(reel_path)),
         6: ("Delivery", lambda: run_delivery(reel_path)),
     }
@@ -501,32 +502,53 @@ def plan(
 
 @app.command()
 def assets(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option("gemini", "-p", "--provider", help="Image generation provider (gemini, openai, kie)"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save prompts only, don't call API"),
 ):
-    """Run asset generation stage (Stage 3.5) on current reel."""
+    """Run asset generation stage (Stage 3.5) on current reel. Uses Gemini by default."""
     from dotenv import load_dotenv
     load_dotenv()
     
     reel_path = _get_current_reel()
     _print_context(reel_path, "Assets (Stage 3.5)")
     
-    llm = LLMService(provider=provider)
-    run_asset_generation(reel_path, llm)
+    results = run_asset_generation(reel_path, provider=provider, dry_run=dry_run)
     
-    typer.echo(f"\n[OK] Asset generation complete!")
+    success = sum(1 for r in results if r.get("status") in ("success", "exists"))
+    typer.echo(f"\n[OK] Asset generation complete! ({success}/{len(results)} successful)")
 
 
 @app.command()
-def videos():
+def vidprompt(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run video prompt engineering stage (Stage 4) on current reel."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Video Prompts (Stage 4)")
+    
+    llm = LLMService(provider=provider)
+    run_vidprompt(reel_path, llm)
+    
+    typer.echo(f"\n[OK] Video prompt engineering complete!")
+
+
+@app.command()
+def videos(
+    provider: str = typer.Option("kling", "-p", "--provider", help="Video generation provider (kling, runway, veo)"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save prompts only, don't call API"),
+):
     """Run video generation stage (Stage 4.5) on current reel."""
     from src.stages import run_video_generation
     
     reel_path = _get_current_reel()
     _print_context(reel_path, "Videos (Stage 4.5)")
     
-    run_video_generation(reel_path)
+    results = run_video_generation(reel_path, provider=provider, dry_run=dry_run)
     
-    typer.echo(f"\n[OK] Video generation complete!")
+    typer.echo(f"\n[OK] Video generation prepared! ({len(results)} clips)")
 
 
 @app.command()
@@ -953,6 +975,15 @@ _assets_app.command()(assets)
 def _run_assets():
     """Entry point for 'uv run assets'."""
     _assets_app()
+
+
+# Vidprompt
+_vidprompt_app = typer.Typer()
+_vidprompt_app.command()(vidprompt)
+
+def _run_vidprompt():
+    """Entry point for 'uv run vidprompt'."""
+    _vidprompt_app()
 
 
 # Videos

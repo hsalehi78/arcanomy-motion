@@ -7,8 +7,8 @@ Arcanomy Motion is a **hybrid monorepo** combining:
 2.  **Remotion (React):** Handles deterministic rendering of video, charts, and typography.
 
 We follow a **"Smart Agent + Dumb Scripts"** architecture:
-- **Smart Agent Stages:** LLM plans, writes prompts, makes creative decisions
-- **Dumb Script Stages:** Automated execution of API calls, no creativity
+- **Smart Agent Stages** (1, 2, 3, 4, 5, 6): LLM plans, writes prompts, makes creative decisions
+- **Dumb Script Stages** (3.5, 4.5, 5.5, 7): Automated execution of API calls, no creativity
 
 ---
 
@@ -39,18 +39,24 @@ A "dumb" robot reads those instructions and paints the pictures.
 It uses tools like **DALL-E** or **Midjourney** to create one image per chunk.
 *(This creates images in `renders/images/`)*
 
-### 5. The Animator (Video Gen)
+### 5. The Director (Video Prompts)
+Before animating, another smart robot reads the images and refines the animation instructions.
+- It makes sure the motion matches what's in the image ("image anchor" logic).
+- It puts instructions in the right order: what moves → how it moves → camera movement.
+*(This creates `04_video_prompt.output.json`)*
+
+### 6. The Animator (Video Gen)
 The robot takes each picture and makes it "breathe" for **10 seconds**.
 - It adds subtle movement: "Zoom in slowly" or "Rain falling in background."
 - It uses tools like **Kling AI** or **Runway** to animate the still images.
-*(Now we have `renders/videos/bg_01.mp4`, `bg_02.mp4`...)*
+*(Now we have `renders/videos/clip_01.mp4`, `clip_02.mp4`...)*
 
-### 6. The Voice Actor (Audio Gen)
+### 7. The Voice Actor (Audio Gen)
 The robot reads the script out loud using a tool called **ElevenLabs**.
 It makes sure the voice matches the video timing.
 *(Now we have `renders/voice_full.mp3`)*
 
-### 7. The Editor (Assembly)
+### 8. The Editor (Assembly)
 Now the robot has a pile of stuff:
 - 3 Video clips
 - 1 Audio track
@@ -99,6 +105,7 @@ src/
 │   ├── s02_script.py
 │   ├── s03_plan.py
 │   ├── s03_5_assets.py       # Image generation execution
+│   ├── s04_vidprompt.py      # Video prompt engineering
 │   ├── s04_5_videos.py       # Video generation execution
 │   ├── s05_voice.py
 │   └── s06_assembly.py
@@ -171,6 +178,10 @@ content/
         ├── 03.5_asset_generation.input.md
         ├── 03.5_asset_generation.output.json  # Image generation results
         │
+        ├── 04_video_prompt.input.md
+        ├── 04_video_prompt.output.md          # Refined video prompts
+        ├── 04_video_prompt.output.json        # Video shot list
+        │
         ├── 04.5_video_generation.input.md
         ├── 04.5_video_generation.output.json  # Video generation results
         │
@@ -191,8 +202,8 @@ content/
         │   │   ├── object_clock_chart.png
         │   │   └── character_professional.png
         │   ├── videos/              # Video clips from Stage 4.5
-        │   │   ├── bg_01.mp4
-        │   │   └── bg_02.mp4
+        │   │   ├── clip_01.mp4
+        │   │   └── clip_02.mp4
         │   └── voice_full.mp3       # Audio from Stage 5.5
         │
         └── final/                   # [Delivery] Final outputs
@@ -225,6 +236,8 @@ shared/
 │   ├── 02_script_system.md          # Scriptwriter instructions
 │   ├── 03_visual_plan_system.md     # Visual director + prompt engineer
 │   ├── 03.5_asset_generation_system.md  # Automated image generation
+│   ├── 04_video_prompt_system.md    # Video prompt specialist
+│   ├── 04.5_video_generation_system.md  # Automated video generation
 │   └── 05_voice_system.md           # Voice director instructions
 └── templates/                       # User-facing templates
     └── seed_template.md             # Template for creating new reels
@@ -245,6 +258,7 @@ shared/
 | 2 | Agent | Write script + segment | `02_story_generator.output.json` |
 | 3 | Agent | Visual plan + all prompts | `03_visual_plan.output.json` |
 | 3.5 | Script | Generate images | `renders/images/*.png` |
+| 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate videos | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
 | 5.5 | Script | Generate audio | `renders/voice_*.mp3` |
@@ -276,6 +290,7 @@ Key constraint that shapes the entire pipeline:
 - This is NOT action sequences — it's "photographs that breathe"
 
 This constraint means:
-- Stage 3 creates prompts for **static state images**
+- Stage 3 creates prompts for **static state images** and initial motion descriptions
+- Stage 4 refines motion prompts for video AI (priority order, plain language, camera movement)
 - Motion prompts describe **subtle animation**, not complex choreography
 - Assets are designed to sustain 10 seconds of micro-movement

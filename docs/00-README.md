@@ -14,9 +14,10 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 ## Doc set
 1. `01-vision-and-reel-types.md` — motivation, reel types, length bands, goals
 2. `02-architecture-and-folder-structure.md` — repo layout + pipeline folder model + audit trail
-3. `03-objective-md-format.md` — **single-file reel input**: `objective.md` (YAML frontmatter + required headers)
+3. `03-seed-and-config-format.md` — seed file and config YAML format
 4. `04-pipeline-stages.md` — step-by-step pipeline (inputs/outputs per stage)
 5. `05-visual-style-and-subtitles.md` — v1 style rules (Arcanomy look) + subtitle policy
+6. `06-blog-ingestion.md` — importing content from Arcanomy blog
 
 ## Next build milestone (MVP)
 **MVP = 1 reel end-to-end** that produces:

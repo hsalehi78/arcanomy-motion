@@ -21,6 +21,7 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 | 2 | Agent | Write script & segment | `02_story_generator.output.json` |
 | 3 | Agent | Visual plan + image prompts | `03_visual_plan.output.json` |
 | 3.5 | Script | Generate images | `renders/images/*.png` |
+| 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate video clips | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
 | 5.5 | Script | Generate audio | `renders/voice_*.mp3` |
@@ -147,21 +148,66 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 
 ---
 
+## Stage 4: Video Prompt Engineering
+**Type:** Smart Agent
+
+**Goal:** Refine the basic motion prompts from Stage 3 into production-ready video prompts optimized for Kling/Runway.
+
+**Agent Action:**
+1. Analyzes motion prompts from `03_visual_plan.output.json`
+2. Rewrites prompts following video AI best practices (priority hierarchy, plain language, single camera movement)
+3. Creates a "Video Shot List" mapping each segment to its optimized prompt
+4. Identifies action shots vs. micro-movement shots
+
+**Files:**
+- `04_video_prompt.input.md`
+- `04_video_prompt.output.md` (Human-readable shot list with all prompts)
+- `04_video_prompt.output.json` **(CRITICAL)**: Machine-readable clips array
+
+```json
+{
+  "clips": [
+    {
+      "clip_number": 1,
+      "segment_id": 1,
+      "seed_image": "renders/images/object_clock_spinning.png",
+      "video_prompt": "Clock face glows in dim light. Second hand ticks forward slowly...",
+      "camera_movement": "Slow push in",
+      "duration_seconds": 10,
+      "movement_type": "micro",
+      "notes": "Opening tension shot"
+    }
+  ]
+}
+```
+
+**System Prompt:** `shared/prompts/04_video_prompt_system.md`
+
+**Key Concepts:**
+- **Priority Hierarchy:** Core Action → Specific Details → Context → Camera (in that order)
+- **Plain Language:** Simple, clear sentences with specific body parts/elements named
+- **Single Camera Movement:** Every clip ends with exactly ONE camera directive (e.g., "Slow zoom in")
+- **10-Second Awareness:** Motion must be sustainable for full clip duration
+
+---
+
 ## Stage 4.5: Video Generation
 **Type:** Dumb Script (Execution)
 
 **Goal:** Animate the static images into 10-second video clips.
 
 **Script Action:**
-1. Reads `03_visual_plan.output.json` for motion prompts
+1. Reads `04_video_prompt.output.json` for optimized prompts (fallback: `03_visual_plan.output.json`)
 2. Reads images from `renders/images/`
-3. Calls video generation API (Kling AI, Runway, Veo, etc.)
+3. Calls video generation API (Kling AI, Runway, etc.)
 4. Downloads/saves video clips to `renders/videos/`
 
 **Files:**
 - `04.5_video_generation.input.md` (Execution log)
-- `04.5_video_generation.output.json` (Map of segment IDs to file paths)
-- **Artifacts:** `renders/videos/bg_01.mp4`, `renders/videos/bg_02.mp4`, etc.
+- `04.5_video_generation.output.json` (Map of clip numbers to file paths)
+- **Artifacts:** `renders/videos/clip_01.mp4`, `renders/videos/clip_02.mp4`, etc.
+
+**System Prompt:** `shared/prompts/04.5_video_generation_system.md`
 
 ---
 
@@ -250,6 +296,10 @@ content/reels/2024-05-20-sunk-cost/
 ├── 03.5_asset_generation.input.md
 ├── 03.5_asset_generation.output.json
 │
+├── 04_video_prompt.input.md
+├── 04_video_prompt.output.md
+├── 04_video_prompt.output.json        ← Video shot list with optimized prompts
+│
 ├── 04.5_video_generation.input.md
 ├── 04.5_video_generation.output.json
 │
@@ -267,11 +317,11 @@ content/reels/2024-05-20-sunk-cost/
 │
 ├── renders/
 │   ├── images/
-│   │   ├── object_clock_chart.png
-│   │   └── character_professional_decisive.png
+│   │   ├── object_clock_spinning.png
+│   │   └── character_professional_stride.png
 │   ├── videos/
-│   │   ├── bg_01.mp4
-│   │   └── bg_02.mp4
+│   │   ├── clip_01.mp4
+│   │   └── clip_02.mp4
 │   └── voice_full.mp3
 │
 └── final/
@@ -300,4 +350,6 @@ content/reels/2024-05-20-sunk-cost/
 | 2 | `shared/prompts/02_script_system.md` |
 | 3 | `shared/prompts/03_visual_plan_system.md` |
 | 3.5 | `shared/prompts/03.5_asset_generation_system.md` |
+| 4 | `shared/prompts/04_video_prompt_system.md` |
+| 4.5 | `shared/prompts/04.5_video_generation_system.md` |
 | 5 | `shared/prompts/05_voice_system.md` |

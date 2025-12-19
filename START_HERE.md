@@ -36,7 +36,8 @@ Once you've set your reel, run each stage in order:
 | 1     | `uv run research` | Research & fact-check the seed concept              | `01_research.output.md`             |
 | 2     | `uv run script`   | Write script & split into 10s segments              | `02_story_generator.output.json`    |
 | 3     | `uv run plan`     | Create visual plan + image/motion prompts           | `03_visual_plan.output.json`        |
-| 3.5   | `uv run assets`   | Generate images from prompts (DALL-E/Midjourney)    | `renders/images/*.png`              |
+| 3.5   | `uv run assets`   | Generate images from prompts (DALL-E/Kie.ai)        | `renders/images/*.png`              |
+| 4     | `uv run vidprompt`| Refine motion prompts for video AI                  | `04_video_prompt.output.json`       |
 | 4.5   | `uv run videos`   | Generate video clips from images (Kling/Runway)     | `renders/videos/*.mp4`              |
 | 5     | `uv run voice`    | Generate voice audio (ElevenLabs)                   | `renders/voice_*.mp3`               |
 | 6     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
@@ -68,6 +69,7 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run script` | Run Stage 2 on current reel |
 | `uv run plan` | Run Stage 3 on current reel |
 | `uv run assets` | Run Stage 3.5 on current reel |
+| `uv run vidprompt` | Run Stage 4 on current reel |
 | `uv run videos` | Run Stage 4.5 on current reel |
 | `uv run voice` | Run Stage 5 on current reel |
 | `uv run assemble` | Run Stage 6 on current reel |
@@ -112,6 +114,10 @@ content/reels/2025-12-15-my-reel/
 │
 ├── 03.5_asset_generation.output.json   <- Stage 3.5: Image generation results
 │
+├── 04_video_prompt.input.md
+├── 04_video_prompt.output.md           <- Stage 4: Refined video prompts
+├── 04_video_prompt.output.json         <- Stage 4: Video shot list (machine-readable)
+│
 ├── 04.5_video_generation.output.json   <- Stage 4.5: Video generation results
 │
 ├── 05_voice.output.md                  <- Stage 5: Voice direction
@@ -122,8 +128,8 @@ content/reels/2025-12-15-my-reel/
 │   │   ├── object_clock_chart.png
 │   │   └── character_professional.png
 │   ├── videos/                         <- Video clips (from Stage 4.5)
-│   │   ├── bg_01.mp4
-│   │   └── bg_02.mp4
+│   │   ├── clip_01.mp4
+│   │   └── clip_02.mp4
 │   └── voice_full.mp3                  <- Audio (from Stage 5.5)
 │
 └── final/
@@ -137,13 +143,18 @@ content/reels/2025-12-15-my-reel/
 ## The Pipeline Philosophy
 
 **Smart Agent + Dumb Script:**
-- **Agent stages** (1, 2, 3, 5): LLM plans, writes prompts, makes creative decisions
+- **Agent stages** (1, 2, 3, 4, 5): LLM plans, writes prompts, makes creative decisions
 - **Script stages** (3.5, 4.5, 5.5, 6): Automated execution of API calls, no creativity
 
 **Stage 3 is the keystone:**
-- Creates complete image prompts (ready for DALL-E)
-- Creates motion prompts (ready for Kling/Runway)
+- Creates complete image prompts (ready for DALL-E/Kie.ai)
+- Creates initial motion prompts
 - Outputs machine-readable JSON for automation
+
+**Stage 4 refines for video AI:**
+- Optimizes motion prompts for Kling 2.5/Runway
+- Adds proper camera movements (always last in prompt)
+- Ensures prompts match seed images ("image anchor" logic)
 
 ---
 
@@ -159,6 +170,18 @@ content/reels/2025-12-15-my-reel/
 ```bash
 uv run research -p anthropic
 uv run script -p gemini
+```
+
+**Switch image provider:** Default is Gemini (Nano Bananao style). Use `-p openai` for DALL-E
+```bash
+uv run assets                     # Uses Gemini (default, Nano Bananao style)
+uv run assets -p openai           # Use DALL-E 3 instead
+uv run assets --dry-run           # Just save prompts, don't call API
+```
+
+**Direct CLI for single assets:**
+```bash
+python scripts/generate_asset.py --prompt "Your prompt here" --output "output.png" --provider openai
 ```
 
 **Debug prompts:** Check `*.input.md` files to see exactly what was sent to the LLM
@@ -223,6 +246,8 @@ The LLM instructions are in `shared/prompts/`:
 | `02_script_system.md` | 2 | Scriptwriter |
 | `03_visual_plan_system.md` | 3 | Visual director + prompt engineer |
 | `03.5_asset_generation_system.md` | 3.5 | Automated image generation |
+| `04_video_prompt_system.md` | 4 | Video prompt specialist |
+| `04.5_video_generation_system.md` | 4.5 | Automated video generation |
 | `05_voice_system.md` | 5 | Voice director |
 
 ---
@@ -235,5 +260,7 @@ uv run research                # Stage 1
 uv run script                  # Stage 2
 uv run plan                    # Stage 3
 uv run assets                  # Stage 3.5
+uv run vidprompt               # Stage 4
+uv run videos                  # Stage 4.5
 # ... continue through stages
 ```
