@@ -6,6 +6,8 @@ from typing import Literal, Optional
 
 import typer
 
+from src.config import get_model
+
 Provider = Literal["openai", "anthropic", "gemini"]
 
 
@@ -48,7 +50,8 @@ class LLMService:
             import google.generativeai as genai
 
             genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-            self._client = genai.GenerativeModel("gemini-1.5-pro")
+            self._gemini_model = get_model(self.provider)
+            self._client = genai.GenerativeModel(self._gemini_model)
 
         return self._client
 
@@ -59,12 +62,22 @@ class LLMService:
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
+        stage: Optional[str] = None,
     ) -> str:
-        """Generate a completion from the LLM."""
+        """Generate a completion from the LLM.
+        
+        Args:
+            prompt: The user prompt
+            system: Optional system prompt
+            model: Optional model override (uses config default if not provided)
+            temperature: Sampling temperature (0-1)
+            max_tokens: Maximum tokens in response
+            stage: Optional stage name for stage-specific model selection
+        """
         client = self._get_client()
 
         if self.provider == "openai":
-            model = model or "gpt-4o"
+            model = model or get_model(self.provider, stage)
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})
@@ -91,7 +104,7 @@ class LLMService:
             return response.choices[0].message.content
 
         elif self.provider == "anthropic":
-            model = model or "claude-sonnet-4-20250514"
+            model = model or get_model(self.provider, stage)
             response = client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
@@ -113,6 +126,7 @@ class LLMService:
             return response.content[0].text
 
         elif self.provider == "gemini":
+            gemini_model = getattr(self, "_gemini_model", get_model(self.provider, stage))
             response = client.generate_content(
                 prompt if not system else f"{system}\n\n{prompt}"
             )
@@ -124,7 +138,7 @@ class LLMService:
                     input_tokens=usage_meta.prompt_token_count,
                     output_tokens=usage_meta.candidates_token_count,
                     total_tokens=usage_meta.total_token_count,
-                    model="gemini-1.5-pro",
+                    model=gemini_model,
                     provider=self.provider,
                 )
                 self.last_usage.print()
@@ -140,12 +154,20 @@ class LLMService:
         prompt: str,
         system: Optional[str] = None,
         model: Optional[str] = None,
+        stage: Optional[str] = None,
     ) -> dict:
-        """Generate a JSON response from the LLM."""
+        """Generate a JSON response from the LLM.
+        
+        Args:
+            prompt: The user prompt
+            system: Optional system prompt
+            model: Optional model override
+            stage: Optional stage name for stage-specific model selection
+        """
         import json
 
         system_with_json = (system or "") + "\n\nRespond with valid JSON only."
-        response = self.complete(prompt, system=system_with_json, model=model)
+        response = self.complete(prompt, system=system_with_json, model=model, stage=stage)
 
         # Strip markdown code blocks if present
         response = response.strip()

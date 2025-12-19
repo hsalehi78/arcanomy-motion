@@ -6,6 +6,7 @@ from typing import Optional
 import typer
 import yaml
 
+from src.config import DEFAULT_PROVIDERS
 from src.domain import Objective
 from src.services import (
     LLMService,
@@ -452,7 +453,7 @@ def ingest_blog(
 
 @app.command()
 def research(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["research"], "-p", "--provider", help="LLM provider"),
 ):
     """Run research stage (Stage 1) on current reel."""
     from dotenv import load_dotenv
@@ -470,7 +471,7 @@ def research(
 
 @app.command()
 def script(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["script"], "-p", "--provider", help="LLM provider"),
 ):
     """Run script stage (Stage 2) on current reel."""
     from dotenv import load_dotenv
@@ -488,7 +489,7 @@ def script(
 
 @app.command()
 def plan(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["plan"], "-p", "--provider", help="LLM provider"),
 ):
     """Run visual plan stage (Stage 3) on current reel."""
     from dotenv import load_dotenv
@@ -505,7 +506,7 @@ def plan(
 
 @app.command()
 def assets(
-    provider: str = typer.Option("gemini", "-p", "--provider", help="Image generation provider (gemini, openai, kie)"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["assets"], "-p", "--provider", help="Image generation provider (kie, openai, gemini)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save prompts only, don't call API"),
 ):
     """Run asset generation stage (Stage 3.5) on current reel. Uses Gemini by default."""
@@ -523,7 +524,7 @@ def assets(
 
 @app.command()
 def vidprompt(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["vidprompt"], "-p", "--provider", help="LLM provider"),
 ):
     """Run video prompt engineering stage (Stage 4) on current reel."""
     from dotenv import load_dotenv
@@ -540,7 +541,7 @@ def vidprompt(
 
 @app.command()
 def videos(
-    provider: str = typer.Option("kling", "-p", "--provider", help="Video generation provider (kling, runway, veo)"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["videos"], "-p", "--provider", help="Video generation provider (veo, kling)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save prompts only, don't call API"),
 ):
     """Run video generation stage (Stage 4.5) on current reel."""
@@ -556,7 +557,7 @@ def videos(
 
 @app.command()
 def voice(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["voice"], "-p", "--provider", help="LLM provider"),
 ):
     """Run voice prompting stage (Stage 5) on current reel."""
     from dotenv import load_dotenv
@@ -602,7 +603,7 @@ def audio(
 
 @app.command()
 def sfx(
-    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["sfx"], "-p", "--provider", help="LLM provider"),
 ):
     """Run sound effects prompting stage (Stage 6) on current reel.
     
