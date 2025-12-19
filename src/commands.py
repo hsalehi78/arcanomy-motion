@@ -563,9 +563,38 @@ def voice(
     _print_context(reel_path, "Voice (Stage 5)")
     
     llm = LLMService(provider=provider)
-    run_voice_prompting(reel_path, llm)
+    output_path = run_voice_prompting(reel_path, llm)
     
     typer.echo(f"\n[OK] Voice prompting complete!")
+    typer.echo(f"   Created: {output_path.name}")
+
+
+@app.command()
+def audio(
+    voice_id: str = typer.Option(None, "--voice", "-v", help="Override ElevenLabs voice ID"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save config only, don't call API"),
+    skip_duration: bool = typer.Option(False, "--skip-duration", help="Skip iterative duration targeting"),
+):
+    """Run audio generation stage (Stage 5.5) on current reel.
+    
+    Generates narrator audio using ElevenLabs TTS with documentary-style voice settings.
+    Iteratively adjusts narration to hit 7.5-9 second target duration.
+    """
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Audio (Stage 5.5)")
+    
+    results = run_audio_generation(
+        reel_path, 
+        voice_id=voice_id, 
+        dry_run=dry_run,
+        skip_duration_check=skip_duration,
+    )
+    
+    success = sum(1 for r in results if r.get("status") in ("success", "success_no_duration_check", "dry_run"))
+    typer.echo(f"\n[OK] Audio generation complete! ({success}/{len(results)} successful)")
 
 
 @app.command()
@@ -1002,6 +1031,15 @@ _voice_app.command()(voice)
 def _run_voice():
     """Entry point for 'uv run voice'."""
     _voice_app()
+
+
+# Audio
+_audio_app = typer.Typer()
+_audio_app.command()(audio)
+
+def _run_audio():
+    """Entry point for 'uv run audio'."""
+    _audio_app()
 
 
 # Assemble

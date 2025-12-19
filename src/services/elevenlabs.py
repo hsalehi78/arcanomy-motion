@@ -28,8 +28,9 @@ class ElevenLabsService:
         voice_id: str,
         output_path: Path,
         model_id: str = "eleven_multilingual_v2",
-        stability: float = 0.5,
+        stability: float = 0.40,
         similarity_boost: float = 0.75,
+        style: float = 0.12,
     ) -> Path:
         """Generate speech audio from text.
 
@@ -38,22 +39,27 @@ class ElevenLabsService:
             voice_id: ElevenLabs voice ID
             output_path: Where to save the audio file
             model_id: ElevenLabs model to use
-            stability: Voice stability (0-1)
-            similarity_boost: Voice similarity boost (0-1)
+            stability: Voice stability (0-1). Lower = more natural variation. Documentary style: 0.35-0.45
+            similarity_boost: Voice similarity boost (0-1). Documentary style: 0.75
+            style: Style exaggeration (0-1). Adds theatrical weight. Documentary style: 0.10-0.15
 
         Returns:
             Path to the generated audio file
         """
         client = self._get_client()
 
+        # Build voice settings - include style if supported
+        voice_settings = {
+            "stability": stability,
+            "similarity_boost": similarity_boost,
+            "style": style,
+        }
+
         audio = client.text_to_speech.convert(
             voice_id=voice_id,
             text=text,
             model_id=model_id,
-            voice_settings={
-                "stability": stability,
-                "similarity_boost": similarity_boost,
-            },
+            voice_settings=voice_settings,
         )
 
         output_path = Path(output_path)
