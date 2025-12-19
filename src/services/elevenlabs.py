@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from src.config import get_audio_voice_model
+from src.config import get_audio_sfx_model, get_audio_voice_model
 
 
 class ElevenLabsService:
@@ -101,6 +101,7 @@ class ElevenLabsService:
         """Generate a sound effect from a text prompt.
 
         Uses ElevenLabs Sound Effects API to create atmospheric audio.
+        Model is configured in src/config.py (AUDIO_MODELS["elevenlabs"]["sfx_model"]).
 
         Args:
             text: The sound effect prompt (e.g., "Continuous rain with thunder")
@@ -112,6 +113,10 @@ class ElevenLabsService:
             Path to the generated audio file
         """
         client = self._get_client()
+        
+        # Model from config (currently "sound-generation" is the only available model)
+        # The ElevenLabs SDK uses this model by default; kept here for documentation
+        _sfx_model = get_audio_sfx_model("elevenlabs")  # noqa: F841
 
         # Generate sound effect using ElevenLabs API
         audio = client.text_to_sound_effects.convert(

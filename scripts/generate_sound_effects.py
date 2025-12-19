@@ -34,6 +34,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.config import get_audio_sfx_model
+
 # Load environment variables
 load_dotenv()
 
@@ -54,8 +58,11 @@ def generate_sound_effect(
         from elevenlabs import ElevenLabs
 
         client = ElevenLabs(api_key=api_key)
+        
+        # Get model from config (currently "sound-generation" is the only available model)
+        sfx_model = get_audio_sfx_model("elevenlabs")
 
-        print(f"Generating sound effect...")
+        print(f"Generating sound effect ({sfx_model})...")
         print(f"   Prompt: {text[:80]}...")
         print(f"   Duration: {duration_seconds}s")
         print(f"   Prompt Influence: {prompt_influence}")

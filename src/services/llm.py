@@ -50,8 +50,8 @@ class LLMService:
             import google.generativeai as genai
 
             genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-            self._gemini_model = get_model(self.provider)
-            self._client = genai.GenerativeModel(self._gemini_model)
+            # Store module reference only; model instantiated per-call in complete()
+            self._client = genai
 
         return self._client
 
@@ -137,8 +137,13 @@ class LLMService:
             return response.content[0].text
 
         elif self.provider == "gemini":
-            gemini_model = getattr(self, "_gemini_model", get_model(self.provider, stage))
-            response = client.generate_content(
+            # Resolve model from config (supports stage-specific overrides)
+            target_model = model or get_model(self.provider, stage)
+            
+            # Instantiate GenerativeModel per-call to allow model switching
+            generative_model = client.GenerativeModel(target_model)
+            
+            response = generative_model.generate_content(
                 prompt if not system else f"{system}\n\n{prompt}"
             )
             
@@ -149,7 +154,7 @@ class LLMService:
                     input_tokens=usage_meta.prompt_token_count,
                     output_tokens=usage_meta.candidates_token_count,
                     total_tokens=usage_meta.total_token_count,
-                    model=gemini_model,
+                    model=target_model,
                     provider=self.provider,
                 )
                 self.last_usage.print()
