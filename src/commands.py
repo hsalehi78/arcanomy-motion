@@ -625,7 +625,7 @@ def seed(
         llm = LLMService(provider=provider)
         
         try:
-            new_seed = regenerate_seed(
+            new_seed, csv_content = regenerate_seed(
                 mdx_content=mdx_content,
                 blog_identifier=source_blog,
                 blog_title=blog_title,
@@ -641,6 +641,15 @@ def seed(
         seed_file.write_text(new_seed, encoding="utf-8")
         typer.echo(f"\n[OK] Seed regenerated from blog!")
         typer.echo(f"   File: {seed_file}")
+        
+        # Write CSV if data was extracted
+        if csv_content:
+            data_dir = reel_path / "inputs" / "data"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            csv_file = data_dir / "extracted_data.csv"
+            csv_file.write_text(csv_content, encoding="utf-8")
+            typer.echo(f"   CSV: {csv_file}")
+        
         typer.echo(f"\n   Preview:")
         typer.echo("-" * 40)
         for line in new_seed.strip().split("\n")[:8]:

@@ -419,5 +419,16 @@ BLOG CONTENT:
 {data_sources}
 """
 
-    return seed_content
+    # Build CSV content from verified data points
+    csv_content = None
+    if extract_data and 'verified_points' in dir() and verified_points:
+        csv_lines = ["label,value,source_quote"]
+        for dp in verified_points:
+            label = dp.get("label", "").replace(",", ";").replace('"', "'")
+            value = dp.get("value", "").replace(",", ";").replace('"', "'")
+            quote = dp.get("source_quote", "")[:80].replace(",", ";").replace('"', "'").replace("\n", " ")
+            csv_lines.append(f'"{label}","{value}","{quote}"')
+        csv_content = "\n".join(csv_lines)
+
+    return seed_content, csv_content
 
