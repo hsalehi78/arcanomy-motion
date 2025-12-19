@@ -23,6 +23,8 @@ from src.stages import (
     run_delivery,
     run_voice_prompting,
     run_audio_generation,
+    run_sfx_prompting,
+    run_sfx_generation,
     run_music_selection,
 )
 from src.utils.logger import get_logger
@@ -598,6 +600,53 @@ def audio(
 
 
 @app.command()
+def sfx(
+    provider: str = typer.Option("openai", "-p", "--provider", help="LLM provider"),
+):
+    """Run sound effects prompting stage (Stage 6) on current reel.
+    
+    Creates sound effect prompts for each video segment based on the visual plan.
+    """
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Sound Effects (Stage 6)")
+    
+    llm = LLMService(provider=provider)
+    output_path = run_sfx_prompting(reel_path, llm)
+    
+    typer.echo(f"\n[OK] Sound effects prompting complete!")
+    typer.echo(f"   Created: {output_path.name}")
+
+
+@app.command()
+def sfxgen(
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Save prompts only, don't call API"),
+    prompt_influence: float = typer.Option(0.3, "--influence", "-i", help="Prompt influence (0-1)"),
+):
+    """Run sound effects generation stage (Stage 6.5) on current reel.
+    
+    Generates sound effect audio using ElevenLabs Sound Effects API.
+    Each clip gets a 10-second atmospheric sound effect.
+    """
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Sound Effects Generation (Stage 6.5)")
+    
+    results = run_sfx_generation(
+        reel_path,
+        dry_run=dry_run,
+        prompt_influence=prompt_influence,
+    )
+    
+    success = sum(1 for r in results if r.get("status") in ("success", "dry_run"))
+    typer.echo(f"\n[OK] Sound effects generation complete! ({success}/{len(results)} successful)")
+
+
+@app.command()
 def assemble():
     """Run assembly stage (Stage 5) on current reel."""
     reel_path = _get_current_reel()
@@ -1040,6 +1089,24 @@ _audio_app.command()(audio)
 def _run_audio():
     """Entry point for 'uv run audio'."""
     _audio_app()
+
+
+# SFX
+_sfx_app = typer.Typer()
+_sfx_app.command()(sfx)
+
+def _run_sfx():
+    """Entry point for 'uv run sfx'."""
+    _sfx_app()
+
+
+# SFX Gen
+_sfxgen_app = typer.Typer()
+_sfxgen_app.command()(sfxgen)
+
+def _run_sfxgen():
+    """Entry point for 'uv run sfxgen'."""
+    _sfxgen_app()
 
 
 # Assemble

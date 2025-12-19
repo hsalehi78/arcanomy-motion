@@ -7,6 +7,8 @@ from .s04_vidprompt import run_video_prompting as run_vidprompt
 from .s04_assets import run_asset_generation, run_video_generation
 from .s05_voice import run_voice_prompting
 from .s05_audio import run_audio_generation
+from .s06_sfx import run_sfx_prompting
+from .s06_sfx_gen import run_sfx_generation
 from .s06_delivery import run_music_selection, run_assembly, run_delivery
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "run_video_generation",
     "run_voice_prompting",
     "run_audio_generation",
+    "run_sfx_prompting",
+    "run_sfx_generation",
     "run_music_selection",
     "run_assembly",
     "run_delivery",

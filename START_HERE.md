@@ -27,7 +27,7 @@ uv run set permission-trap    # Partial match works!
 
 ---
 
-### 2. Run the Pipeline (6 Stages)
+### 2. Run the Pipeline (8 Stages)
 
 Once you've set your reel, run each stage in order:
 
@@ -36,11 +36,14 @@ Once you've set your reel, run each stage in order:
 | 1     | `uv run research` | Research & fact-check the seed concept              | `01_research.output.md`             |
 | 2     | `uv run script`   | Write script & split into 10s segments              | `02_story_generator.output.json`    |
 | 3     | `uv run plan`     | Create visual plan + image/motion prompts           | `03_visual_plan.output.json`        |
-| 3.5   | `uv run assets`   | Generate images from prompts (DALL-E/Kie.ai)        | `renders/images/*.png`              |
+| 3.5   | `uv run assets`   | Generate images from prompts (DALL-E/Gemini)        | `renders/images/*.png`              |
 | 4     | `uv run vidprompt`| Refine motion prompts for video AI                  | `04_video_prompt.output.json`       |
 | 4.5   | `uv run videos`   | Generate video clips from images (Kling/Runway)     | `renders/videos/*.mp4`              |
-| 5     | `uv run voice`    | Generate voice audio (ElevenLabs)                   | `renders/voice_*.mp3`               |
-| 6     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
+| 5     | `uv run voice`    | Voice direction (optimize narration)                | `05_voice.output.json`              |
+| 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/voice_*.mp3`               |
+| 6     | `uv run sfx`      | Create sound effect prompts per clip                | `06_sound_effects.output.json`      |
+| 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/sfx/*.mp3`                 |
+| 7     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
 
 Or run the full pipeline at once:
 ```bash
@@ -72,7 +75,10 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run vidprompt` | Run Stage 4 on current reel |
 | `uv run videos` | Run Stage 4.5 on current reel |
 | `uv run voice` | Run Stage 5 on current reel |
-| `uv run assemble` | Run Stage 6 on current reel |
+| `uv run audio` | Run Stage 5.5 on current reel |
+| `uv run sfx` | Run Stage 6 on current reel |
+| `uv run sfxgen` | Run Stage 6.5 on current reel |
+| `uv run assemble` | Run Stage 7 on current reel |
 | `uv run commit` | Git add + commit + push |
 
 ---
@@ -123,6 +129,10 @@ content/reels/2025-12-15-my-reel/
 ├── 05_voice.output.md                  <- Stage 5: Voice direction
 ├── 05.5_audio_generation.output.json   <- Stage 5.5: Audio generation results
 │
+├── 06_sound_effects.output.md          <- Stage 6: SFX prompts (human-readable)
+├── 06_sound_effects.output.json        <- Stage 6: SFX prompts (machine-readable)
+├── 06.5_sound_effects_generation.output.json <- Stage 6.5: SFX generation results
+│
 ├── renders/                            <- Generated media assets
 │   ├── images/                         <- Static images (from Stage 3.5)
 │   │   ├── object_clock_chart.png
@@ -130,6 +140,9 @@ content/reels/2025-12-15-my-reel/
 │   ├── videos/                         <- Video clips (from Stage 4.5)
 │   │   ├── clip_01.mp4
 │   │   └── clip_02.mp4
+│   ├── sfx/                            <- Sound effects (from Stage 6.5)
+│   │   ├── clip_01_sfx.mp3
+│   │   └── clip_02_sfx.mp3
 │   └── voice_full.mp3                  <- Audio (from Stage 5.5)
 │
 └── final/
@@ -143,8 +156,8 @@ content/reels/2025-12-15-my-reel/
 ## The Pipeline Philosophy
 
 **Smart Agent + Dumb Script:**
-- **Agent stages** (1, 2, 3, 4, 5): LLM plans, writes prompts, makes creative decisions
-- **Script stages** (3.5, 4.5, 5.5, 6): Automated execution of API calls, no creativity
+- **Agent stages** (1, 2, 3, 4, 5, 6): LLM plans, writes prompts, makes creative decisions
+- **Script stages** (3.5, 4.5, 5.5, 6.5, 7): Automated execution of API calls, no creativity
 
 **Stage 3 is the keystone:**
 - Creates complete image prompts (ready for DALL-E/Kie.ai)
@@ -249,6 +262,8 @@ The LLM instructions are in `shared/prompts/`:
 | `04_video_prompt_system.md` | 4 | Video prompt specialist |
 | `04.5_video_generation_system.md` | 4.5 | Automated video generation |
 | `05_voice_system.md` | 5 | Voice director |
+| `06_sound_effects_system.md` | 6 | Sound effects designer |
+| `06.5_sound_effects_generation_system.md` | 6.5 | Automated SFX generation |
 
 ---
 
@@ -262,5 +277,9 @@ uv run plan                    # Stage 3
 uv run assets                  # Stage 3.5
 uv run vidprompt               # Stage 4
 uv run videos                  # Stage 4.5
-# ... continue through stages
+uv run voice                   # Stage 5
+uv run audio                   # Stage 5.5
+uv run sfx                     # Stage 6
+uv run sfxgen                  # Stage 6.5
+uv run assemble                # Stage 7
 ```

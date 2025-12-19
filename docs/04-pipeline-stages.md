@@ -24,9 +24,11 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 | 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate video clips | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate audio | `renders/voice_*.mp3` |
-| 6 | Agent | Music & SFX selection | `06_music.output.json` |
-| 7 | Script | Final assembly | `final/final.mp4` |
+| 5.5 | Script | Generate narrator audio | `renders/voice_*.mp3` |
+| 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
+| 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
+| 7 | Agent | Music selection | `07_music.output.json` |
+| 8 | Script | Final assembly | `final/final.mp4` |
 
 ---
 
@@ -240,34 +242,114 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 
 ---
 
-## Stage 6: Music & SFX
+## Stage 6: Sound Effects Prompt Engineering
 **Type:** Smart Agent
 
-**Goal:** Select background track and sound effects.
+**Goal:** Create atmospheric sound effect prompts for each video segment.
+
+**Agent Action:**
+1. Reads script segments from Stage 2
+2. Analyzes visual plan from Stage 3 for scene context
+3. Creates 10-second sound effect prompts for each clip
+4. Ensures continuous ambient bed with action sounds layered on top
 
 **Files:**
-- `06_music.input.md`
-- `06_music.output.json` (Selected track path / SFX list)
+- `06_sound_effects.input.md` (The prompt sent to the LLM)
+- `06_sound_effects.output.md` (Human-readable SFX prompts with table)
+- `06_sound_effects.output.json` **(CRITICAL)**: Machine-readable SFX prompts
+
+```json
+{
+  "total_clips": 2,
+  "sound_effects": [
+    {
+      "clip_number": 1,
+      "segment_id": 1,
+      "scene_summary": "Opening scene - urban night",
+      "environment": "city street, night, rainy",
+      "continuous_sounds": ["rain", "distant traffic", "city hum"],
+      "action_sounds": ["footsteps", "phone notification"],
+      "mood": "tense anticipation",
+      "prompt": "Continuous late night city ambience with steady rain pattering...",
+      "duration_seconds": 10
+    }
+  ]
+}
+```
+
+**System Prompt:** `shared/prompts/06_sound_effects_system.md`
+
+**Key Concepts:**
+- **Continuous Ambience:** Each prompt must establish a continuous ambient bed (rain, traffic, wind, etc.)
+- **NO Silence:** Every second should have environmental sound
+- **Action Layered On Top:** Footsteps, impacts, movement sounds added to the ambient bed
+- **10-Second Duration:** Each sound effect matches the video clip duration
+- **Documentary Style:** Realistic, atmospheric, subtle background layer
 
 ---
 
-## Stage 7: Assembly & Rendering
+## Stage 6.5: Sound Effects Generation
+**Type:** Dumb Script (Execution)
+
+**Goal:** Generate sound effect audio using ElevenLabs Sound Effects API.
+
+**Script Action:**
+1. Reads `06_sound_effects.output.json`
+2. For each clip: calls ElevenLabs Sound Effects API with the prompt
+3. Saves audio to `renders/sfx/clip_XX_sfx.mp3`
+
+**Files:**
+- `06.5_sound_effects_generation.input.md` (Execution log)
+- `06.5_sound_effects_generation.output.json` (Generation results)
+- **Artifacts:** `renders/sfx/clip_01_sfx.mp3`, `renders/sfx/clip_02_sfx.mp3`, etc.
+
+**System Prompt:** `shared/prompts/06.5_sound_effects_generation_system.md`
+
+**Audio Mixing Notes:**
+Sound effects are designed as background layer:
+- **Narrator voice:** 100% volume (primary audio)
+- **Sound effects:** 20-30% volume (subtle background)
+- **Crossfade:** 0.5s transitions between clips
+
+---
+
+## Stage 7: Music Selection
+**Type:** Smart Agent
+
+**Goal:** Select background music track.
+
+**Files:**
+- `07_music.input.md`
+- `07_music.output.json` (Selected track path)
+
+---
+
+## Stage 8: Assembly & Rendering
 **Type:** Dumb Script (Execution)
 
 **Goal:** Put it all together using Remotion.
 
 **Script Action:**
 1. Orchestrator creates a "Manifest" for Remotion
-2. Remotion renders the final video with all layers
+2. Combines video clips, narrator audio, sound effects, and music
+3. Remotion renders the final video with all layers
 
 **Files:**
-- `07_assembly.input.md` (Execution log)
-- `07_assembly.output.json` (The Timeline/Manifest sent to Remotion)
+- `08_assembly.input.md` (Execution log)
+- `08_assembly.output.json` (The Timeline/Manifest sent to Remotion)
 
 **Final Output:**
 - `final/final.mp4`
 - `final/final.srt`
 - `final/metadata.json`
+
+**Audio Layers in Final Assembly:**
+```
+[Video Clip 01] (10 seconds)
+  ├── Audio Track 1: voice_01.mp3 (narrator ~8s) [100% volume]
+  ├── Audio Track 2: clip_01_sfx.mp3 (SFX 10s) [25% volume]
+  └── Audio Track 3: background_music.mp3 [15% volume]
+```
 
 ---
 
@@ -309,11 +391,18 @@ content/reels/2024-05-20-sunk-cost/
 ├── 05.5_audio_generation.input.md
 ├── 05.5_audio_generation.output.json
 │
-├── 06_music.input.md
-├── 06_music.output.json
+├── 06_sound_effects.input.md
+├── 06_sound_effects.output.md
+├── 06_sound_effects.output.json      ← SFX prompts per clip
 │
-├── 07_assembly.input.md
-├── 07_assembly.output.json
+├── 06.5_sound_effects_generation.input.md
+├── 06.5_sound_effects_generation.output.json
+│
+├── 07_music.input.md
+├── 07_music.output.json
+│
+├── 08_assembly.input.md
+├── 08_assembly.output.json
 │
 ├── renders/
 │   ├── images/
@@ -322,6 +411,9 @@ content/reels/2024-05-20-sunk-cost/
 │   ├── videos/
 │   │   ├── clip_01.mp4
 │   │   └── clip_02.mp4
+│   ├── sfx/                          ← Sound effects from Stage 6.5
+│   │   ├── clip_01_sfx.mp3
+│   │   └── clip_02_sfx.mp3
 │   └── voice_full.mp3
 │
 └── final/
@@ -353,3 +445,5 @@ content/reels/2024-05-20-sunk-cost/
 | 4 | `shared/prompts/04_video_prompt_system.md` |
 | 4.5 | `shared/prompts/04.5_video_generation_system.md` |
 | 5 | `shared/prompts/05_voice_system.md` |
+| 6 | `shared/prompts/06_sound_effects_system.md` |
+| 6.5 | `shared/prompts/06.5_sound_effects_generation_system.md` |

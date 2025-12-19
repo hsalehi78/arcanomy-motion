@@ -85,3 +85,41 @@ class ElevenLabsService:
                 return voice["id"]
         return None
 
+    def generate_sound_effect(
+        self,
+        text: str,
+        output_path: Path,
+        duration_seconds: float = 10.0,
+        prompt_influence: float = 0.3,
+    ) -> Path:
+        """Generate a sound effect from a text prompt.
+
+        Uses ElevenLabs Sound Effects API to create atmospheric audio.
+
+        Args:
+            text: The sound effect prompt (e.g., "Continuous rain with thunder")
+            output_path: Where to save the audio file
+            duration_seconds: Duration of the sound effect (default 10s for video clips)
+            prompt_influence: How closely to follow the prompt (0-1, default 0.3)
+
+        Returns:
+            Path to the generated audio file
+        """
+        client = self._get_client()
+
+        # Generate sound effect using ElevenLabs API
+        audio = client.text_to_sound_effects.convert(
+            text=text,
+            duration_seconds=duration_seconds,
+            prompt_influence=prompt_influence,
+        )
+
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "wb") as f:
+            for chunk in audio:
+                f.write(chunk)
+
+        return output_path
+

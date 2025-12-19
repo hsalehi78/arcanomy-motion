@@ -7,8 +7,8 @@ Arcanomy Motion is a **hybrid monorepo** combining:
 2.  **Remotion (React):** Handles deterministic rendering of video, charts, and typography.
 
 We follow a **"Smart Agent + Dumb Scripts"** architecture:
-- **Smart Agent Stages** (1, 2, 3, 4, 5, 6): LLM plans, writes prompts, makes creative decisions
-- **Dumb Script Stages** (3.5, 4.5, 5.5, 7): Automated execution of API calls, no creativity
+- **Smart Agent Stages** (1, 2, 3, 4, 5, 6, 7): LLM plans, writes prompts, makes creative decisions
+- **Dumb Script Stages** (3.5, 4.5, 5.5, 6.5, 8): Automated execution of API calls, no creativity
 
 ---
 
@@ -108,7 +108,10 @@ src/
 │   ├── s04_vidprompt.py      # Video prompt engineering
 │   ├── s04_5_videos.py       # Video generation execution
 │   ├── s05_voice.py
-│   └── s06_assembly.py
+│   ├── s05_audio.py          # Voice audio generation execution
+│   ├── s06_sfx.py            # Sound effects prompt engineering
+│   ├── s06_sfx_gen.py        # Sound effects generation execution
+│   └── s06_delivery.py       # Music selection + assembly
 │
 ├── utils/                    # Helpers
 │   ├── io.py                 # Safe file reading/writing
@@ -191,11 +194,18 @@ content/
         ├── 05.5_audio_generation.input.md
         ├── 05.5_audio_generation.output.json  # Audio file paths
         │
-        ├── 06_music.input.md
-        ├── 06_music.output.json            # Selected track / SFX list
+        ├── 06_sound_effects.input.md
+        ├── 06_sound_effects.output.md        # Human-readable SFX prompts
+        ├── 06_sound_effects.output.json      # SFX prompts for generation
         │
-        ├── 07_assembly.input.md
-        ├── 07_assembly.output.json         # Final Remotion timeline
+        ├── 06.5_sound_effects_generation.input.md
+        ├── 06.5_sound_effects_generation.output.json  # SFX file paths
+        │
+        ├── 07_music.input.md
+        ├── 07_music.output.json              # Selected track
+        │
+        ├── 08_assembly.input.md
+        ├── 08_assembly.output.json           # Final Remotion timeline
         │
         ├── renders/                 # [Assets] Generated media files
         │   ├── images/              # Static images from Stage 3.5
@@ -204,6 +214,9 @@ content/
         │   ├── videos/              # Video clips from Stage 4.5
         │   │   ├── clip_01.mp4
         │   │   └── clip_02.mp4
+        │   ├── sfx/                 # Sound effects from Stage 6.5
+        │   │   ├── clip_01_sfx.mp3
+        │   │   └── clip_02_sfx.mp3
         │   └── voice_full.mp3       # Audio from Stage 5.5
         │
         └── final/                   # [Delivery] Final outputs
@@ -238,7 +251,9 @@ shared/
 │   ├── 03.5_asset_generation_system.md  # Automated image generation
 │   ├── 04_video_prompt_system.md    # Video prompt specialist
 │   ├── 04.5_video_generation_system.md  # Automated video generation
-│   └── 05_voice_system.md           # Voice director instructions
+│   ├── 05_voice_system.md           # Voice director instructions
+│   ├── 06_sound_effects_system.md   # Sound effects designer
+│   └── 06.5_sound_effects_generation_system.md  # SFX generation
 └── templates/                       # User-facing templates
     └── seed_template.md             # Template for creating new reels
 ```
@@ -261,9 +276,11 @@ shared/
 | 4 | Agent | Refine video motion prompts | `04_video_prompt.output.json` |
 | 4.5 | Script | Generate videos | `renders/videos/*.mp4` |
 | 5 | Agent | Voice direction | `05_voice.output.md` |
-| 5.5 | Script | Generate audio | `renders/voice_*.mp3` |
-| 6 | Agent | Music selection | `06_music.output.json` |
-| 7 | Script | Final assembly | `final/final.mp4` |
+| 5.5 | Script | Generate narrator audio | `renders/voice_*.mp3` |
+| 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
+| 6.5 | Script | Generate sound effects | `renders/sfx/*.mp3` |
+| 7 | Agent | Music selection | `07_music.output.json` |
+| 8 | Script | Final assembly | `final/final.mp4` |
 
 ---
 
