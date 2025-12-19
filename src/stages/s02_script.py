@@ -129,7 +129,7 @@ Return ONLY valid JSON. No markdown code fences."""
     write_file(input_path, input_content)
 
     # Call LLM for JSON response
-    response = llm.complete_json(user_prompt, system=system_prompt)
+    response = llm.complete_json(user_prompt, system=system_prompt, stage="script")
 
     # Parse segments
     segments_data = response.get("segments", [])

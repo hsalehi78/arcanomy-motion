@@ -92,7 +92,7 @@ Generate a complete research document following the 7-section structure in your 
     write_file(input_path, input_content)
 
     # Call LLM
-    response = llm.complete(user_prompt, system=system_prompt)
+    response = llm.complete(user_prompt, system=system_prompt, stage="research")
 
     # Save output
     output_path = reel_path / "01_research.output.md"

@@ -151,7 +151,7 @@ This JSON is required for the automated asset generation pipeline to work."""
     write_file(input_path, input_content)
 
     # Call LLM
-    response = llm.complete(user_prompt, system=system_prompt)
+    response = llm.complete(user_prompt, system=system_prompt, stage="plan")
 
     # Save human-readable output
     output_md_path = reel_path / "03_visual_plan.output.md"

@@ -172,7 +172,7 @@ This JSON is required for the automated video generation pipeline (Stage 4.5) to
     write_file(input_path, input_content)
 
     # Call LLM
-    response = llm.complete(user_prompt, system=system_prompt)
+    response = llm.complete(user_prompt, system=system_prompt, stage="vidprompt")
 
     # Save human-readable output
     output_md_path = reel_path / "04_video_prompt.output.md"

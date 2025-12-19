@@ -138,7 +138,7 @@ BLOG CONTENT:
 {mdx_content[:8000]}  # Truncate to avoid token limits
 """
 
-    result = llm.complete_json(user_prompt, system=system_prompt)
+    result = llm.complete_json(user_prompt, system=system_prompt, stage="research")
 
     # Build seed.md content
     seed_content = f"""# Hook

@@ -47,6 +47,7 @@ assemble = "src.commands:_run_assemble"
 deliver = "src.commands:_run_deliver"
 current = "src.commands:_run_current"
 guide = "src.commands:_run_guide"
+reels = "src.commands:_run_reels"
 
 [build-system]
 requires = ["hatchling"]

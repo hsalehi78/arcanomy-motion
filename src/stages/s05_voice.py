@@ -152,7 +152,7 @@ Provide:
     write_file(input_path, input_content)
 
     # Call LLM
-    response = llm.complete(user_prompt, system=system_prompt)
+    response = llm.complete(user_prompt, system=system_prompt, stage="voice")
 
     # Save human-readable output
     output_md_path = reel_path / "05_voice.output.md"

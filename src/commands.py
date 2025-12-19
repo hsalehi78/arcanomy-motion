@@ -436,14 +436,18 @@ def ingest_blog(
     config_yaml = yaml.dump(config, default_flow_style=False, allow_unicode=True)
     (reel_path / "00_reel.yaml").write_text(config_yaml)
 
+    # Auto-set as current reel
+    CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
+
     typer.echo(f"\n[OK] Created new reel at: {reel_path}")
+    typer.echo(f"   (Auto-set as current reel)")
     typer.echo(f"  Source blog: {blog.title}")
     typer.echo(f"\n  Files created:")
     typer.echo(f"    - {reel_path}/00_seed.md")
     typer.echo(f"    - {reel_path}/00_reel.yaml")
     typer.echo(f"\n  Next steps:")
     typer.echo(f"    1. Review and edit the seed/config files")
-    typer.echo(f"    2. Run: uv run arcanomy run {reel_path}")
+    typer.echo(f"    2. Run: uv run full")
 
 
 # =============================================================================
@@ -970,6 +974,7 @@ def current():
     if not CURRENT_REEL_FILE.exists():
         typer.echo("[ERROR] No reel selected.")
         typer.echo("   Run: uv run set <reel-path>")
+        typer.echo("   Or:  uv run reels  (to list available reels)")
         raise typer.Exit(1)
     
     reel_path = _get_current_reel()
@@ -984,11 +989,100 @@ def current():
         ("02_story_generator.output.json", "Script"),
         ("03_visual_plan.output.json", "Plan"),
         ("03.5_asset_generation.output.json", "Images"),
+        ("04_video_prompt.output.json", "Vidprompt"),
+        ("04.5_video_generation.output.json", "Videos"),
+        ("05_voice.output.md", "Voice"),
+        ("05.5_audio_generation.output.json", "Audio"),
+        ("06_sound_effects.output.json", "SFX"),
+        ("06.5_sound_effects_generation.output.json", "SFXGen"),
+        ("final/final.mp4", "Final"),
     ]
     for filename, name in stages:
         exists = (reel_path / filename).exists()
         status = "[x]" if exists else "[ ]"
         typer.echo(f"   {status} {name}")
+
+
+@app.command()
+def reels():
+    """List all available reels and optionally select one."""
+    from rich.console import Console
+    from rich.table import Table
+    
+    console = Console()
+    reels_dir = Path("content/reels")
+    
+    if not reels_dir.exists():
+        typer.echo("[ERROR] No reels directory found at content/reels")
+        raise typer.Exit(1)
+    
+    # Get all reel directories
+    reel_dirs = sorted([d for d in reels_dir.iterdir() if d.is_dir()], reverse=True)
+    
+    if not reel_dirs:
+        typer.echo("No reels found. Create one with:")
+        typer.echo("   uv run arcanomy new <slug>")
+        typer.echo("   uv run arcanomy ingest-blog")
+        return
+    
+    # Get current reel for highlighting
+    current_reel = None
+    if CURRENT_REEL_FILE.exists():
+        try:
+            current_reel = Path(CURRENT_REEL_FILE.read_text().strip())
+        except Exception:
+            pass
+    
+    # Build table
+    table = Table(title=f"Available Reels ({len(reel_dirs)})")
+    table.add_column("#", style="bold cyan", width=3)
+    table.add_column("Reel", style="bold")
+    table.add_column("Status", style="dim")
+    table.add_column("", style="green", width=8)
+    
+    for i, reel in enumerate(reel_dirs, 1):
+        # Determine status
+        has_seed = (reel / "00_seed.md").exists()
+        has_final = (reel / "final" / "final.mp4").exists()
+        
+        if has_final:
+            status = "[green]Complete[/green]"
+        elif has_seed:
+            # Count completed stages
+            stage_files = [
+                "01_research.output.md",
+                "02_story_generator.output.json",
+                "03_visual_plan.output.json",
+                "05.5_audio_generation.output.json",
+            ]
+            done = sum(1 for f in stage_files if (reel / f).exists())
+            status = f"Stage {done}/4"
+        else:
+            status = "[dim]Empty[/dim]"
+        
+        # Mark current reel
+        is_current = current_reel and reel.resolve() == current_reel.resolve()
+        current_marker = "[cyan]<< current[/cyan]" if is_current else ""
+        
+        table.add_row(str(i), reel.name, status, current_marker)
+    
+    console.print(table)
+    console.print()
+    
+    # Prompt for selection
+    choice = typer.prompt("Select reel # (or Enter to skip)", default="", show_default=False)
+    
+    if choice.strip():
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(reel_dirs):
+                selected = reel_dirs[idx]
+                CURRENT_REEL_FILE.write_text(str(selected.resolve()))
+                typer.echo(f"\n[OK] Current reel set to: {selected.name}")
+            else:
+                typer.echo(f"[ERROR] Invalid selection. Enter 1-{len(reel_dirs)}", err=True)
+        except ValueError:
+            typer.echo("[ERROR] Enter a number", err=True)
 
 
 @app.command()
@@ -1450,6 +1544,15 @@ _guide_app.command()(guide)
 def _run_guide():
     """Entry point for 'uv run guide'."""
     _guide_app()
+
+
+# Reels
+_reels_app = typer.Typer()
+_reels_app.command()(reels)
+
+def _run_reels():
+    """Entry point for 'uv run reels'."""
+    _reels_app()
 
 
 # Full Pipeline

@@ -68,7 +68,7 @@ Annotate each segment with prosody directions that make the delivery feel natura
     write_file(input_path, input_content)
 
     # Call LLM
-    response = llm.complete(user_prompt, system=system_prompt)
+    response = llm.complete(user_prompt, system=system_prompt, stage="voice")
 
     # Save output
     output_path = reel_path / "05_voice.output.md"

@@ -3,6 +3,7 @@
 Edit the dictionaries below to switch models across the pipeline.
 """
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -38,6 +39,39 @@ MODELS = {
 
 # OpenAI API parameter selection: newer model families use `max_completion_tokens`
 OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES: tuple[str, ...] = ("gpt-5", "o3", "o1")
+
+
+# =============================================================================
+# LLM API KEYS (centralize env var names here; no hard-coding elsewhere)
+# =============================================================================
+
+LLM_API_KEY_ENV_VARS: dict[str, tuple[str, ...]] = {
+    "openai": ("OPENAI_API_KEY",),
+    "anthropic": ("ANTHROPIC_API_KEY",),
+    # Support both names to avoid confusion across docs/scripts
+    "gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+}
+
+
+def get_llm_api_key(provider: str) -> str:
+    """Return the API key for an LLM provider from the environment.
+
+    Raises:
+        ValueError: unknown provider
+        RuntimeError: key missing
+    """
+    env_names = LLM_API_KEY_ENV_VARS.get(provider)
+    if not env_names:
+        raise ValueError(f"Unknown LLM provider for API key lookup: {provider}")
+
+    for env_name in env_names:
+        value = os.getenv(env_name)
+        if value:
+            return value
+
+    raise RuntimeError(
+        f"Missing API key for provider '{provider}'. Set one of: {', '.join(env_names)}"
+    )
 
 
 # =============================================================================

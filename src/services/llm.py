@@ -1,12 +1,15 @@
 """LLM service wrapper for OpenAI, Anthropic, and Google Gemini."""
 
-import os
 from dataclasses import dataclass
 from typing import Literal, Optional
 
 import typer
 
-from src.config import OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES, get_model
+from src.config import (
+    OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES,
+    get_llm_api_key,
+    get_model,
+)
 
 Provider = Literal["openai", "anthropic", "gemini"]
 
@@ -41,15 +44,15 @@ class LLMService:
         if self.provider == "openai":
             import openai
 
-            self._client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            self._client = openai.OpenAI(api_key=get_llm_api_key("openai"))
         elif self.provider == "anthropic":
             import anthropic
 
-            self._client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            self._client = anthropic.Anthropic(api_key=get_llm_api_key("anthropic"))
         elif self.provider == "gemini":
             import google.generativeai as genai
 
-            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+            genai.configure(api_key=get_llm_api_key("gemini"))
             # Store module reference only; model instantiated per-call in complete()
             self._client = genai
 
