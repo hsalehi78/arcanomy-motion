@@ -6,6 +6,24 @@ Run `uv run guide` anytime to see this in your terminal.
 
 ---
 
+## Quick Start (One Command!)
+
+```bash
+uv run full <reel-name>
+```
+
+This runs the **entire pipeline** from research to final video automatically.
+
+Example:
+```bash
+uv run full permission-trap          # Runs all 11 stages
+uv run full permission-trap -p openai  # Use OpenAI for all LLM stages
+uv run full --fresh                  # Start over (ignore existing outputs)
+uv run full --skip-videos            # Skip video generation
+```
+
+---
+
 ## Workflow Overview
 
 ### 1. Create or Select a Reel
@@ -27,12 +45,18 @@ uv run set permission-trap    # Partial match works!
 
 ---
 
-### 2. Run the Pipeline (8 Stages)
+### 2. Run the Pipeline
 
-Once you've set your reel, run each stage in order:
+**Automated (recommended):**
+```bash
+uv run full                   # Runs all stages on current reel
+```
+
+**Or run stages individually (11 Stages):**
 
 | Stage | Command           | What It Does                                        | Key Output                          |
 |-------|-------------------|-----------------------------------------------------|-------------------------------------|
+| ALL   | `uv run full`     | **Run entire pipeline automatically**               | `final/final.mp4`                   |
 | 1     | `uv run research` | Research & fact-check the seed concept              | `01_research.output.md`             |
 | 2     | `uv run script`   | Write script & split into 10s segments              | `02_story_generator.output.json`    |
 | 3     | `uv run plan`     | Create visual plan + image/motion prompts           | `03_visual_plan.output.json`        |
@@ -43,12 +67,7 @@ Once you've set your reel, run each stage in order:
 | 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/voice/*.mp3`               |
 | 6     | `uv run sfx`      | Create sound effect prompts per clip                | `06_sound_effects.output.json`      |
 | 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/sfx/*.mp3`                 |
-| 7     | `uv run assemble` | Combine all assets into final video                 | `final/final.mp4`                   |
-
-Or run the full pipeline at once:
-```bash
-uv run arcanomy run content/reels/2025-12-15-my-reel
-```
+| 7     | `uv run final`    | Combine all assets into final video                 | `final/final.mp4`                   |
 
 ---
 
@@ -65,6 +84,7 @@ uv run arcanomy status <path>     # Check pipeline progress
 
 | Command | Description |
 |---------|-------------|
+| `uv run full` | **Run entire pipeline (all 11 stages)** |
 | `uv run guide` | Show this guide in terminal |
 | `uv run current` | Show current reel + status |
 | `uv run set <slug>` | Set working reel (partial match OK) |
@@ -78,7 +98,7 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run audio` | Run Stage 5.5 on current reel |
 | `uv run sfx` | Run Stage 6 on current reel |
 | `uv run sfxgen` | Run Stage 6.5 on current reel |
-| `uv run assemble` | Run Stage 7 on current reel |
+| `uv run final` | Run Stage 7 on current reel |
 | `uv run commit` | Git add + commit + push |
 
 ---
@@ -234,6 +254,44 @@ All Arcanomy reels are built from **10-second blocks**. This aligns with:
 2. Add your API keys:
    - `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY`)
    - `ELEVENLABS_API_KEY`
+   - `KIE_API_KEY` (for Kie.ai image/video generation)
+
+---
+
+## Model Configuration (`src/config.py`)
+
+All AI models are configured in `src/config.py`. Edit this file to:
+
+**Switch LLM models:**
+```python
+MODELS = {
+    "openai": {"default": "gpt-5.2"},      # or "gpt-4o", "o3"
+    "anthropic": {"default": "claude-opus-4-5-20251101"},
+    "gemini": {"default": "gemini-3-pro"},
+}
+```
+
+**Switch image/video models:**
+```python
+IMAGE_MODELS = {
+    "kie": {"default": "nano-banana-pro"},
+    "openai": {"default": "gpt-image-1.5"},
+    "gemini": {"default": "gemini-3-pro-image-preview"},
+}
+```
+
+**Change default providers per stage:**
+```python
+DEFAULT_PROVIDERS = {
+    "research": "openai",    # Which LLM for research
+    "script": "anthropic",   # Which LLM for script writing
+    "assets": "kie",         # Which API for images
+    "videos": "kling",       # Which API for videos
+    # ... etc
+}
+```
+
+To use OpenAI for everything, change all LLM stages to `"openai"`.
 
 ---
 
@@ -271,6 +329,13 @@ The LLM instructions are in `shared/prompts/`:
 
 **Ready to start?**
 
+**Option 1: Fully Automated (recommended)**
+```bash
+uv run arcanomy ingest-blog    # Pick a blog
+uv run full                    # Run entire pipeline!
+```
+
+**Option 2: Run stages individually**
 ```bash
 uv run arcanomy ingest-blog    # Pick a blog
 uv run research                # Stage 1
@@ -283,5 +348,5 @@ uv run voice                   # Stage 5
 uv run audio                   # Stage 5.5
 uv run sfx                     # Stage 6
 uv run sfxgen                  # Stage 6.5
-uv run assemble                # Stage 7
+uv run final                   # Stage 7
 ```

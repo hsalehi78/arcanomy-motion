@@ -11,6 +11,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.config import get_default_voice_id
 from src.domain import Objective
 from src.services import LLMService
 from src.utils.io import read_file, write_file
@@ -86,8 +87,9 @@ def run_voice_prompting(reel_path: Path, llm: LLMService) -> Path:
     if script_md_path.exists():
         script_md = read_file(script_md_path)
 
-    # Get voice config from reel settings
-    voice_id = getattr(objective, "voice_id", "eleven_labs_adam")
+    # Get voice config from reel settings (fallback to config default)
+    default_voice = get_default_voice_id("elevenlabs")
+    voice_id = getattr(objective, "voice_id", default_voice)
 
     user_prompt = f"""# Voice Direction Request
 

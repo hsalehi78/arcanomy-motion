@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from src.config import get_audio_voice_model
+
 
 class ElevenLabsService:
     """Wrapper for ElevenLabs Text-to-Speech API."""
@@ -27,7 +29,7 @@ class ElevenLabsService:
         text: str,
         voice_id: str,
         output_path: Path,
-        model_id: str = "eleven_multilingual_v2",
+        model_id: str = None,
         stability: float = 0.40,
         similarity_boost: float = 0.75,
         style: float = 0.12,
@@ -47,6 +49,10 @@ class ElevenLabsService:
             Path to the generated audio file
         """
         client = self._get_client()
+        
+        # Get model from config if not provided
+        if model_id is None:
+            model_id = get_audio_voice_model("elevenlabs")
 
         # Build voice settings - include style if supported
         voice_settings = {

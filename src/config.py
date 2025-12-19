@@ -36,6 +36,9 @@ MODELS = {
     },
 }
 
+# OpenAI API parameter selection: newer model families use `max_completion_tokens`
+OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES: tuple[str, ...] = ("gpt-5", "o3", "o1")
+
 
 # =============================================================================
 # IMAGE GENERATION MODELS (for assets stage)
@@ -50,7 +53,8 @@ IMAGE_MODELS = {
         # Other: "dall-e-3"
     },
     "gemini": {
-        "default": "imagen-3",                # Google Imagen 3
+        "default": "gemini-3-pro-image-preview",  # Gemini 3 Pro Image Preview (native image gen)
+        # Other: "gemini-2.0-flash-exp-image-generation", "imagen-3"
     },
 }
 
@@ -77,7 +81,7 @@ AUDIO_MODELS = {
     "elevenlabs": {
         "voice_model": "eleven_v3",                # ElevenLabs v3 (most expressive)
         "sfx_model": "sound-generation",           # ElevenLabs Sound Effects
-       
+        "default_voice_id": "21m00Tcm4TlvDq8ikWAM",  # "Rachel" - professional narrator voice
     },
 }
 
@@ -169,14 +173,10 @@ def get_model(provider: str, stage: Optional[str] = None) -> str:
     # Fall back to provider default
     if provider in MODELS:
         return MODELS[provider]["default"]
-    
-    # Fallback defaults if provider not configured
-    fallbacks = {
-        "openai": "gpt-5.2",
-        "anthropic": "claude-opus-4-5-20251101",
-        "gemini": "gemini-3-pro",
-    }
-    return fallbacks.get(provider, "gpt-4o")
+
+    raise ValueError(
+        f"Unknown LLM provider: {provider}. Expected one of: {', '.join(sorted(MODELS.keys()))}"
+    )
 
 
 @dataclass
@@ -199,16 +199,50 @@ def get_model_config(provider: str, stage: Optional[str] = None) -> ModelConfig:
 
 def get_image_model(provider: str) -> str:
     """Get image generation model for a provider."""
-    if provider in IMAGE_MODELS:
-        return IMAGE_MODELS[provider]["default"]
-    return IMAGE_MODELS.get("kie", {}).get("default", "nano-banana-pro")
+    if provider not in IMAGE_MODELS:
+        raise ValueError(
+            f"Unknown image provider: {provider}. Expected one of: {', '.join(sorted(IMAGE_MODELS.keys()))}"
+        )
+    return IMAGE_MODELS[provider]["default"]
 
 
 def get_video_model(provider: str) -> str:
     """Get video generation model for a provider."""
-    if provider in VIDEO_MODELS:
-        return VIDEO_MODELS[provider]["default"]
-    return VIDEO_MODELS.get("kling", {}).get("default", "kling/v2-5-turbo-image-to-video-pro")
+    if provider not in VIDEO_MODELS:
+        raise ValueError(
+            f"Unknown video provider: {provider}. Expected one of: {', '.join(sorted(VIDEO_MODELS.keys()))}"
+        )
+    return VIDEO_MODELS[provider]["default"]
+
+
+def get_audio_voice_model(provider: str = "elevenlabs") -> str:
+    """Get audio (TTS) model ID for a provider."""
+    if provider not in AUDIO_MODELS or "voice_model" not in AUDIO_MODELS[provider]:
+        raise ValueError(
+            f"Unknown/unsupported audio provider for voice model: {provider}. "
+            f"Expected one of: {', '.join(sorted(AUDIO_MODELS.keys()))}"
+        )
+    return AUDIO_MODELS[provider]["voice_model"]
+
+
+def get_audio_sfx_model(provider: str = "elevenlabs") -> str:
+    """Get audio (SFX) model ID for a provider."""
+    if provider not in AUDIO_MODELS or "sfx_model" not in AUDIO_MODELS[provider]:
+        raise ValueError(
+            f"Unknown/unsupported audio provider for sfx model: {provider}. "
+            f"Expected one of: {', '.join(sorted(AUDIO_MODELS.keys()))}"
+        )
+    return AUDIO_MODELS[provider]["sfx_model"]
+
+
+def get_default_voice_id(provider: str = "elevenlabs") -> str:
+    """Get default voice ID for a provider."""
+    if provider not in AUDIO_MODELS or "default_voice_id" not in AUDIO_MODELS[provider]:
+        raise ValueError(
+            f"Unknown/unsupported audio provider for voice id: {provider}. "
+            f"Expected one of: {', '.join(sorted(AUDIO_MODELS.keys()))}"
+        )
+    return AUDIO_MODELS[provider]["default_voice_id"]
 
 
 def get_default_provider(stage: str) -> str:

@@ -175,7 +175,7 @@ def run(
         help="Run specific stage only (1-7)",
     ),
     provider: str = typer.Option(
-        "openai",
+        DEFAULT_PROVIDERS["research"],
         "--provider",
         "-p",
         help="LLM provider (openai, anthropic, gemini)",
@@ -197,7 +197,7 @@ def run(
         1: ("Research", lambda: run_research(reel_path, llm)),
         2: ("Script", lambda: run_script(reel_path, llm)),
         3: ("Visual Plan", lambda: run_visual_plan(reel_path, llm)),
-        4: ("Assets", lambda: run_asset_generation(reel_path, provider="kie")),
+        4: ("Assets", lambda: run_asset_generation(reel_path, provider=DEFAULT_PROVIDERS["assets"])),
         5: ("Assembly", lambda: run_assembly(reel_path)),
         6: ("Delivery", lambda: run_delivery(reel_path)),
     }
@@ -216,7 +216,7 @@ def run(
                 func()
                 logger.info(f"  [OK] {name} complete")
             except Exception as e:
-                logger.error(f"  ✗ {name} failed: {e}")
+                logger.error(f"  [FAIL] {name} failed: {e}")
                 raise typer.Exit(1)
 
     typer.echo("[OK] Pipeline complete")
@@ -686,6 +686,260 @@ def final(
     else:
         typer.echo(f"\n❌ Assembly failed: {result.get('error', 'Unknown error')}", err=True)
         raise typer.Exit(1)
+
+
+@app.command("full")
+def full_pipeline(
+    reel_path: Optional[str] = typer.Argument(None, help="Path to reel folder (uses current if not provided)"),
+    resume: bool = typer.Option(True, "--resume/--fresh", help="Resume from last completed stage (default) or start fresh"),
+    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Run in dry-run mode (no API calls)"),
+    skip_videos: bool = typer.Option(False, "--skip-videos", help="Skip video generation (uses images only)"),
+    provider: Optional[str] = typer.Option(None, "-p", "--provider", help="Override LLM provider for all stages (openai, anthropic, gemini)"),
+):
+    """Run the COMPLETE pipeline from research to final video.
+    
+    This is the fully automated end-to-end workflow that:
+    
+    1. Research (Stage 1)     - Gathers facts and context
+    2. Script (Stage 2)       - Writes voiceover and segments  
+    3. Plan (Stage 3)         - Creates visual plan and prompts
+    4. Assets (Stage 3.5)     - Generates images
+    5. Vidprompt (Stage 4)    - Refines video motion prompts
+    6. Videos (Stage 4.5)     - Generates video clips (2-5 min each)
+    7. Voice (Stage 5)        - Creates voice direction
+    8. Audio (Stage 5.5)      - Generates narrator audio
+    9. SFX (Stage 6)          - Creates sound effects prompts
+    10. SFXgen (Stage 6.5)    - Generates sound effects
+    11. Final (Stage 7)       - Assembles final.mp4
+    
+    The pipeline automatically waits for API responses and resumes from
+    the last completed stage if interrupted.
+    
+    Examples:
+        uv run full                              # Run on current reel
+        uv run full content/reels/my-reel        # Run on specific reel
+        uv run full --fresh                      # Force restart from stage 1
+        uv run full --skip-videos                # Skip video generation
+    """
+    import time
+    from datetime import datetime
+    from dotenv import load_dotenv
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+    
+    load_dotenv()
+    console = Console()
+    
+    # Resolve reel path
+    if reel_path:
+        path = Path(reel_path)
+        if not path.exists():
+            # Try to find it in content/reels
+            reels_dir = Path("content/reels")
+            if reels_dir.exists():
+                matches = [d for d in reels_dir.iterdir() if d.is_dir() and reel_path in d.name]
+                if len(matches) == 1:
+                    path = matches[0]
+                elif len(matches) > 1:
+                    typer.echo(f"[ERROR] Multiple matches found:", err=True)
+                    for m in matches:
+                        typer.echo(f"   - {m.name}")
+                    raise typer.Exit(1)
+                else:
+                    typer.echo(f"[ERROR] No reel found matching: {reel_path}", err=True)
+                    raise typer.Exit(1)
+        
+        if not path.exists():
+            typer.echo(f"[ERROR] Reel not found: {path}", err=True)
+            raise typer.Exit(1)
+        
+        # Set as current reel
+        CURRENT_REEL_FILE.write_text(str(path.resolve()))
+        reel = path
+    else:
+        reel = _get_current_reel()
+    
+    # Print header
+    console.print()
+    console.print(Panel.fit(
+        f"[bold cyan]Full Pipeline Execution[/bold cyan]\n"
+        f"[dim]Reel: {reel.name}[/dim]",
+        border_style="cyan"
+    ))
+    console.print()
+    
+    # Helper to get LLM provider (use override if provided, otherwise default)
+    def get_llm_provider(stage_key: str) -> str:
+        return provider if provider else DEFAULT_PROVIDERS[stage_key]
+    
+    # Define all stages with their check files and runner functions
+    stages = [
+        {
+            "name": "Research",
+            "stage": "1",
+            "check_file": "01_research.output.md",
+            "run": lambda: run_research(reel, LLMService(provider=get_llm_provider("research"))),
+        },
+        {
+            "name": "Script",
+            "stage": "2", 
+            "check_file": "02_story_generator.output.json",
+            "run": lambda: run_script(reel, LLMService(provider=get_llm_provider("script"))),
+        },
+        {
+            "name": "Visual Plan",
+            "stage": "3",
+            "check_file": "03_visual_plan.output.json",
+            "run": lambda: run_visual_plan(reel, LLMService(provider=get_llm_provider("plan"))),
+        },
+        {
+            "name": "Assets",
+            "stage": "3.5",
+            "check_file": "03.5_asset_generation.output.json",
+            "run": lambda: run_asset_generation(reel, provider=DEFAULT_PROVIDERS["assets"], dry_run=dry_run),
+        },
+        {
+            "name": "Video Prompts",
+            "stage": "4",
+            "check_file": "04_video_prompt.output.json",
+            "run": lambda: run_vidprompt(reel, LLMService(provider=get_llm_provider("vidprompt"))),
+        },
+        {
+            "name": "Videos",
+            "stage": "4.5",
+            "check_file": "04.5_video_generation.output.json",
+            "run": lambda: run_video_generation(reel, provider=DEFAULT_PROVIDERS["videos"], dry_run=dry_run),
+            "skip": skip_videos,
+        },
+        {
+            "name": "Voice Direction",
+            "stage": "5",
+            "check_file": "05_voice.output.md",
+            "run": lambda: run_voice_prompting(reel, LLMService(provider=get_llm_provider("voice"))),
+        },
+        {
+            "name": "Audio",
+            "stage": "5.5",
+            "check_file": "05.5_audio_generation.output.json",
+            "run": lambda: run_audio_generation(reel, dry_run=dry_run),
+        },
+        {
+            "name": "SFX Prompts",
+            "stage": "6",
+            "check_file": "06_sound_effects.output.json",
+            "run": lambda: run_sfx_prompting(reel, LLMService(provider=get_llm_provider("sfx"))),
+        },
+        {
+            "name": "SFX Generation",
+            "stage": "6.5",
+            "check_file": "06.5_sound_effects_generation.output.json",
+            "run": lambda: run_sfx_generation(reel, dry_run=dry_run),
+        },
+        {
+            "name": "Final Assembly",
+            "stage": "7",
+            "check_file": "final/final.mp4",
+            "run": lambda: run_final_assembly(reel),
+        },
+    ]
+    
+    # Track timing
+    start_time = time.time()
+    stage_times = {}
+    completed = 0
+    skipped = 0
+    failed = None
+    
+    # Import video generation function
+    from src.stages import run_video_generation
+    
+    # Run stages
+    for i, stage in enumerate(stages):
+        stage_name = stage["name"]
+        stage_num = stage["stage"]
+        check_file = stage["check_file"]
+        should_skip = stage.get("skip", False)
+        
+        # Check if stage should be skipped
+        if should_skip:
+            console.print(f"[dim]Stage {stage_num}: {stage_name} - SKIPPED (--skip-videos)[/dim]")
+            skipped += 1
+            continue
+        
+        # Check if stage already complete (resume mode)
+        if resume and (reel / check_file).exists():
+            console.print(f"[dim]Stage {stage_num}: {stage_name} - EXISTS (skipping)[/dim]")
+            skipped += 1
+            continue
+        
+        # Run the stage
+        console.print(f"\n[bold cyan]Stage {stage_num}: {stage_name}[/bold cyan]")
+        console.print("-" * 50)
+        
+        stage_start = time.time()
+        try:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                TimeElapsedColumn(),
+                console=console,
+                transient=True,
+            ) as progress:
+                task = progress.add_task(f"Running {stage_name}...", total=None)
+                
+                # Execute the stage
+                result = stage["run"]()
+                
+                progress.update(task, description=f"[green]{stage_name} complete!")
+            
+            stage_elapsed = time.time() - stage_start
+            stage_times[stage_name] = stage_elapsed
+            
+            console.print(f"[green][OK][/green] {stage_name} complete ({stage_elapsed:.1f}s)")
+            completed += 1
+            
+        except Exception as e:
+            stage_elapsed = time.time() - stage_start
+            console.print(f"[red][FAIL][/red] {stage_name} failed after {stage_elapsed:.1f}s: {e}")
+            failed = {"stage": stage_name, "error": str(e)}
+            break
+    
+    # Summary
+    total_time = time.time() - start_time
+    console.print()
+    console.print("=" * 60)
+    
+    if failed:
+        console.print(f"[bold red]Pipeline FAILED at Stage: {failed['stage']}[/bold red]")
+        console.print(f"[red]Error: {failed['error']}[/red]")
+        console.print(f"\n[dim]To resume, run: uv run full {reel.name}[/dim]")
+        raise typer.Exit(1)
+    
+    # Check for final video
+    final_path = reel / "final" / "final.mp4"
+    if final_path.exists():
+        file_size = final_path.stat().st_size / (1024 * 1024)
+        console.print(Panel.fit(
+            f"[bold green]Pipeline COMPLETE![/bold green]\n\n"
+            f"[cyan]Final Video:[/cyan] {final_path}\n"
+            f"[cyan]Size:[/cyan] {file_size:.2f} MB\n"
+            f"[cyan]Total Time:[/cyan] {total_time/60:.1f} minutes\n"
+            f"[cyan]Stages:[/cyan] {completed} completed, {skipped} skipped",
+            border_style="green"
+        ))
+    else:
+        console.print(f"[yellow]Pipeline finished but final.mp4 not found[/yellow]")
+        console.print(f"   Stages completed: {completed}")
+        console.print(f"   Stages skipped: {skipped}")
+    
+    # Print stage timing breakdown
+    if stage_times:
+        console.print("\n[bold]Stage Timing:[/bold]")
+        for name, elapsed in stage_times.items():
+            console.print(f"   {name}: {elapsed:.1f}s")
+    
+    console.print()
 
 
 @app.command()
@@ -1196,6 +1450,15 @@ _guide_app.command()(guide)
 def _run_guide():
     """Entry point for 'uv run guide'."""
     _guide_app()
+
+
+# Full Pipeline
+_full_app = typer.Typer()
+_full_app.command()(full_pipeline)
+
+def _run_full():
+    """Entry point for 'uv run full'."""
+    _full_app()
 
 
 if __name__ == "__main__":

@@ -21,8 +21,16 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 
 ## Pipeline Overview
 
+**Run everything with one command:**
+```bash
+uv run full <reel-name>
+```
+
+Or run stages individually:
+
 | Stage | Type | Goal | Command |
 |-------|------|------|---------|
+| ALL | Auto | **Run entire pipeline** | `uv run full` |
 | 0 | Manual | Initialize reel | `uv run arcanomy new` |
 | 1 | Agent | Research & fact-check | `uv run research` |
 | 2 | Agent | Write script & segment | `uv run script` |
@@ -35,6 +43,10 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 | 6 | Agent | Sound effects prompts | `uv run sfx` |
 | 6.5 | Script | Generate sound effects | `uv run sfxgen` |
 | 7 | Script | Final assembly (FFmpeg) | `uv run final` |
+
+## Configuration
+
+Model and provider settings are in `src/config.py`. See `START_HERE.md` for details.
 
 ## Next build milestone (MVP)
 **MVP = 1 reel end-to-end** that produces:

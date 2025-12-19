@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from src.config import get_default_voice_id
 from src.services import ElevenLabsService
 from src.utils.io import write_file
 from src.utils.logger import get_logger
@@ -174,8 +175,8 @@ def run_audio_generation(
         voice_id = getattr(objective, "voice_id", None)
         # Handle placeholder values
         if voice_id in (None, "eleven_labs_adam", "your_voice_id"):
-            # Use a common ElevenLabs voice as default
-            voice_id = "21m00Tcm4TlvDq8ikWAM"  # "Rachel" - a popular ElevenLabs voice
+            # Use default voice ID from config
+            voice_id = get_default_voice_id("elevenlabs")
             logger.warning(f"No voice_id configured, using default: {voice_id}")
 
     # Try to load Stage 5 output first

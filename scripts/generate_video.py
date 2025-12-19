@@ -35,15 +35,12 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.config import get_default_provider, get_video_model
+
 # Load environment variables
 load_dotenv()
-
-# Model mapping for Kie.ai
-KLING_MODELS = {
-    "kling": "kling/v2-5-turbo-image-to-video-pro",  # Default - fast, 1080p
-    "kling-2.5": "kling/v2-5-turbo-image-to-video-pro",
-    "kling-2.6": "kling-2.6/image-to-video",  # With native audio
-}
 
 
 def upload_image_to_imgbb(image_path: str) -> str | None:
@@ -110,7 +107,7 @@ def generate_kling(
     image_path: str,
     prompt: str,
     output_path: str,
-    model: str = "kling/v2-5-turbo-image-to-video-pro",
+    model: str = None,
     duration: str = "10",
     negative_prompt: str = "blur, distort, low quality, morphing, glitch",
     cfg_scale: float = 0.5,
@@ -123,6 +120,10 @@ def generate_kling(
 
     # Strip any smart quotes or whitespace from API key
     api_key = api_key.strip().strip('"').strip('"').strip('"').strip("'").strip("'")
+    
+    # Get model from config if not provided
+    if model is None:
+        model = get_video_model("kling")
 
     # Verify image exists
     if not Path(image_path).exists():
@@ -354,7 +355,7 @@ def main():
     # Optional arguments
     parser.add_argument(
         "--provider",
-        default="kling",
+        default=get_default_provider("videos"),
         choices=["kling", "kling-2.5", "kling-2.6", "runway"],
         help="Video generation API provider (default: kling = kling-2.5-turbo)"
     )
@@ -398,7 +399,7 @@ def main():
         success = dry_run(args.image, args.prompt, args.output)
 
     elif args.provider in ("kling", "kling-2.5", "kling-2.6"):
-        model = KLING_MODELS.get(args.provider, KLING_MODELS["kling"])
+        model = get_video_model("kling")
         print(f"Mode: Generate ({model})")
         success = generate_kling(
             image_path=args.image,

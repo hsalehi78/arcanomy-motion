@@ -28,6 +28,10 @@ import httpx
 from dotenv import load_dotenv
 from PIL import Image
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.config import get_default_provider, get_image_model
+
 # Load environment variables
 load_dotenv()
 
@@ -137,14 +141,16 @@ def create_split_vertical(top_path: str, bottom_path: str, output_path: str):
 
 
 def generate_dalle(prompt: str, output_path: str, size: str = "1024x1792") -> bool:
-    """Generate image using OpenAI DALL-E 3."""
+    """Generate image using OpenAI."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("[ERROR] OPENAI_API_KEY not set", file=sys.stderr)
         return False
 
     try:
-        print(f"Generating with DALL-E 3...")
+        model_name = get_image_model("openai")
+        
+        print(f"Generating with OpenAI ({model_name})...")
         print(f"Prompt: {prompt[:100]}...")
 
         # Truncate if too long
@@ -158,7 +164,7 @@ def generate_dalle(prompt: str, output_path: str, size: str = "1024x1792") -> bo
                 "Content-Type": "application/json",
             },
             json={
-                "model": "dall-e-3",
+                "model": model_name,
                 "prompt": prompt,
                 "n": 1,
                 "size": size,
@@ -180,7 +186,7 @@ def generate_dalle(prompt: str, output_path: str, size: str = "1024x1792") -> bo
         return True
 
     except httpx.HTTPStatusError as e:
-        print(f"[ERROR] DALL-E API error: {e.response.status_code}", file=sys.stderr)
+        print(f"[ERROR] OpenAI Image API error: {e.response.status_code}", file=sys.stderr)
         print(f"   {e.response.text[:200]}", file=sys.stderr)
         return False
     except Exception as e:
@@ -216,7 +222,7 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
                 "Content-Type": "application/json",
             },
             json={
-                "model": "nano-banana-pro",
+                "model": get_image_model("kie"),
                 "input": {
                     "prompt": prompt,
                     "aspect_ratio": "9:16",  # Vertical for reels
@@ -344,7 +350,7 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
 
 
 def generate_gemini(prompt: str, output_path: str, reference_paths: list = None) -> bool:
-    """Generate image using Google Gemini (fallback)."""
+    """Generate image using Google Gemini."""
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         print("[ERROR] GEMINI_API_KEY or GOOGLE_API_KEY not set", file=sys.stderr)
@@ -355,8 +361,10 @@ def generate_gemini(prompt: str, output_path: str, reference_paths: list = None)
         from google.genai import types
         
         client = genai.Client(api_key=api_key)
+        
+        model_name = get_image_model("gemini")
 
-        print(f"Generating with Gemini...")
+        print(f"Generating with Gemini ({model_name})...")
         print(f"Prompt: {prompt[:100]}...")
 
         if reference_paths:
@@ -370,7 +378,7 @@ def generate_gemini(prompt: str, output_path: str, reference_paths: list = None)
             parts.append(prompt)
             
             response = client.models.generate_content(
-                model="gemini-2.0-flash-exp-image-generation",
+                model=model_name,
                 contents=parts,
                 config=types.GenerateContentConfig(
                     response_modalities=["IMAGE", "TEXT"]
@@ -378,7 +386,7 @@ def generate_gemini(prompt: str, output_path: str, reference_paths: list = None)
             )
         else:
             response = client.models.generate_content(
-                model="gemini-2.0-flash-exp-image-generation",
+                model=model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_modalities=["IMAGE", "TEXT"]
@@ -413,7 +421,12 @@ def main():
     parser.add_argument("--prompt", help="Image generation prompt")
     parser.add_argument("--output", required=True, help="Output file path")
     parser.add_argument("--reference-image", action="append", help="Reference image(s) for variations")
-    parser.add_argument("--provider", default="kie", choices=["kie", "gemini", "openai"], help="API provider (default: kie)")
+    parser.add_argument(
+        "--provider",
+        default=get_default_provider("assets"),
+        choices=["kie", "gemini", "openai"],
+        help="API provider",
+    )
     parser.add_argument("--size", default="1024x1792", help="Image size (DALL-E only)")
     
     # Composite mode

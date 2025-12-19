@@ -6,7 +6,7 @@ from typing import Literal, Optional
 
 import typer
 
-from src.config import get_model
+from src.config import OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES, get_model
 
 Provider = Literal["openai", "anthropic", "gemini"]
 
@@ -83,11 +83,22 @@ class LLMService:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
 
+            # Newer model families use max_completion_tokens instead of max_tokens
+            use_new_param = any(
+                model.startswith(prefix) for prefix in OPENAI_MAX_COMPLETION_TOKENS_MODEL_PREFIXES
+            )
+            
+            token_params = {}
+            if use_new_param:
+                token_params["max_completion_tokens"] = max_tokens
+            else:
+                token_params["max_tokens"] = max_tokens
+
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                **token_params,
             )
             
             # Track token usage

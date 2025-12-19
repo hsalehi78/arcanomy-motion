@@ -4,6 +4,7 @@ import httpx
 from dataclasses import dataclass
 from typing import Optional
 
+from src.config import get_default_voice_id
 from src.services.llm import LLMService
 
 CDN_BASE_URL = "https://cdn.arcanomydata.com/content/posts"
@@ -158,7 +159,7 @@ BLOG CONTENT:
         "title": blog.title,
         "type": result.get("reel_type", "story_essay"),
         "duration_blocks": result.get("duration_blocks", 2),
-        "voice_id": "eleven_labs_adam",
+        "voice_id": get_default_voice_id("elevenlabs"),
         "music_mood": result.get("music_mood", "contemplative"),
         "aspect_ratio": "9:16",
         "subtitles": "burned_in",

@@ -8,13 +8,14 @@ from datetime import datetime
 from pathlib import Path
 
 from src.utils.io import read_file, write_file
+from src.config import get_default_provider
 
 # Path to shared prompts directory
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "shared" / "prompts"
 SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 
 
-def run_asset_generation(reel_path: Path, provider: str = "openai", dry_run: bool = False) -> list[dict]:
+def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: bool = False) -> list[dict]:
     """Generate images from the visual plan prompts.
 
     This is the "dumb script" execution stage that:
@@ -31,6 +32,7 @@ def run_asset_generation(reel_path: Path, provider: str = "openai", dry_run: boo
     Returns:
         List of generation results
     """
+    provider = provider or get_default_provider("assets")
     # Load the visual plan JSON
     visual_plan_path = reel_path / "03_visual_plan.output.json"
     
@@ -241,7 +243,7 @@ For each asset:
     return execution_log["assets"]
 
 
-def run_video_generation(reel_path: Path, provider: str = "kling", dry_run: bool = False) -> list[dict]:
+def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: bool = False) -> list[dict]:
     """Generate video clips from images using motion prompts.
 
     This is Stage 4.5 - animates static images into 10-second video clips.
@@ -257,6 +259,7 @@ def run_video_generation(reel_path: Path, provider: str = "kling", dry_run: bool
     Returns:
         List of video generation results
     """
+    provider = provider or get_default_provider("videos")
     # Try to load video prompts (Stage 4 output) first, fall back to visual plan
     video_prompts_path = reel_path / "04_video_prompt.output.json"
     visual_plan_path = reel_path / "03_visual_plan.output.json"

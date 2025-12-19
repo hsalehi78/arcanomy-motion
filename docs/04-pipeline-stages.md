@@ -1,5 +1,20 @@
 # 04 — Pipeline Stages (Detailed)
 
+## Run Everything Automatically
+
+```bash
+uv run full <reel-name>
+```
+
+This command runs all 11 stages from research to final video, automatically resuming from the last completed stage if interrupted.
+
+Options:
+- `uv run full --fresh` — Start over, ignore existing outputs
+- `uv run full -p openai` — Use OpenAI for all LLM stages
+- `uv run full --skip-videos` — Skip video generation stage
+
+---
+
 ## Philosophy: Granular Audit Trail
 
 We strictly follow the **"Smart Agent + Dumb Scripts"** model:

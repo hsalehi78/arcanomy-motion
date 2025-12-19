@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from src.config import MODELS, DEFAULT_PROVIDERS, get_model
 from src.domain import Manifest, Objective, Segment
 from src.services import RemotionCLI
 from src.utils.io import read_file, write_file
@@ -160,7 +161,10 @@ Segments to assemble:
         # Log error but continue to create metadata
         write_file(final_dir / "render_error.txt", str(e))
 
-    # Generate metadata
+    # Generate metadata - use models from config
+    script_provider = DEFAULT_PROVIDERS.get("script", "anthropic")
+    llm_model = get_model(script_provider, "script")
+    
     metadata = {
         "version": "1.0",
         "created_at": datetime.utcnow().isoformat() + "Z",
@@ -172,7 +176,7 @@ Segments to assemble:
         },
         "data_sources": objective.data_sources,
         "model_ids": {
-            "llm": "gpt-4o",
+            "llm": llm_model,
             "voice": objective.voice_id,
             "video": "pending",
         },
