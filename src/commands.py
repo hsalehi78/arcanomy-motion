@@ -15,6 +15,7 @@ from src.services import (
     fetch_featured_blogs,
     fetch_blog_mdx,
     extract_seed_and_config,
+    regenerate_seed,
 )
 from src.stages import (
     run_research,
@@ -142,7 +143,7 @@ def new(
 # Data Sources
 - inputs/data/your_data.csv
 """
-    seed_path(reel_path).write_text(seed_content)
+    seed_path(reel_path).write_text(seed_content, encoding="utf-8")
 
     # Create config template
     config_content = f"""title: "{slug.replace('-', ' ').title()}"
@@ -157,7 +158,7 @@ subtitles: "burned_in"
 
 audit_level: "strict"
 """
-    reel_yaml_path(reel_path).write_text(config_content)
+    reel_yaml_path(reel_path).write_text(config_content, encoding="utf-8")
 
     # Auto-set as current reel
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
@@ -433,12 +434,12 @@ def ingest_blog(
     reel_path.mkdir(parents=True)
     ensure_reel_layout(reel_path)
 
-    # Write seed file
-    seed_path(reel_path).write_text(seed_content)
+    # Write seed file (explicit UTF-8 for Windows compatibility)
+    seed_path(reel_path).write_text(seed_content, encoding="utf-8")
 
-    # Write config file
+    # Write config file (explicit UTF-8 for Windows compatibility)
     config_yaml = yaml.dump(config, default_flow_style=False, allow_unicode=True)
-    reel_yaml_path(reel_path).write_text(config_yaml)
+    reel_yaml_path(reel_path).write_text(config_yaml, encoding="utf-8")
 
     # Auto-set as current reel
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
@@ -562,6 +563,88 @@ def migrate_reel(
 # =============================================================================
 # SHORTHAND STAGE COMMANDS (use after `uv run set <reel>`)
 # =============================================================================
+
+
+@app.command()
+def seed(
+    focus: Optional[str] = typer.Argument(None, help="Focus prompt to guide seed generation (e.g., 'focus on money psychology')"),
+    data: bool = typer.Option(False, "--data", "-d", help="Extract specific data points/statistics from the blog"),
+    provider: str = typer.Option(DEFAULT_PROVIDERS["research"], "-p", "--provider", help="LLM provider"),
+):
+    """Regenerate seed.md for current reel from its source blog.
+    
+    Examples:
+        uv run seed                           # Basic regeneration
+        uv run seed "focus on money"          # With focus prompt
+        uv run seed --data                    # Extract data points
+        uv run seed "emphasize urgency" -d    # Both focus and data
+    """
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Seed Regeneration")
+    
+    # Load reel config to get source blog
+    config_path = reel_yaml_path(reel_path)
+    if not config_path.exists():
+        typer.echo("[ERROR] No reel.yaml found. This reel may not have a source blog.", err=True)
+        raise typer.Exit(1)
+    
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    source_blog = config.get("source_blog")
+    
+    if not source_blog:
+        typer.echo("[ERROR] No source_blog in reel.yaml. This reel wasn't created from a blog.", err=True)
+        typer.echo("   Manually edit: " + str(seed_path(reel_path)))
+        raise typer.Exit(1)
+    
+    blog_title = config.get("title", source_blog)
+    
+    # Fetch the blog content
+    typer.echo(f"Fetching blog: {source_blog}")
+    try:
+        from src.services import fetch_blog_mdx
+        mdx_content = fetch_blog_mdx(source_blog)
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to fetch blog: {e}", err=True)
+        raise typer.Exit(1)
+    
+    # Show what we're doing
+    if focus:
+        typer.echo(f"Focus: {focus}")
+    if data:
+        typer.echo("Extracting data points...")
+    
+    # Regenerate seed
+    typer.echo("Regenerating seed with LLM...")
+    llm = LLMService(provider=provider)
+    
+    try:
+        new_seed = regenerate_seed(
+            mdx_content=mdx_content,
+            blog_identifier=source_blog,
+            blog_title=blog_title,
+            llm=llm,
+            focus=focus,
+            extract_data=data,
+        )
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to generate seed: {e}", err=True)
+        raise typer.Exit(1)
+    
+    # Write the new seed
+    seed_file = seed_path(reel_path)
+    seed_file.write_text(new_seed, encoding="utf-8")
+    
+    typer.echo(f"\n[OK] Seed regenerated!")
+    typer.echo(f"   File: {seed_file}")
+    typer.echo(f"\n   Preview:")
+    typer.echo("-" * 40)
+    # Show first few lines
+    for line in new_seed.strip().split("\n")[:8]:
+        typer.echo(f"   {line}")
+    typer.echo("   ...")
 
 
 @app.command()
@@ -1569,6 +1652,15 @@ _set_app.command()(set_reel)
 def _run_set():
     """Entry point for 'uv run set'."""
     _set_app()
+
+
+# Seed
+_seed_app = typer.Typer()
+_seed_app.command()(seed)
+
+def _run_seed():
+    """Entry point for 'uv run seed'."""
+    _seed_app()
 
 
 # Research

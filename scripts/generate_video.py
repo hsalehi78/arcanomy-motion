@@ -135,9 +135,9 @@ def generate_kling(
         prompt = prompt.replace('"', '"').replace('"', '"').replace("'", "'").replace("'", "'")
         prompt = prompt.replace('—', '-').replace('–', '-').replace('…', '...')
 
-        print(f"Generating video with {model}...")
-        print(f"Image: {image_path}")
-        print(f"Prompt: {prompt[:100]}...")
+        print(f"   [Kling] Model: {model}")
+        print(f"   Image: {image_path}")
+        print(f"   Prompt: {prompt[:100]}...")
 
         # Step 1: Upload image to get a URL
         print(f"   Uploading image...")

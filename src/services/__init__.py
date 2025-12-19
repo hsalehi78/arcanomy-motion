@@ -6,6 +6,7 @@ from .blog_ingest import (
     fetch_featured_blogs,
     fetch_blog_mdx,
     extract_seed_and_config,
+    regenerate_seed,
 )
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     "fetch_featured_blogs",
     "fetch_blog_mdx",
     "extract_seed_and_config",
+    "regenerate_seed",
 ]
 

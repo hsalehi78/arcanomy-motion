@@ -88,6 +88,8 @@ def extract_seed_and_config(
     mdx_content: str,
     blog: BlogPost,
     llm: LLMService,
+    focus: Optional[str] = None,
+    extract_data: bool = False,
 ) -> tuple[str, dict]:
     """Use LLM to extract seed.md content and reel.yaml config from blog MDX.
 
@@ -95,26 +97,49 @@ def extract_seed_and_config(
         mdx_content: The raw MDX content
         blog: The BlogPost metadata
         llm: LLM service instance
+        focus: Optional focus prompt to guide extraction (e.g., "focus on money psychology")
+        extract_data: If True, extract specific data points/statistics from the blog
 
     Returns:
         Tuple of (seed_markdown, config_dict)
     """
-    system_prompt = """You are an expert at converting blog posts into short-form video briefs.
+    # Build data extraction instruction if requested
+    data_instruction = ""
+    data_json_field = ""
+    if extract_data:
+        data_instruction = """4. Key data points (specific numbers, statistics, or facts from the blog that should be visualized)
+"""
+        data_json_field = """    "data_points": [
+        {"label": "Description of data point", "value": "The specific number or statistic"},
+        ...
+    ],
+"""
+
+    # Build focus instruction if provided
+    focus_instruction = ""
+    if focus:
+        focus_instruction = f"""
+CREATIVE DIRECTION:
+{focus}
+(Use this to guide what angle/aspect to emphasize in the hook and core insight)
+"""
+
+    system_prompt = f"""You are an expert at converting blog posts into short-form video briefs.
 
 Given a blog post, extract:
 1. A compelling hook (the attention-grabbing opening line for the video)
 2. The core insight (the single main lesson or takeaway)
 3. A visual vibe description (mood, colors, style for the video)
-
+{data_instruction}
 Respond with valid JSON in this exact format:
-{
+{{
     "hook": "The attention-grabbing opening line",
     "core_insight": "The main lesson or data point being conveyed",
     "visual_vibe": "Description of mood, colors, and visual style",
-    "reel_type": "chart_explainer|text_cinematic|story_essay",
+{data_json_field}    "reel_type": "chart_explainer|text_cinematic|story_essay",
     "duration_blocks": 2,
     "music_mood": "keyword for music mood"
-}
+}}
 
 Guidelines:
 - Hook should be punchy, confrontational, or intriguing (max 15 words)
@@ -133,12 +158,20 @@ Guidelines:
 BLOG TITLE: {blog.title}
 BLOG CATEGORY: {blog.category}
 BLOG SECTION: {blog.section}
-
+{focus_instruction}
 BLOG CONTENT:
 {mdx_content[:8000]}  # Truncate to avoid token limits
 """
 
     result = llm.complete_json(user_prompt, system=system_prompt, stage="research")
+
+    # Build data sources section
+    data_sources = f"- (sourced from blog: {blog.identifier})"
+    if extract_data and result.get("data_points"):
+        data_lines = [data_sources]
+        for dp in result.get("data_points", []):
+            data_lines.append(f"- {dp.get('label', 'Data')}: {dp.get('value', 'N/A')}")
+        data_sources = "\n".join(data_lines)
 
     # Build seed.md content
     seed_content = f"""# Hook
@@ -151,7 +184,7 @@ BLOG CONTENT:
 {result.get('visual_vibe', 'Dark, moody, cinematic. Gold accents on black.')}
 
 # Data Sources
-- (none - sourced from blog: {blog.identifier})
+{data_sources}
 """
 
     # Build reel.yaml config
@@ -168,4 +201,108 @@ BLOG CONTENT:
     }
 
     return seed_content, config
+
+
+def regenerate_seed(
+    mdx_content: str,
+    blog_identifier: str,
+    blog_title: str,
+    llm: LLMService,
+    focus: Optional[str] = None,
+    extract_data: bool = False,
+) -> str:
+    """Regenerate just the seed.md content (without config) for an existing reel.
+
+    Args:
+        mdx_content: The raw MDX content
+        blog_identifier: The blog identifier
+        blog_title: The blog title
+        llm: LLM service instance
+        focus: Optional focus prompt to guide extraction
+        extract_data: If True, extract specific data points from the blog
+
+    Returns:
+        The seed markdown content
+    """
+    # Build data extraction instruction if requested
+    data_instruction = ""
+    data_json_field = ""
+    if extract_data:
+        data_instruction = """4. Key data points (specific numbers, statistics, percentages, or facts that could be visualized in charts or callouts)
+"""
+        data_json_field = """    "data_points": [
+        {"label": "Description", "value": "The number/stat", "context": "Why it matters"},
+        ...
+    ],
+"""
+
+    # Build focus instruction if provided
+    focus_instruction = ""
+    if focus:
+        focus_instruction = f"""
+CREATIVE DIRECTION:
+{focus}
+(Use this to guide what angle/aspect to emphasize. Be bold and specific based on this direction.)
+"""
+
+    system_prompt = f"""You are an expert at converting blog posts into punchy short-form video briefs.
+
+Given a blog post, extract:
+1. A compelling hook (the attention-grabbing opening line for the video)
+2. The core insight (the single main lesson or takeaway)
+3. A visual vibe description (mood, colors, style for the video)
+{data_instruction}
+Respond with valid JSON in this exact format:
+{{
+    "hook": "The attention-grabbing opening line",
+    "core_insight": "The main lesson or data point being conveyed",
+    "visual_vibe": "Description of mood, colors, and visual style"{"," if extract_data else ""}
+{data_json_field}}}
+
+Guidelines:
+- Hook should be punchy, confrontational, or intriguing (max 15 words)
+- Core insight should be a single, clear statement (max 50 words)  
+- Visual vibe should describe mood/colors (e.g., "Dark, moody, cinematic. Gold accents on black.")
+{"- Data points should be specific numbers from the blog that would make compelling visuals" if extract_data else ""}
+"""
+
+    user_prompt = f"""Convert this blog post into a video brief.
+
+BLOG TITLE: {blog_title}
+{focus_instruction}
+BLOG CONTENT:
+{mdx_content[:8000]}
+"""
+
+    result = llm.complete_json(user_prompt, system=system_prompt, stage="research")
+
+    # Build data sources section
+    data_sources = f"- (sourced from blog: {blog_identifier})"
+    if extract_data and result.get("data_points"):
+        data_lines = [data_sources]
+        for dp in result.get("data_points", []):
+            label = dp.get("label", "Data")
+            value = dp.get("value", "N/A")
+            context = dp.get("context", "")
+            if context:
+                data_lines.append(f"- {label}: {value} ({context})")
+            else:
+                data_lines.append(f"- {label}: {value}")
+        data_sources = "\n".join(data_lines)
+
+    # Build seed.md content
+    seed_content = f"""# Hook
+{result.get('hook', blog_title)}
+
+# Core Insight
+{result.get('core_insight', '')}
+
+# Visual Vibe
+{result.get('visual_vibe', 'Dark, moody, cinematic. Gold accents on black.')}
+
+# Data Sources
+{data_sources}
+"""
+
+    return seed_content
 

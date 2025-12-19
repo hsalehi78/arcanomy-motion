@@ -61,6 +61,9 @@ class ElevenLabsService:
             "style": style,
         }
 
+        # Log the API call
+        print(f"   [ElevenLabs] Voice: {voice_id[:12]}... | Model: {model_id}")
+        
         audio = client.text_to_speech.convert(
             voice_id=voice_id,
             text=text,
@@ -115,8 +118,10 @@ class ElevenLabsService:
         client = self._get_client()
         
         # Model from config (currently "sound-generation" is the only available model)
-        # The ElevenLabs SDK uses this model by default; kept here for documentation
-        _sfx_model = get_audio_sfx_model("elevenlabs")  # noqa: F841
+        sfx_model = get_audio_sfx_model("elevenlabs")
+        
+        # Log the API call
+        print(f"   [ElevenLabs] SFX Model: {sfx_model} | Duration: {duration_seconds}s")
 
         # Generate sound effect using ElevenLabs API
         audio = client.text_to_sound_effects.convert(

@@ -150,7 +150,7 @@ def generate_dalle(prompt: str, output_path: str, size: str = "1024x1792") -> bo
     try:
         model_name = get_image_model("openai")
         
-        print(f"Generating with OpenAI ({model_name})...")
+        print(f"   [OpenAI] Model: {model_name}")
         print(f"Prompt: {prompt[:100]}...")
 
         # Truncate if too long
@@ -211,7 +211,8 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
         prompt = prompt.replace('"', '"').replace('"', '"').replace("'", "'").replace("'", "'")
         prompt = prompt.replace('—', '-').replace('–', '-').replace('…', '...')
         
-        print(f"Generating with Kie.ai Nano Banana Pro...")
+        model_name = get_image_model("kie")
+        print(f"   [Kie.ai] Model: {model_name}")
         print(f"Prompt: {prompt[:100]}...")
 
         # Step 1: Create task
@@ -364,7 +365,7 @@ def generate_gemini(prompt: str, output_path: str, reference_paths: list = None)
         
         model_name = get_image_model("gemini")
 
-        print(f"Generating with Gemini ({model_name})...")
+        print(f"   [Gemini] Model: {model_name}")
         print(f"Prompt: {prompt[:100]}...")
 
         if reference_paths:

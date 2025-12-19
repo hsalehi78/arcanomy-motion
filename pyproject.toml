@@ -31,6 +31,7 @@ commit = "src.commands:run_commit"
 
 # Shorthand stage commands
 set = "src.commands:_run_set"
+seed = "src.commands:_run_seed"
 research = "src.commands:_run_research"
 script = "src.commands:_run_script"
 plan = "src.commands:_run_plan"
