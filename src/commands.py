@@ -571,80 +571,218 @@ def seed(
     data: bool = typer.Option(False, "--data", "-d", help="Extract specific data points/statistics from the blog"),
     provider: str = typer.Option(DEFAULT_PROVIDERS["research"], "-p", "--provider", help="LLM provider"),
 ):
-    """Regenerate seed.md for current reel from its source blog.
+    """Create or regenerate seed.md for current reel.
+    
+    If the reel was created from a blog, regenerates seed from the source.
+    If the reel was created manually, creates a template seed.md.
     
     Examples:
-        uv run seed                           # Basic regeneration
-        uv run seed "focus on money"          # With focus prompt
-        uv run seed --data                    # Extract data points
+        uv run seed                           # Create template or regenerate
+        uv run seed "focus on money"          # With focus prompt (blog reels only)
+        uv run seed --data                    # Extract data points (blog reels only)
         uv run seed "emphasize urgency" -d    # Both focus and data
     """
     from dotenv import load_dotenv
     load_dotenv()
     
     reel_path = _get_current_reel()
-    _print_context(reel_path, "Seed Regeneration")
+    _print_context(reel_path, "Seed")
     
-    # Load reel config to get source blog
-    config_path = reel_yaml_path(reel_path)
-    if not config_path.exists():
-        typer.echo("[ERROR] No reel.yaml found. This reel may not have a source blog.", err=True)
-        raise typer.Exit(1)
-    
-    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    source_blog = config.get("source_blog")
-    
-    if not source_blog:
-        typer.echo("[ERROR] No source_blog in reel.yaml. This reel wasn't created from a blog.", err=True)
-        typer.echo("   Manually edit: " + str(seed_path(reel_path)))
-        raise typer.Exit(1)
-    
-    blog_title = config.get("title", source_blog)
-    
-    # Fetch the blog content
-    typer.echo(f"Fetching blog: {source_blog}")
-    try:
-        from src.services import fetch_blog_mdx
-        mdx_content = fetch_blog_mdx(source_blog)
-    except Exception as e:
-        typer.echo(f"[ERROR] Failed to fetch blog: {e}", err=True)
-        raise typer.Exit(1)
-    
-    # Show what we're doing
-    if focus:
-        typer.echo(f"Focus: {focus}")
-    if data:
-        typer.echo("Extracting data points...")
-    
-    # Regenerate seed
-    typer.echo("Regenerating seed with LLM...")
-    llm = LLMService(provider=provider)
-    
-    try:
-        new_seed = regenerate_seed(
-            mdx_content=mdx_content,
-            blog_identifier=source_blog,
-            blog_title=blog_title,
-            llm=llm,
-            focus=focus,
-            extract_data=data,
-        )
-    except Exception as e:
-        typer.echo(f"[ERROR] Failed to generate seed: {e}", err=True)
-        raise typer.Exit(1)
-    
-    # Write the new seed
     seed_file = seed_path(reel_path)
-    seed_file.write_text(new_seed, encoding="utf-8")
+    config_path = reel_yaml_path(reel_path)
     
-    typer.echo(f"\n[OK] Seed regenerated!")
+    # Check if we have a source blog to regenerate from
+    source_blog = None
+    if config_path.exists():
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        source_blog = config.get("source_blog")
+    
+    # CASE 1: Blog-based reel - regenerate from source
+    if source_blog:
+        blog_title = config.get("title", source_blog)
+        
+        typer.echo(f"Fetching blog: {source_blog}")
+        try:
+            from src.services import fetch_blog_mdx
+            mdx_content = fetch_blog_mdx(source_blog)
+        except Exception as e:
+            typer.echo(f"[ERROR] Failed to fetch blog: {e}", err=True)
+            raise typer.Exit(1)
+        
+        if focus:
+            typer.echo(f"Focus: {focus}")
+        if data:
+            typer.echo("Extracting data points...")
+        
+        from src.config import DATA_EXTRACTION, get_model
+        
+        typer.echo("Regenerating seed with LLM...")
+        typer.echo(f"[LLM] Extractor: {provider} ({get_model(provider)})")
+        if data:
+            verifier = DATA_EXTRACTION.get("verifier", "gemini")
+            typer.echo(f"[LLM] Verifier: {verifier} ({get_model(verifier)})")
+        
+        llm = LLMService(provider=provider)
+        
+        try:
+            new_seed = regenerate_seed(
+                mdx_content=mdx_content,
+                blog_identifier=source_blog,
+                blog_title=blog_title,
+                llm=llm,
+                focus=focus,
+                extract_data=data,
+                log_fn=typer.echo,
+            )
+        except Exception as e:
+            typer.echo(f"[ERROR] Failed to generate seed: {e}", err=True)
+            raise typer.Exit(1)
+        
+        seed_file.write_text(new_seed, encoding="utf-8")
+        typer.echo(f"\n[OK] Seed regenerated from blog!")
+        typer.echo(f"   File: {seed_file}")
+        typer.echo(f"\n   Preview:")
+        typer.echo("-" * 40)
+        for line in new_seed.strip().split("\n")[:8]:
+            typer.echo(f"   {line}")
+        typer.echo("   ...")
+        return
+    
+    # Warn about ignored flags for non-blog reels
+    if focus:
+        typer.echo(f"[WARN] --focus is only used for blog-ingested reels. Ignoring: '{focus}'")
+    
+    if data:
+        typer.echo("[INFO] Manual reel detected (no source_blog).")
+        typer.echo("       Creating empty templates for you to fill in.")
+        typer.echo("       (LLM extraction only works with blog-ingested reels)")
+    
+    # CASE 2: Manual reel - create templates if they don't exist
+    created_files = []
+    
+    # Handle --data flag: create sample CSV
+    data_dir = reel_path / "inputs" / "data"
+    sample_csv = data_dir / "sample.csv"
+    if data and not sample_csv.exists():
+        data_dir.mkdir(parents=True, exist_ok=True)
+        sample_csv_content = """# Replace this file with your actual data
+# Column 1: x-axis (dates, categories)
+# Column 2+: y-axis values (numbers)
+date,value
+"""
+        sample_csv.write_text(sample_csv_content, encoding="utf-8")
+        created_files.append(("data/sample.csv", sample_csv))
+    
+    if not seed_file.exists():
+        # Create template seed.md - include data section if --data flag
+        if data:
+            template_seed = """# Hook
+Write your attention-grabbing opening line here.
+
+# Core Insight
+What's the main lesson or takeaway? This is the heart of your reel.
+
+# Visual Vibe
+Describe the mood, colors, and visual style. Examples:
+- "Dark, moody, cinematic. Gold accents on black."
+- "Bright, energetic, fast-paced. Neon colors."
+- "Calm, minimalist, clean. Soft pastels."
+
+# Data Sources
+List your CSV files here. These will be visualized as charts in the reel.
+- sample.csv (edit or replace with your data)
+
+## Data Format
+Each CSV should have columns that can be charted:
+- First column: x-axis (dates, categories, labels)
+- Other columns: y-axis values (numbers, percentages)
+
+# Key Data Points
+What story does your data tell? List the specific claims your reel will make.
+These will be fact-checked against your CSV during research.
+
+- 
+- 
+- 
+"""
+        else:
+            template_seed = """# Hook
+Write your attention-grabbing opening line here.
+
+# Core Insight
+What's the main lesson or takeaway? This is the heart of your reel.
+
+# Visual Vibe
+Describe the mood, colors, and visual style. Examples:
+- "Dark, moody, cinematic. Gold accents on black."
+- "Bright, energetic, fast-paced. Neon colors."
+- "Calm, minimalist, clean. Soft pastels."
+
+# Data Sources
+- (Add CSV files to inputs/data/ if using charts)
+"""
+        seed_file.parent.mkdir(parents=True, exist_ok=True)
+        seed_file.write_text(template_seed, encoding="utf-8")
+        created_files.append(("seed.md", seed_file))
+    
+    if not config_path.exists():
+        # Create template reel.yaml
+        # Extract slug from reel path for title
+        slug = reel_path.name
+        # Convert slug to title: "2025-12-15-my-reel" -> "My Reel"
+        title_parts = slug.split("-")[3:] if len(slug.split("-")) > 3 else slug.split("-")
+        title = " ".join(word.capitalize() for word in title_parts)
+        
+        # Use chart_explainer type if --data flag is set
+        reel_type = "chart_explainer" if data else "story_essay"
+        
+        template_config = f"""title: "{title}"
+type: {reel_type}
+duration_blocks: 2
+voice_id: eleven_labs_adam
+music_mood: contemplative
+aspect_ratio: "9:16"
+subtitles: burned_in
+audit_level: {"strict" if data else "loose"}
+"""
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(template_config, encoding="utf-8")
+        created_files.append(("reel.yaml", config_path))
+    
+    if created_files:
+        typer.echo(f"\n[OK] Template files created!")
+        for name, path in created_files:
+            typer.echo(f"   - {name}: {path}")
+        if data:
+            typer.echo(f"\n   Data mode enabled:")
+            typer.echo(f"   - Type set to 'chart_explainer'")
+            typer.echo(f"   - Audit level set to 'strict'")
+            typer.echo(f"   - Sample CSV created in inputs/data/")
+        typer.echo(f"\n   Next steps:")
+        typer.echo(f"   1. Edit seed.md with your creative brief")
+        if data:
+            typer.echo(f"   2. Replace sample.csv with your actual data")
+            typer.echo(f"   3. Edit reel.yaml to adjust duration/voice")
+            typer.echo(f"   4. Run: uv run research")
+        else:
+            typer.echo(f"   2. Edit reel.yaml to adjust duration/voice/type")
+            typer.echo(f"   3. Run: uv run research")
+        return
+    
+    # CASE 3: Manual reel with existing seed - show status
+    if data:
+        typer.echo(f"[INFO] Seed already exists. --data flag only applies when creating new templates.")
+    
+    typer.echo(f"\n[OK] Seed already exists!")
     typer.echo(f"   File: {seed_file}")
     typer.echo(f"\n   Preview:")
     typer.echo("-" * 40)
-    # Show first few lines
-    for line in new_seed.strip().split("\n")[:8]:
+    content = seed_file.read_text(encoding="utf-8")
+    for line in content.strip().split("\n")[:8]:
         typer.echo(f"   {line}")
     typer.echo("   ...")
+    typer.echo(f"\n   To edit: open {seed_file}")
+    typer.echo(f"   To proceed: uv run research")
 
 
 @app.command()

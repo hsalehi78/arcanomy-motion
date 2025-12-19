@@ -50,11 +50,10 @@ class LLMService:
 
             self._client = anthropic.Anthropic(api_key=get_llm_api_key("anthropic"))
         elif self.provider == "gemini":
-            import google.generativeai as genai
+            from google import genai
 
-            genai.configure(api_key=get_llm_api_key("gemini"))
-            # Store module reference only; model instantiated per-call in complete()
-            self._client = genai
+            client = genai.Client(api_key=get_llm_api_key("gemini"))
+            self._client = client
 
         return self._client
 
@@ -143,11 +142,11 @@ class LLMService:
             # Resolve model from config (supports stage-specific overrides)
             target_model = model or get_model(self.provider, stage)
             
-            # Instantiate GenerativeModel per-call to allow model switching
-            generative_model = client.GenerativeModel(target_model)
-            
-            response = generative_model.generate_content(
-                prompt if not system else f"{system}\n\n{prompt}"
+            # Use new google.genai API
+            contents = prompt if not system else f"{system}\n\n{prompt}"
+            response = client.models.generate_content(
+                model=target_model,
+                contents=contents,
             )
             
             # Gemini token counting (approximate from metadata if available)

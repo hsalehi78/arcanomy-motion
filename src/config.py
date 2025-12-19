@@ -29,11 +29,10 @@ MODELS = {
         # "default": "claude-sonnet-4-20250514",    # Sonnet 4
     },
     "gemini": {
-        "default": "gemini-3-pro",            # Best Gemini model
+        "default": "gemini-3-pro-preview",     # Latest Gemini 3 Pro
         # Other options:
-        # "default": "gemini-2.5-pro",        # Previous best
-        # "default": "gemini-2.0-pro",        # Stable
-        # "default": "gemini-1.5-flash",      # Faster, cheaper
+        # "default": "gemini-2.5-pro-preview", # Gemini 2.5 Pro
+        # "default": "gemini-2.0-flash",       # Fast
     },
 }
 
@@ -193,6 +192,21 @@ DEFAULT_PROVIDERS = {
 #   uv run audio      →  generates VOICE AUDIO     →  elevenlabs →  eleven_v3
 #   uv run sfxgen     →  generates SFX AUDIO       →  elevenlabs →  sound-generation
 #
+
+
+# =============================================================================
+# DATA EXTRACTION & VERIFICATION (for --data flag on blog reels)
+# =============================================================================
+# When extracting data points from blogs, use two different LLMs:
+# 1. Extractor: Pulls data points from the blog
+# 2. Verifier: Checks each data point against the original blog text
+# Only data points that pass verification are included.
+
+DATA_EXTRACTION = {
+    "extractor": "openai",      # Primary LLM that extracts data points
+    "verifier": "gemini",       # Secondary LLM that verifies claims (different from extractor)
+    "require_verification": True,  # If False, skip verification step
+}
 
 
 # =============================================================================

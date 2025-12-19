@@ -203,6 +203,72 @@ BLOG CONTENT:
     return seed_content, config
 
 
+def _verify_data_points(
+    data_points: list[dict],
+    hook: str,
+    core_insight: str,
+    mdx_content: str,
+    verifier_llm: LLMService,
+) -> list[dict]:
+    """Verify extracted data points using a second LLM.
+    
+    Checks each data point for:
+    1. Accuracy - Is this data actually present in the blog?
+    2. Relevance - Does this data support the hook/core insight?
+    
+    Returns only verified data points.
+    """
+    if not data_points:
+        return []
+    
+    system_prompt = """You are a fact-checker verifying data claims against source material.
+
+For each data point, you must verify:
+1. ACCURACY: Is this exact number/statistic present in the blog text?
+2. RELEVANCE: Does this data point directly support the hook or core insight?
+
+A data point passes verification ONLY if:
+- The number/value appears verbatim (or very close) in the blog
+- It directly relates to the main message
+
+Respond with valid JSON:
+{
+    "verified": [
+        {"label": "...", "value": "...", "context": "...", "source_quote": "exact quote from blog"},
+        ...
+    ],
+    "rejected": [
+        {"label": "...", "value": "...", "reason": "why it failed"},
+        ...
+    ]
+}
+"""
+    
+    # Format data points for verification
+    data_points_text = "\n".join([
+        f"- {dp.get('label', 'Data')}: {dp.get('value', 'N/A')} ({dp.get('context', '')})"
+        for dp in data_points
+    ])
+    
+    user_prompt = f"""Verify these extracted data points.
+
+HOOK: {hook}
+CORE INSIGHT: {core_insight}
+
+DATA POINTS TO VERIFY:
+{data_points_text}
+
+ORIGINAL BLOG CONTENT:
+{mdx_content[:6000]}
+
+For each data point, check if it appears in the blog AND supports the hook/insight.
+"""
+    
+    result = verifier_llm.complete_json(user_prompt, system=system_prompt, stage="research")
+    
+    return result.get("verified", [])
+
+
 def regenerate_seed(
     mdx_content: str,
     blog_identifier: str,
@@ -210,6 +276,7 @@ def regenerate_seed(
     llm: LLMService,
     focus: Optional[str] = None,
     extract_data: bool = False,
+    log_fn=None,
 ) -> str:
     """Regenerate just the seed.md content (without config) for an existing reel.
 
@@ -220,18 +287,25 @@ def regenerate_seed(
         llm: LLM service instance
         focus: Optional focus prompt to guide extraction
         extract_data: If True, extract specific data points from the blog
+        log_fn: Optional logging function (e.g., typer.echo)
 
     Returns:
         The seed markdown content
     """
+    from src.config import DATA_EXTRACTION, get_model
+    
+    def log(msg: str):
+        if log_fn:
+            log_fn(msg)
+    
     # Build data extraction instruction if requested
     data_instruction = ""
     data_json_field = ""
     if extract_data:
-        data_instruction = """4. Key data points (specific numbers, statistics, percentages, or facts that could be visualized in charts or callouts)
+        data_instruction = """4. Key data points (specific numbers, statistics, percentages from the blog that support your hook/insight)
 """
         data_json_field = """    "data_points": [
-        {"label": "Description", "value": "The number/stat", "context": "Why it matters"},
+        {"label": "Description", "value": "The exact number/stat from the blog", "context": "How it supports the hook"},
         ...
     ],
 """
@@ -263,7 +337,8 @@ Guidelines:
 - Hook should be punchy, confrontational, or intriguing (max 15 words)
 - Core insight should be a single, clear statement (max 50 words)  
 - Visual vibe should describe mood/colors (e.g., "Dark, moody, cinematic. Gold accents on black.")
-{"- Data points should be specific numbers from the blog that would make compelling visuals" if extract_data else ""}
+{"- Data points MUST be exact numbers from the blog that directly support your hook/insight" if extract_data else ""}
+{"- Only include data that appears verbatim in the blog - no calculations or inferences" if extract_data else ""}
 """
 
     user_prompt = f"""Convert this blog post into a video brief.
@@ -274,28 +349,68 @@ BLOG CONTENT:
 {mdx_content[:8000]}
 """
 
+    # Log extraction LLM call
+    extractor_model = get_model(llm.provider)
+    log(f"[LLM] Extraction: {llm.provider} ({extractor_model})")
+    
     result = llm.complete_json(user_prompt, system=system_prompt, stage="research")
+    
+    hook = result.get('hook', blog_title)
+    core_insight = result.get('core_insight', '')
+    
+    log(f"   -> Hook: {hook[:50]}...")
+    log(f"   -> Insight: {core_insight[:50]}...")
 
     # Build data sources section
     data_sources = f"- (sourced from blog: {blog_identifier})"
+    
     if extract_data and result.get("data_points"):
-        data_lines = [data_sources]
-        for dp in result.get("data_points", []):
-            label = dp.get("label", "Data")
-            value = dp.get("value", "N/A")
-            context = dp.get("context", "")
-            if context:
-                data_lines.append(f"- {label}: {value} ({context})")
-            else:
-                data_lines.append(f"- {label}: {value}")
-        data_sources = "\n".join(data_lines)
+        extracted_points = result.get("data_points", [])
+        log(f"   -> Extracted {len(extracted_points)} data points")
+        
+        # Verify data points with second LLM if configured
+        if DATA_EXTRACTION.get("require_verification", True):
+            verifier_provider = DATA_EXTRACTION.get("verifier", "gemini")
+            verifier_model = get_model(verifier_provider)
+            log(f"[LLM] Verification: {verifier_provider} ({verifier_model})")
+            
+            verifier_llm = LLMService(provider=verifier_provider)
+            
+            verified_points = _verify_data_points(
+                data_points=extracted_points,
+                hook=hook,
+                core_insight=core_insight,
+                mdx_content=mdx_content,
+                verifier_llm=verifier_llm,
+            )
+            log(f"   -> Verified: {len(verified_points)}/{len(extracted_points)} passed")
+        else:
+            log(f"   -> Verification skipped (require_verification=False)")
+            verified_points = extracted_points
+        
+        if verified_points:
+            data_lines = [data_sources]
+            for dp in verified_points:
+                label = dp.get("label", "Data")
+                value = dp.get("value", "N/A")
+                context = dp.get("context", "")
+                source_quote = dp.get("source_quote", "")
+                
+                if source_quote:
+                    data_lines.append(f"- {label}: {value}")
+                    data_lines.append(f"  > \"{source_quote[:100]}...\"")
+                elif context:
+                    data_lines.append(f"- {label}: {value} ({context})")
+                else:
+                    data_lines.append(f"- {label}: {value}")
+            data_sources = "\n".join(data_lines)
 
     # Build seed.md content
     seed_content = f"""# Hook
-{result.get('hook', blog_title)}
+{hook}
 
 # Core Insight
-{result.get('core_insight', '')}
+{core_insight}
 
 # Visual Vibe
 {result.get('visual_vibe', 'Dark, moody, cinematic. Gold accents on black.')}
