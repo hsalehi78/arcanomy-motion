@@ -225,7 +225,9 @@ content/
         │           └── clip_02_sfx.mp3
         │
         └── final/                    # [Delivery] Final output
-            └── final.mp4             # Assembled video from Stage 7
+            ├── final_raw.mp4         # Assembled base video from Stage 7 (no captions)
+            ├── final.mp4             # Captioned video from Stage 7.5
+            └── final.srt             # Subtitle export from Stage 7.5
 ```
 
 ### Philosophy: Explicit State
@@ -283,7 +285,8 @@ shared/
 | 5.5 | Script | Generate narrator audio | `renders/audio/voice/*.mp3` |
 | 6 | Agent | Sound effects prompts | `06_sound_effects.output.json` |
 | 6.5 | Script | Generate sound effects | `renders/audio/sfx/*.mp3` |
-| 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
+| 7 | Script | Final assembly (FFmpeg) | `final/final_raw.mp4` |
+| 7.5 | Script | Captions burn-in (Remotion) | `final/final.mp4`, `final/final.srt` |
 
 ---
 

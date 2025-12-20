@@ -31,6 +31,7 @@ from src.stages import (
     run_sfx_generation,
     run_music_selection,
     run_final_assembly,
+    run_captions,
 )
 from src.utils.logger import get_logger
 
@@ -260,7 +261,8 @@ def status(
         ("json/05.5_audio_generation.output.json", "Audio"),
         ("json/06_sound_effects.output.json", "SFX Prompts"),
         ("json/06.5_sound_effects_generation.output.json", "SFX"),
-        ("final/final.mp4", "Final Video"),
+        ("final/final_raw.mp4", "Final (Raw)"),
+        ("final/final.mp4", "Final Video (Captioned)"),
     ]
 
     typer.echo(f"\nPipeline status for: {reel_path.name}\n")
@@ -997,6 +999,7 @@ def final(
     voice_volume: float = typer.Option(1.0, "--voice", "-v", help="Voice volume (0-1, default 1.0)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Validate files only, don't process"),
     keep_files: bool = typer.Option(False, "--keep", "-k", help="Keep intermediate files"),
+    captions: bool = typer.Option(True, "--captions/--no-captions", help="Burn karaoke captions into final.mp4 (default: on)"),
 ):
     """Run final assembly stage (Stage 7) on current reel.
     
@@ -1021,14 +1024,46 @@ def final(
     if result.get("status") == "success":
         final_info = result.get("final_video", {})
         typer.echo(f"\n[OK] Final assembly complete!")
-        typer.echo(f"   Output: {final_info.get('path', 'N/A')}")
+        typer.echo(f"   Output (raw): {final_info.get('path', 'N/A')}")
         typer.echo(f"   Duration: {final_info.get('duration_seconds', 0):.1f}s")
         typer.echo(f"   Size: {final_info.get('size_mb', 0):.2f} MB")
+
+        # Optional caption burn (Stage 7.5)
+        try:
+            objective = Objective.from_reel_folder(reel_path)
+        except Exception:
+            objective = None
+
+        if not dry_run and captions and (objective is None or objective.subtitles == "burned_in"):
+            _print_context(reel_path, "Captions (Stage 7.5)")
+            caps = run_captions(reel_path)
+            typer.echo(f"\n[OK] Captions complete!")
+            typer.echo(f"   Output (captioned): {caps.get('captioned_video', 'N/A')}")
+            typer.echo(f"   SRT: {caps.get('srt', 'N/A')}")
     elif result.get("status") == "dry_run":
         typer.echo(f"\n[DRY RUN] Would process {result.get('clips', 0)} clips")
     else:
         typer.echo(f"\n❌ Assembly failed: {result.get('error', 'Unknown error')}", err=True)
         raise typer.Exit(1)
+
+
+@app.command()
+def captions():
+    """Run captions stage (Stage 7.5) on current reel.
+
+    Requires Stage 7 output: final/final_raw.mp4.
+    Produces:
+    - json/07.5_captions.output.json
+    - final/final.srt
+    - final/final.mp4 (captioned)
+    """
+    reel_path = _get_current_reel()
+    _print_context(reel_path, "Captions (Stage 7.5)")
+
+    result = run_captions(reel_path)
+    typer.echo(f"\n[OK] Captions complete!")
+    typer.echo(f"   Output (captioned): {result.get('captioned_video', 'N/A')}")
+    typer.echo(f"   SRT: {result.get('srt', 'N/A')}")
 
 
 @app.command("full")
@@ -1102,6 +1137,8 @@ def full_pipeline(
         reel = path
     else:
         reel = _get_current_reel()
+
+    objective = Objective.from_reel_folder(reel)
     
     # Print header
     console.print()
@@ -1154,6 +1191,7 @@ def full_pipeline(
             "check_file": "json/04.5_video_generation.output.json",
             "run": lambda: run_video_generation(reel, provider=DEFAULT_PROVIDERS["videos"], dry_run=dry_run),
             "skip": skip_videos,
+            "skip_reason": "--skip-videos",
         },
         {
             "name": "Voice Direction",
@@ -1182,8 +1220,16 @@ def full_pipeline(
         {
             "name": "Final Assembly",
             "stage": "7",
+            "check_file": "final/final_raw.mp4",
+            "run": lambda: run_final_assembly(reel, dry_run=dry_run),
+        },
+        {
+            "name": "Captions",
+            "stage": "7.5",
             "check_file": "final/final.mp4",
-            "run": lambda: run_final_assembly(reel),
+            "run": lambda: run_captions(reel),
+            "skip": objective.subtitles != "burned_in" or dry_run,
+            "skip_reason": "--dry-run" if dry_run else "subtitles disabled",
         },
     ]
     
@@ -1206,7 +1252,9 @@ def full_pipeline(
         
         # Check if stage should be skipped
         if should_skip:
-            console.print(f"[dim]Stage {stage_num}: {stage_name} - SKIPPED (--skip-videos)[/dim]")
+            reason = stage.get("skip_reason")
+            suffix = f" ({reason})" if reason else ""
+            console.print(f"[dim]Stage {stage_num}: {stage_name} - SKIPPED{suffix}[/dim]")
             skipped += 1
             continue
         
@@ -1334,7 +1382,8 @@ def current():
         ("json/05.5_audio_generation.output.json", "Audio"),
         ("json/06_sound_effects.output.json", "SFX"),
         ("json/06.5_sound_effects_generation.output.json", "SFXGen"),
-        ("final/final.mp4", "Final"),
+        ("final/final_raw.mp4", "Final Raw"),
+        ("final/final.mp4", "Final (Captioned)"),
     ]
     for filename, name in stages:
         exists = (reel_path / filename).exists()
@@ -1907,6 +1956,15 @@ _final_app.command()(final)
 def _run_final():
     """Entry point for 'uv run final'."""
     _final_app()
+
+
+# Captions
+_captions_app = typer.Typer()
+_captions_app.command()(captions)
+
+def _run_captions():
+    """Entry point for 'uv run captions'."""
+    _captions_app()
 
 
 # Assemble

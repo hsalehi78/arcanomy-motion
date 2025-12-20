@@ -495,14 +495,16 @@ def run_final_assembly(
         })
         return {"status": "failed", "error": "No clips were successfully mixed"}
     
-    # Final output filename is fixed (final/final.mp4). Keep reel_name for logs/UI.
+    # Final output filename is fixed (final/final_raw.mp4). Keep reel_name for logs/UI.
     reel_name = reel_path.name
     
-    final_video_path = final_dir / "final.mp4"
+    # This file is the audio-correct base video (voice centered + SFX mixed).
+    # A later stage may burn captions into final/final.mp4.
+    final_video_path = final_dir / "final_raw.mp4"
     
     if len(mixed_clips) == 1:
         # Single clip - just copy it
-        execution_log.append("- Single clip, copying to final.mp4")
+        execution_log.append("- Single clip, copying to final_raw.mp4")
         shutil.copy2(mixed_clips[0], final_video_path)
         concat_success = True
     else:

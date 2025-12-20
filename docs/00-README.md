@@ -43,6 +43,7 @@ Or run stages individually:
 | 6 | Agent | Sound effects prompts | `uv run sfx` |
 | 6.5 | Script | Generate sound effects | `uv run sfxgen` |
 | 7 | Script | Final assembly (FFmpeg) | `uv run final` |
+| 7.5 | Script | Captions burn-in (Remotion) | `uv run captions` |
 
 ## Configuration
 

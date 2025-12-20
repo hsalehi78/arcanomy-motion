@@ -42,7 +42,8 @@ The state of a reel is defined entirely by the files in its folder. To "resume" 
 | 5.5 | Script | Generate narrator audio | `renders/audio/voice/*.mp3` |
 | 6 | Agent | Sound effects prompts | `json/06_sound_effects.output.json` |
 | 6.5 | Script | Generate sound effects | `renders/audio/sfx/*.mp3` |
-| 7 | Script | Final assembly (FFmpeg) | `final/final.mp4` |
+| 7 | Script | Final assembly (FFmpeg) | `final/final_raw.mp4` |
+| 7.5 | Script | Captions burn-in (Remotion) | `final/final.mp4`, `final/final.srt` |
 
 ---
 
@@ -355,7 +356,36 @@ Combine all mixed clips into one final video using FFmpeg concat demuxer.
 - `json/07_final.output.json` (Assembly results)
 
 **Final Output:**
-- `final/final.mp4`
+- `final/final_raw.mp4`
+- `final/final_raw.mp4`
+
+---
+
+## Stage 7.5: Captions (Burned-in + SRT)
+**Type:** Dumb Script (Execution)
+
+**Goal:** Burn **karaoke-style captions** into the final video for social shorts, and export `final.srt`.
+
+**Script Action:**
+1. Reads the script segments (`json/02_story_generator.output.json`) for the spoken text
+2. Reads voice audio (`renders/audio/voice/*.mp3`) to estimate timing (voice is centered in each 10s block)
+3. Generates word-level timing data (`json/07.5_captions.output.json`)
+4. Renders captioned video with Remotion
+5. Exports `final/final.srt`
+
+**Files:**
+- `prompts/07.5_captions.input.md` (Execution log)
+- `json/07.5_captions.output.json` (Word timing data for karaoke)
+- **Artifacts:**
+  - `final/final.mp4` (Captioned, burned-in)
+  - `final/final.srt` (Subtitle export)
+
+**Command:**
+```bash
+uv run captions           # Burn captions into final.mp4 and export final.srt
+uv run final              # Stage 7 + (by default) Stage 7.5 captions
+uv run final --no-captions
+```
 
 **Audio Mixing Formula:**
 ```

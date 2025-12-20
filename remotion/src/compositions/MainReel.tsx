@@ -16,7 +16,8 @@ interface Segment {
   }>;
 }
 
-interface MainReelProps {
+interface MainReelProps extends Record<string, unknown> {
+  totalFrames?: number;
   segments: Segment[];
   musicPath?: string;
   musicVolume?: number;

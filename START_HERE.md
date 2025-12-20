@@ -56,7 +56,7 @@ uv run full                   # Runs all stages on current reel
 
 | Stage | Command           | What It Does                                        | Key Output                          |
 |-------|-------------------|-----------------------------------------------------|-------------------------------------|
-| ALL   | `uv run full`     | **Run entire pipeline automatically**               | `final/final.mp4`                   |
+| ALL   | `uv run full`     | **Run entire pipeline automatically**               | `final/final.mp4` (and `final/final_raw.mp4`) |
 | 1     | `uv run research` | Research & fact-check the seed concept              | `01_research.output.md`             |
 | 2     | `uv run script`   | Write script & split into 10s segments              | `02_story_generator.output.json`    |
 | 3     | `uv run plan`     | Create visual plan + image/motion prompts           | `03_visual_plan.output.json`        |
@@ -67,7 +67,8 @@ uv run full                   # Runs all stages on current reel
 | 5.5   | `uv run audio`    | Generate narrator audio (ElevenLabs TTS)            | `renders/audio/voice/*.mp3`         |
 | 6     | `uv run sfx`      | Create sound effect prompts per clip                | `06_sound_effects.output.json`      |
 | 6.5   | `uv run sfxgen`   | Generate sound effects (ElevenLabs SFX)             | `renders/audio/sfx/*.mp3`           |
-| 7     | `uv run final`    | Combine all assets into final video                 | `final/final.mp4`                   |
+| 7     | `uv run final`    | Assemble audio + SFX + clips into base video        | `final/final_raw.mp4`               |
+| 7.5   | `uv run captions` | Burn karaoke captions + export `.srt`               | `final/final.mp4`, `final/final.srt` |
 
 ---
 
@@ -99,6 +100,7 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run sfx` | Run Stage 6 on current reel |
 | `uv run sfxgen` | Run Stage 6.5 on current reel |
 | `uv run final` | Run Stage 7 on current reel |
+| `uv run captions` | Run Stage 7.5 on current reel |
 | `uv run commit` | Git add + commit + push |
 
 ---
@@ -200,8 +202,9 @@ content/reels/2025-12-15-my-reel/
 │           └── voice_02.mp3
 │
 └── final/
-    ├── final.mp4                       <- The output video
-    ├── final.srt                       <- Subtitle file
+    ├── final_raw.mp4                   <- Base output (audio/SFX correct, no captions)
+    ├── final.mp4                       <- Captioned output (burned-in karaoke)
+    ├── final.srt                       <- Subtitle file (export)
     └── metadata.json                   <- Audit trail
 ```
 
@@ -381,4 +384,5 @@ uv run audio                   # Stage 5.5
 uv run sfx                     # Stage 6
 uv run sfxgen                  # Stage 6.5
 uv run final                   # Stage 7
+uv run captions                # Stage 7.5
 ```

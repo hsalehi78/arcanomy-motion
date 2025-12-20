@@ -1,7 +1,7 @@
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { COLORS } from "../lib/constants";
 
-interface ShortsProps {
+interface ShortsProps extends Record<string, unknown> {
   text: string;
   colors?: typeof COLORS;
 }
