@@ -190,7 +190,7 @@ For each asset:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=180,  # 3 minute timeout
+                timeout=300,  # 5 minute timeout for async APIs like Kie.ai
                 encoding="utf-8",
                 env=env,
             )
@@ -214,11 +214,11 @@ For each asset:
                 execution_log["failed"] += 1
                 
         except subprocess.TimeoutExpired:
-            print(f"   [TIMEOUT] Timed out after 180s")
+            print(f"   [TIMEOUT] Timed out after 300s")
             execution_log["assets"].append({
                 "id": asset_id,
                 "status": "timeout",
-                "error": "Generation timed out after 180 seconds",
+                "error": "Generation timed out after 300 seconds",
             })
             execution_log["failures"].append(asset_id)
             execution_log["failed"] += 1

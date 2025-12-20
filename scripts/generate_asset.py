@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import base64
+import json
 import os
 import sys
 from io import BytesIO
@@ -248,93 +249,74 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
         
         print(f"Task created: {task_id}")
         
-        # Step 2: Poll for result
+        # Step 2: Poll for result using recordInfo endpoint
         max_attempts = 60  # 5 minutes max
         for attempt in range(max_attempts):
             time.sleep(5)  # Wait 5 seconds between polls
             
-            # Try the task result endpoint
+            # #region agent log
+            import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-poll","location":"generate_asset.py:kie_poll","message":"Polling recordInfo","data":{"task_id":task_id,"attempt":attempt+1},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
+            # #endregion
+            
+            # Use recordInfo endpoint with taskId as query param
             status_response = httpx.get(
-                f"https://api.kie.ai/api/v1/jobs/{task_id}",
+                "https://api.kie.ai/api/v1/jobs/recordInfo",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                 },
+                params={"taskId": task_id},
                 timeout=30.0,
             )
             
-            # If 404, try alternative endpoint
-            if status_response.status_code == 404:
-                status_response = httpx.post(
-                    "https://api.kie.ai/api/v1/jobs/getTask",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={"taskId": task_id},
-                    timeout=30.0,
-                )
-            
-            if status_response.status_code == 404:
-                # Still processing, continue waiting
-                print(f"   Waiting... ({attempt + 1}/{max_attempts})")
-                continue
-                
             status_response.raise_for_status()
             status_data = status_response.json()
             
+            # #region agent log
+            import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-response","location":"generate_asset.py:kie_status","message":"recordInfo response","data":{"code":status_data.get("code"),"state":status_data.get("data",{}).get("state")},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
+            # #endregion
+            
             if status_data.get("code") != 200:
-                # Not ready yet
                 print(f"   Waiting... ({attempt + 1}/{max_attempts})")
                 continue
             
             task_info = status_data.get("data", {})
-            status = str(task_info.get("status", "")).lower()
+            state = str(task_info.get("state", "")).lower()
             
-            # Check various success states
-            if status in ("completed", "success", "done", "finished"):
-                # Get the image URL from various possible locations
-                output = task_info.get("output", task_info)
-                image_url = None
-                
-                # Try different field names
-                for field in ["image_url", "imageUrl", "url", "image", "result"]:
-                    if field in output:
-                        val = output[field]
-                        if isinstance(val, str) and val.startswith("http"):
-                            image_url = val
-                            break
-                        elif isinstance(val, list) and len(val) > 0:
-                            image_url = val[0] if isinstance(val[0], str) else val[0].get("url")
-                            break
-                
-                # Also check at task_info level
-                if not image_url:
-                    for field in ["image_url", "imageUrl", "url", "result"]:
-                        if field in task_info:
-                            val = task_info[field]
-                            if isinstance(val, str) and val.startswith("http"):
-                                image_url = val
-                                break
-                
-                if image_url:
-                    img_response = httpx.get(image_url, timeout=60.0)
-                    img_response.raise_for_status()
-                    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-                    Path(output_path).write_bytes(img_response.content)
-                    print(f"[OK] Image saved: {output_path}")
-                    return True
-                else:
-                    print(f"[ERROR] No image URL in completed task", file=sys.stderr)
-                    print(f"Task data: {task_info}", file=sys.stderr)
+            # Check state values: waiting, queuing, generating, success, fail
+            if state == "success":
+                # Parse resultJson string to get URLs
+                result_json_str = task_info.get("resultJson", "{}")
+                try:
+                    result_data = json.loads(result_json_str)
+                    result_urls = result_data.get("resultUrls", [])
+                    if result_urls:
+                        image_url = result_urls[0]
+                        # #region agent log
+                        import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-success","location":"generate_asset.py:kie_download","message":"Downloading image","data":{"image_url":image_url[:100]},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
+                        # #endregion
+                        img_response = httpx.get(image_url, timeout=60.0)
+                        img_response.raise_for_status()
+                        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                        Path(output_path).write_bytes(img_response.content)
+                        print(f"[OK] Image saved: {output_path}")
+                        return True
+                    else:
+                        print(f"[ERROR] No resultUrls in resultJson", file=sys.stderr)
+                        return False
+                except json.JSONDecodeError as e:
+                    print(f"[ERROR] Failed to parse resultJson: {e}", file=sys.stderr)
+                    print(f"resultJson: {result_json_str[:200]}", file=sys.stderr)
                     return False
             
-            elif status in ("failed", "error"):
-                print(f"[ERROR] Task failed: {task_info.get('error', 'Unknown error')}", file=sys.stderr)
+            elif state == "fail":
+                fail_msg = task_info.get("failMsg", "Unknown error")
+                fail_code = task_info.get("failCode", "")
+                print(f"[ERROR] Task failed: {fail_code} - {fail_msg}", file=sys.stderr)
                 return False
             
             else:
-                # Still processing
-                print(f"   Waiting... ({attempt + 1}/{max_attempts}) status: {status}")
+                # Still processing: waiting, queuing, generating
+                print(f"   Waiting... ({attempt + 1}/{max_attempts}) state: {state}")
         
         print("[ERROR] Task timed out", file=sys.stderr)
         return False
@@ -481,3 +463,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
