@@ -35,7 +35,7 @@
       "font": {
         "family": "Inter",
         "size": 42,
-        "weight": 600
+        "weight": 500
       },
       "color": "#FFFFFF"
     }
@@ -69,9 +69,9 @@
     "color": "#FFFFFF"
   },
   "animation": {
-    "duration": 60,
+    "duration": 30,
     "style": "staggered",
-    "staggerDelay": 15,
+    "staggerDelay": 0,
     "direction": "left-to-right"
   },
   "data": [

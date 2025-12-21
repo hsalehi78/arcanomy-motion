@@ -75,7 +75,7 @@
         "family": "Inter",
         "size": 42,
         "_size_desc": "Min 42px for mobile readability",
-        "weight": 600,
+        "weight": 500,
         "_weight_desc": "Semi-bold for visibility"
       },
       "color": "#FFFFFF",
@@ -131,11 +131,11 @@
 
   "animation": {
     "_desc": "Animation settings for bar entrance",
-    "duration": 60,
+    "duration": 30,
     "_duration_desc": "Duration per bar in frames (30 = 1 sec at 30fps)",
     "style": "staggered",
     "_style_desc": "Animation style: 'simultaneous' (all bars together), 'staggered' (one by one), 'wave' (overlapping wave)",
-    "staggerDelay": 20,
+    "staggerDelay": 0,
     "_staggerDelay_desc": "Frames between each bar start (only for staggered/wave)",
     "direction": "left-to-right",
     "_direction_desc": "Direction: 'left-to-right', 'right-to-left', 'center-out', 'random'"
