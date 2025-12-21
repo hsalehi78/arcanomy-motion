@@ -1,15 +1,139 @@
 {
-  "_description": "Minimal 2-3 bar chart - maximum impact, fewest elements",
-  "_usage": "uv run chart docs/charts/bar-chart-minimal.json",
-  "_notes": "Best for dramatic before/after or simple A vs B comparisons. Larger bars = more visual impact.",
-  "_when_to_use": "Opening hooks, key statistics, simple binary comparisons",
-  
+  "_meta": {
+    "description": "MINIMAL CHART - 2-3 bars only for maximum visual impact",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-minimal.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Fewer bars = larger bars = more dramatic. Perfect for before/after, A vs B",
+    "bestFor": "Opening hooks, key statistics, simple binary comparisons, dramatic reveals",
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
   "chartType": "bar",
-  "title": "Before vs After",
-  "animationDuration": 30,
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square - bars will be LARGE with only 2-3 items",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "_desc": "Larger margins since bars are fewer and bigger",
+      "top": 220,
+      "_top_desc": "Room for dramatic title",
+      "right": 100,
+      "_right_desc": "Extra padding for cleaner look",
+      "bottom": 150,
+      "left": 100
+    }
+  },
+
+  "background": {
+    "_desc": "Background color",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black for drama. Use '#00FF00' for green screen"
+  },
+
+  "title": {
+    "_desc": "Big, bold, punchy title",
+    "show": true,
+    "text": "Before vs After",
+    "_text_desc": "Keep VERY short - this is about impact",
+    "y": 70,
+    "font": {
+      "family": "Montserrat",
+      "size": 72,
+      "_size_desc": "Extra large for minimal charts",
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": false,
+    "_show_desc": "Often skip subtitle for cleaner minimal look",
+    "text": "",
+    "y": 140,
+    "font": { "family": "Inter", "size": 42, "weight": 400 },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Category labels - keep short: 'Before', 'After', 'A', 'B'",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Montserrat",
+        "_family_desc": "Bold font for minimal charts",
+        "size": 48,
+        "_size_desc": "Large labels match the minimal aesthetic",
+        "weight": 700
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "show": false,
+    "_show_desc": "Hide for cleaner minimal look",
+    "label": {
+      "font": { "family": "Inter", "size": 36, "weight": 400 },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": false,
+      "_show_desc": "No grid lines for minimal aesthetic"
+    }
+  },
+
+  "bars": {
+    "_desc": "THICK bars for visual impact",
+    "gap": 60,
+    "_gap_desc": "Large gap between the few bars",
+    "cornerRadius": 12,
+    "_cornerRadius_desc": "Larger radius for modern look",
+    "defaultColor": "#888888",
+    "_defaultColor_desc": "Muted default - highlight the 'after' with gold"
+  },
+
+  "dataLabels": {
+    "_desc": "Large value labels",
+    "show": true,
+    "position": "above",
+    "font": {
+      "family": "Montserrat",
+      "size": 64,
+      "_size_desc": "Extra large for minimal charts",
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "Staggered animation for dramatic before→after reveal",
+    "duration": 30,
+    "style": "staggered",
+    "_style_desc": "'staggered' builds anticipation between Before and After",
+    "velocityMode": true,
+    "_velocityMode_desc": "true = After bar (if taller) takes longer - dramatic!",
+    "staggerDelay": 10,
+    "_staggerDelay_desc": "Pause between bars for effect",
+    "direction": "left-to-right"
+  },
+
   "data": [
-    { "label": "Before", "value": 23, "color": "#888888" },
-    { "label": "After", "value": 89, "color": "#FFD700" }
+    {
+      "_desc": "BEFORE state - muted color",
+      "label": "Before",
+      "value": 23,
+      "color": "#666666",
+      "_color_desc": "Muted gray for 'before'"
+    },
+    {
+      "_desc": "AFTER state - highlighted gold",
+      "label": "After",
+      "value": 89,
+      "color": "#FFD700",
+      "_color_desc": "Bright gold for 'after' - the payoff"
+    }
   ]
 }
-

@@ -1,0 +1,178 @@
+{
+  "_meta": {
+    "description": "LINE CHART - Show trends over time (growth, decline, patterns)",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/line-chart-basic.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Use for time-series data showing trends. Add area fill for visual impact.",
+    "bestFor": "Growth trends, stock prices, metrics over time, progress tracking",
+    "tips": {
+      "areaFill": "Enable area.show for more visual impact (like filled area under curve)",
+      "points": "Show points for discrete data, hide for continuous trends",
+      "smoothing": "Use line.curve: 'smooth' for organic feel, 'linear' for accuracy"
+    },
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
+  "chartType": "line",
+  "_chartType_desc": "Chart type: 'line' for line/area chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square for TikTok",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "_desc": "Spacing around chart",
+      "top": 200,
+      "right": 60,
+      "bottom": 140,
+      "left": 100
+    }
+  },
+
+  "background": {
+    "_desc": "Background color",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black. Use '#00FF00' for green screen"
+  },
+
+  "title": {
+    "_desc": "What metric is being tracked",
+    "show": true,
+    "text": "Revenue Growth",
+    "_text_desc": "Clear metric name",
+    "y": 60,
+    "font": {
+      "family": "Montserrat",
+      "size": 56,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "text": "Monthly Revenue in $K",
+    "_text_desc": "Units and time period",
+    "y": 125,
+    "font": {
+      "family": "Inter",
+      "size": 36,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Time labels (months, quarters, etc.)",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 32,
+        "weight": 500
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "_desc": "Value scale",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 28,
+        "weight": 400
+      },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": true,
+      "_show_desc": "Horizontal reference lines",
+      "color": "#333333"
+    }
+  },
+
+  "line": {
+    "_desc": "Line styling",
+    "color": "#FFD700",
+    "_color_desc": "Gold for positive trend. Use red for negative",
+    "width": 5,
+    "_width_desc": "Line thickness in pixels. 3-6 works well",
+    "curve": "linear",
+    "_curve_desc": "OPTIONS: 'linear' (straight segments), 'smooth' (curved - future)"
+  },
+
+  "area": {
+    "_desc": "Filled area under the line",
+    "show": true,
+    "_show_desc": "Toggle area fill on/off",
+    "color": "#FFD70040",
+    "_color_desc": "Line color with transparency (last 2 hex digits = alpha)",
+    "gradient": true,
+    "_gradient_desc": "true = gradient fade from top to bottom"
+  },
+
+  "points": {
+    "_desc": "Data point dots on the line",
+    "show": true,
+    "_show_desc": "Toggle point visibility",
+    "radius": 10,
+    "_radius_desc": "Point size in pixels",
+    "color": "#FFD700",
+    "_color_desc": "Usually same as line color"
+  },
+
+  "dataLabels": {
+    "_desc": "Values at each data point",
+    "show": false,
+    "_show_desc": "Toggle data labels. Can clutter with many points",
+    "position": "above",
+    "_position_desc": "OPTIONS: 'above', 'below'",
+    "font": {
+      "family": "Montserrat",
+      "size": 28,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "Line draw animation",
+    "duration": 45,
+    "_duration_desc": "Frames for line to draw (45 = 1.5 sec at 30fps)"
+  },
+
+  "data": [
+    {
+      "_desc": "First data point",
+      "label": "Jan",
+      "_label_desc": "X-axis label (month, quarter, etc.)",
+      "y": 45,
+      "_y_desc": "Y value (the metric being tracked)"
+    },
+    {
+      "label": "Feb",
+      "y": 52
+    },
+    {
+      "label": "Mar",
+      "y": 48
+    },
+    {
+      "label": "Apr",
+      "y": 61
+    },
+    {
+      "label": "May",
+      "y": 78
+    },
+    {
+      "_desc": "Last data point - the current/final value",
+      "label": "Jun",
+      "y": 95
+    }
+  ]
+}
+

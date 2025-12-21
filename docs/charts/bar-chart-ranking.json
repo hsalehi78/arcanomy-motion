@@ -1,18 +1,146 @@
 {
-  "_description": "Ranking chart - items ordered by value, largest to smallest",
-  "_usage": "uv run chart docs/charts/bar-chart-ranking.json",
-  "_notes": "Pre-sort your data from highest to lowest. Highlight #1 to reinforce the winner. Keep to 5-7 items max.",
-  "_arrangement": "Descending order makes the ranking instantly clear",
-  
+  "_meta": {
+    "description": "RANKING CHART - Items ordered by value, largest to smallest",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-ranking.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Pre-sort data DESCENDING (highest first). Highlight #1 with gold. Keep 5-7 items max.",
+    "bestFor": "Top X lists, leaderboards, best/worst rankings",
+    "tips": {
+      "data_order": "Sort highest to lowest in your data array",
+      "highlight": "Use gold on #1 to reinforce the winner",
+      "animation": "right-to-left direction reveals winner last for suspense"
+    },
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
   "chartType": "bar",
-  "title": "Top 5 Revenue Sources",
-  "animationDuration": 45,
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square for TikTok",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "top": 200,
+      "right": 60,
+      "bottom": 140,
+      "left": 100
+    }
+  },
+
+  "background": {
+    "_desc": "Dark background for leaderboard feel",
+    "color": "#0A0A0A"
+  },
+
+  "title": {
+    "_desc": "The ranking being shown",
+    "show": true,
+    "text": "Top 5 Revenue Sources",
+    "_text_desc": "Be specific: 'Top 5...', 'Best performing...', '#1 is...'",
+    "y": 60,
+    "font": {
+      "family": "Montserrat",
+      "size": 56,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "text": "Revenue in $K - Q4 2024",
+    "_text_desc": "Units and time period",
+    "y": 125,
+    "font": { "family": "Inter", "size": 36, "weight": 400 },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Ranked item names",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 32,
+        "weight": 500
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "show": false,
+    "_show_desc": "Hide - descending bar heights show ranking clearly",
+    "label": {
+      "font": { "family": "Inter", "size": 32, "weight": 400 },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#222222"
+    }
+  },
+
+  "bars": {
+    "_desc": "Highlight #1 with gold",
+    "gap": 16,
+    "cornerRadius": 6,
+    "defaultColor": "#555555",
+    "_defaultColor_desc": "Muted for non-winners, #1 gets gold"
+  },
+
+  "dataLabels": {
+    "_desc": "Values above bars",
+    "show": true,
+    "position": "above",
+    "font": {
+      "family": "Montserrat",
+      "size": 42,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "Reveal builds to the winner at the end",
+    "duration": 20,
+    "style": "staggered",
+    "_style_desc": "'staggered' + 'right-to-left' = reveals winner (#1) last for suspense",
+    "velocityMode": true,
+    "staggerDelay": 0,
+    "direction": "right-to-left",
+    "_direction_desc": "right-to-left reveals the tallest (winning) bar LAST"
+  },
+
   "data": [
-    { "label": "Product A", "value": 450, "color": "#FFD700" },
-    { "label": "Product B", "value": 320 },
-    { "label": "Services", "value": 280 },
-    { "label": "Licensing", "value": 150 },
-    { "label": "Other", "value": 95 }
+    {
+      "_desc": "#1 WINNER - highlighted gold, listed first (tallest)",
+      "label": "Product A",
+      "value": 450,
+      "color": "#FFD700",
+      "_color_desc": "Gold for #1"
+    },
+    {
+      "_desc": "#2",
+      "label": "Product B",
+      "value": 320
+    },
+    {
+      "_desc": "#3",
+      "label": "Services",
+      "value": 280
+    },
+    {
+      "_desc": "#4",
+      "label": "Licensing",
+      "value": 150
+    },
+    {
+      "_desc": "#5 (last place)",
+      "label": "Other",
+      "value": 95
+    }
   ]
 }
-

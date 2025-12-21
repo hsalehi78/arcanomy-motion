@@ -153,16 +153,27 @@ class ChartRenderer:
         if output_path is None:
             output_path = json_path.parent / f"{json_path.stem}.mp4"
         
-        if chart_type == "bar":
-            # Pass comprehensive props directly to Remotion
-            # The TypeScript BarChart component handles all nested props
-            return self.cli.render(
-                composition_id="BarChartDemo",
-                output_path=Path(output_path),
-                props=props_dict,
-            )
-        else:
-            raise ValueError(f"Unknown chart type: {chart_type}. Supported: bar")
+        # Map chart types to Remotion composition IDs
+        chart_type_to_composition = {
+            "bar": "BarChartDemo",
+            "pie": "PieChartDemo",
+            "line": "LineChartDemo",
+            "scatter": "ScatterChartDemo",
+        }
+        
+        if chart_type not in chart_type_to_composition:
+            supported = ", ".join(chart_type_to_composition.keys())
+            raise ValueError(f"Unknown chart type: {chart_type}. Supported: {supported}")
+        
+        composition_id = chart_type_to_composition[chart_type]
+        
+        # Pass comprehensive props directly to Remotion
+        # The TypeScript component handles all nested props
+        return self.cli.render(
+            composition_id=composition_id,
+            output_path=Path(output_path),
+            props=props_dict,
+        )
 
 
 # =============================================================================

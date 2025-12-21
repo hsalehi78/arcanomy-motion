@@ -1,18 +1,150 @@
 {
-  "_description": "Chart showing gains and losses - positive values in gold, negative conceptually shown",
-  "_usage": "uv run chart docs/charts/bar-chart-negative.json",
-  "_notes": "Current implementation only supports positive values. Use red color (#FF3B30) to indicate 'bad' categories, gold for 'good'. For true negative bars, a component update would be needed.",
-  "_workaround": "Show absolute values but use color to indicate positive (gold) vs negative (red)",
-  
+  "_meta": {
+    "description": "NEGATIVE VALUES CHART - Show gains (gold) vs losses (red)",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-negative.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Use COLOR to indicate positive (gold/green) vs negative (red). Current component shows absolute values.",
+    "colorCoding": {
+      "positive": "#FFD700 (gold) or #00FF88 (green)",
+      "negative": "#FF3B30 (red) - indicates loss/problem",
+      "neutral": "#888888 (gray)"
+    },
+    "futureEnhancement": "True negative bars (extending downward) would require component update",
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
   "chartType": "bar",
-  "title": "Portfolio Performance (%)",
-  "animationDuration": 45,
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square for TikTok",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "top": 200,
+      "right": 60,
+      "bottom": 140,
+      "left": 100
+    }
+  },
+
+  "background": {
+    "_desc": "Dark background makes red/gold contrast pop",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black for maximum contrast on gains/losses"
+  },
+
+  "title": {
+    "_desc": "What metric shows gains/losses",
+    "show": true,
+    "text": "Portfolio Performance (%)",
+    "_text_desc": "Clear metric with units",
+    "y": 60,
+    "font": {
+      "family": "Montserrat",
+      "size": 56,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "text": "Year-to-Date Returns",
+    "_text_desc": "Time period or context",
+    "y": 125,
+    "font": { "family": "Inter", "size": 36, "weight": 400 },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Asset categories",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 32,
+        "_size_desc": "Smaller to fit longer labels",
+        "weight": 500
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "show": true,
+    "_show_desc": "Show scale for percentage context",
+    "label": {
+      "font": { "family": "Inter", "size": 32, "weight": 400 },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#333333"
+    }
+  },
+
+  "bars": {
+    "_desc": "Color indicates gain vs loss",
+    "gap": 16,
+    "cornerRadius": 6,
+    "defaultColor": "#FFD700",
+    "_defaultColor_desc": "Gold for positive - override with red for negative"
+  },
+
+  "dataLabels": {
+    "_desc": "Values on bars",
+    "show": true,
+    "position": "above",
+    "font": {
+      "family": "Montserrat",
+      "size": 42,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "Wave animation for portfolio reveal",
+    "duration": 25,
+    "style": "wave",
+    "velocityMode": true,
+    "staggerDelay": 6,
+    "direction": "left-to-right"
+  },
+
   "data": [
-    { "label": "Stocks", "value": 12, "color": "#FFD700" },
-    { "label": "Bonds", "value": 3, "color": "#FFD700" },
-    { "label": "Crypto", "value": 28, "color": "#FF3B30" },
-    { "label": "Real Est", "value": 8, "color": "#FFD700" },
-    { "label": "Cash", "value": 1, "color": "#888888" }
+    {
+      "_desc": "POSITIVE - gold color",
+      "label": "Stocks",
+      "value": 12,
+      "color": "#FFD700",
+      "_color_desc": "Gold = positive return"
+    },
+    {
+      "label": "Bonds",
+      "value": 3,
+      "color": "#FFD700"
+    },
+    {
+      "_desc": "NEGATIVE/LOSS - red color to indicate problem",
+      "label": "Crypto",
+      "value": 28,
+      "color": "#FF3B30",
+      "_color_desc": "RED = loss/negative (value is absolute, color shows meaning)"
+    },
+    {
+      "label": "Real Est",
+      "value": 8,
+      "color": "#FFD700"
+    },
+    {
+      "_desc": "NEUTRAL - gray for minimal returns",
+      "label": "Cash",
+      "value": 1,
+      "color": "#666666",
+      "_color_desc": "Gray = neutral/minimal"
+    }
   ]
 }
-

@@ -1,0 +1,175 @@
+{
+  "_meta": {
+    "description": "SCATTER CHART - Show correlation between two variables",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/scatter-chart-basic.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Use to show relationships/correlations. Add trend line to show direction.",
+    "bestFor": "Correlation data, distribution analysis, comparing two metrics, outlier identification",
+    "tips": {
+      "trendLine": "Enable to show overall direction (positive/negative correlation)",
+      "pointSize": "Use varying sizes to add a third dimension (bubble chart style)",
+      "color": "Color code points by category for grouping"
+    },
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
+  "chartType": "scatter",
+  "_chartType_desc": "Chart type: 'scatter' for scatter/bubble chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square for TikTok",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "_desc": "Extra left/bottom margin for axis titles",
+      "top": 200,
+      "right": 80,
+      "bottom": 160,
+      "_bottom_desc": "Extra space for X-axis title",
+      "left": 120,
+      "_left_desc": "Extra space for Y-axis title"
+    }
+  },
+
+  "background": {
+    "_desc": "Background color",
+    "color": "#0A0A0A"
+  },
+
+  "title": {
+    "_desc": "What relationship is being shown",
+    "show": true,
+    "text": "Price vs Sales Volume",
+    "_text_desc": "Describe the two variables being compared",
+    "y": 60,
+    "font": {
+      "family": "Montserrat",
+      "size": 52,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "text": "Product pricing analysis",
+    "y": 120,
+    "font": {
+      "family": "Inter",
+      "size": 32,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Horizontal axis (first variable)",
+    "show": true,
+    "title": "Price ($)",
+    "_title_desc": "Axis label describing what X represents",
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 24,
+        "weight": 400
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "_desc": "Vertical axis (second variable)",
+    "show": true,
+    "title": "Units Sold",
+    "_title_desc": "Axis label describing what Y represents",
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 24,
+        "weight": 400
+      },
+      "color": "#888888"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#333333"
+    }
+  },
+
+  "points": {
+    "_desc": "Default styling for data points",
+    "radius": 14,
+    "_radius_desc": "Point size in pixels. Can override per-point",
+    "color": "#FFD700",
+    "_color_desc": "Default point color. Can override per-point",
+    "opacity": 0.85,
+    "_opacity_desc": "Point transparency (0-1). Lower helps see overlapping points",
+    "stroke": {
+      "color": "#FFFFFF",
+      "_color_desc": "Outline color around points",
+      "width": 2
+    }
+  },
+
+  "trendLine": {
+    "_desc": "Linear regression line showing overall trend",
+    "show": true,
+    "_show_desc": "Toggle trend line visibility",
+    "color": "#FF3B30",
+    "_color_desc": "Contrasting color so it stands out",
+    "width": 3,
+    "style": "dashed",
+    "_style_desc": "OPTIONS: 'solid', 'dashed'"
+  },
+
+  "pointLabels": {
+    "_desc": "Labels next to each point",
+    "show": false,
+    "_show_desc": "Usually off for scatter (too cluttered). Enable for few key points",
+    "font": {
+      "family": "Inter",
+      "size": 20,
+      "weight": 500
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "How points appear",
+    "duration": 30,
+    "_duration_desc": "Frames for animation",
+    "style": "random",
+    "_style_desc": "OPTIONS: 'simultaneous' (all at once), 'sequential' (left-to-right), 'random' (scattered appearance)",
+    "staggerDelay": 3,
+    "_staggerDelay_desc": "Frames between each point for sequential/random"
+  },
+
+  "data": [
+    {
+      "_desc": "Each point has x (horizontal) and y (vertical) values",
+      "x": 10,
+      "_x_desc": "X-axis value (e.g., price)",
+      "y": 150,
+      "_y_desc": "Y-axis value (e.g., sales volume)"
+    },
+    { "x": 15, "y": 140 },
+    { "x": 20, "y": 130 },
+    { "x": 25, "y": 120 },
+    { "x": 30, "y": 95 },
+    { "x": 35, "y": 85 },
+    { "x": 40, "y": 70 },
+    {
+      "_desc": "Outlier point - optionally highlight with different color/size",
+      "x": 45,
+      "y": 90,
+      "color": "#00FF88",
+      "_color_desc": "Green to highlight this outlier",
+      "size": 18,
+      "_size_desc": "Larger size to draw attention"
+    },
+    { "x": 50, "y": 55 },
+    { "x": 55, "y": 45 }
+  ]
+}
+

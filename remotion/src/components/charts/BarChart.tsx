@@ -392,11 +392,6 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
   const titleY = titleExplicitY ?? (margin.top ?? 120) / 2;
   const subtitleY = subtitleExplicitY ?? titleY + (titleFont.size ?? 48) + 20;
 
-  // #region agent log
-  if (frame === 0) {
-    fetch('http://127.0.0.1:7246/ingest/f8eaf619-5d68-4d81-81c1-828880c224eb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarChart.tsx:ANIMATION',message:'Animation settings',data:{animationStyle,animationDuration,velocityMode,staggerDelay,animationDirection,barCount:data.length,maxValue,barValues:data.map(d=>d.value)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4-velocity'})}).catch(()=>{});
-  }
-  // #endregion
 
   // ==========================================================================
   // RENDER

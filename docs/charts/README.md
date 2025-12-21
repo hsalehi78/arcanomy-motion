@@ -9,68 +9,147 @@ uv run chart path/to/your-chart.json
 
 ---
 
-## Quick Reference
+## Available Chart Types
 
-| File | Description | Use Case |
-|------|-------------|----------|
-| `bar-chart-basic.json` | Simple bar chart | Single metric comparison |
-| `bar-chart-highlight.json` | Bar chart with one highlighted bar | Emphasize a winner/outlier |
-| `bar-chart-comparison.json` | Side-by-side comparison | Before/after, us vs them |
-| `bar-chart-timeline.json` | Time-based data | Monthly/quarterly trends |
-| `bar-chart-negative.json` | Positive and negative values | Profit/loss, gains/drops |
+| Type | JSON File | Component | Best For |
+|------|-----------|-----------|----------|
+| **Bar Chart** | `bar-chart-*.json` | BarChart.tsx | Comparing categories, rankings, timelines |
+| **Pie Chart** | `pie-chart-*.json` | PieChart.tsx | Proportions, market share, composition |
+| **Line Chart** | `line-chart-*.json` | LineChart.tsx | Trends over time, growth, progress |
+| **Scatter Chart** | `scatter-chart-*.json` | ScatterChart.tsx | Correlation, distribution, relationships |
 
 ---
 
-## Template Structure
+## Bar Chart Templates
 
-Every chart JSON follows this structure:
+| File | Description | Use Case |
+|------|-------------|----------|
+| `bar-chart-basic.json` | Fully documented reference template | Start here for customization |
+| `bar-chart-comparison.json` | Us vs competitors | Market share, feature comparison |
+| `bar-chart-highlight.json` | One bar emphasized | Winner reveal, key insight |
+| `bar-chart-minimal.json` | 2-3 bars only | Before/after, dramatic impact |
+| `bar-chart-negative.json` | Gains and losses | Profit/loss, performance |
+| `bar-chart-ranking.json` | Sorted by value | Top 5, leaderboards |
+| `bar-chart-timeline.json` | Data over time | Monthly/quarterly metrics |
+
+## Pie Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `pie-chart-basic.json` | Donut chart with legend | Market share, budget breakdown |
+
+## Line Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `line-chart-basic.json` | Line with area fill | Growth trends, progress |
+
+## Scatter Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `scatter-chart-basic.json` | Scatter with trend line | Correlation, outliers |
+
+---
+
+## JSON Schema v2.0
+
+All chart JSONs follow the **v2.0 comprehensive schema** with inline documentation:
 
 ```json
 {
+  "_meta": {
+    "description": "What this template is for",
+    "version": "2.0",
+    "usage": "uv run chart path/to/file.json",
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
   "chartType": "bar",
-  "title": "Your Title Here",
-  "animationDuration": 45,
+  "_chartType_desc": "OPTIONS: 'bar', 'pie', 'line', 'scatter'",
+
+  "dimensions": {
+    "width": 1080,
+    "height": 1080,
+    "margin": { "top": 200, "right": 60, "bottom": 140, "left": 100 }
+  },
+
+  "background": {
+    "color": "#0A0A0A",
+    "_color_desc": "Use '#00FF00' for green screen transparency"
+  },
+
+  "title": {
+    "show": true,
+    "text": "Chart Title",
+    "y": 60,
+    "font": { "family": "Montserrat", "size": 56, "weight": 700 },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "duration": 30,
+    "style": "staggered",
+    "velocityMode": true
+  },
+
   "data": [
-    { "label": "Category", "value": 100 },
-    { "label": "Another", "value": 150, "color": "#FF3B30" }
+    { "label": "A", "value": 100 },
+    { "label": "B", "value": 200, "color": "#FFD700" }
   ]
 }
 ```
 
----
+### Key Features
 
-## Property Reference
-
-### Root Properties
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `chartType` | `"bar"` | Yes | — | Chart type (only "bar" supported currently) |
-| `title` | string | No | `"Chart"` | Title displayed at top of chart |
-| `animationDuration` | number | No | `45` | Frames for bar animation (30 frames = 1 second) |
-| `data` | array | Yes | — | Array of data points to visualize |
-
-### Data Point Properties
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `label` | string | Yes | — | Category name shown below bar |
-| `value` | number | Yes | — | Numeric value (determines bar height) |
-| `color` | string | No | `#FFD700` | Hex color code for this bar |
+- **`_*_desc` fields**: Inline documentation explaining each setting
+- **`show` toggles**: Enable/disable any element (title, subtitle, labels, etc.)
+- **`font` objects**: Full control over family, size, weight
+- **`color` properties**: Hex colors everywhere, supports transparency (#RRGGBBAA)
+- **`animation` options**: Style, duration, velocityMode, staggerDelay, direction
 
 ---
 
-## Animation Timing Guide
+## Animation Options
 
-| Frames | Duration | Use Case |
-|--------|----------|----------|
-| `15` | 0.5 sec | Quick, punchy reveal |
-| `30` | 1.0 sec | Standard pace |
-| `45` | 1.5 sec | Default, good for 3-6 bars |
-| `60` | 2.0 sec | Dramatic, slow build |
-| `90` | 3.0 sec | Maximum impact, few bars |
+### Bar Chart Animation
 
-**Rule of thumb:** More bars = shorter animation per bar feels better.
+| Property | Options | Description |
+|----------|---------|-------------|
+| `style` | `"simultaneous"` | All bars animate together |
+|         | `"staggered"` | Each bar waits for previous to finish |
+|         | `"wave"` | Bars overlap, flowing effect |
+| `velocityMode` | `true` | Taller bars take proportionally longer (dramatic!) |
+|                | `false` | All bars same duration |
+| `direction` | `"left-to-right"` | First to last |
+|             | `"right-to-left"` | Last to first (reveal winner last) |
+|             | `"center-out"` | Center bars first |
+|             | `"random"` | Random order |
+| `staggerDelay` | frames | Extra delay between bars |
+| `duration` | frames | Base duration (30 = 1 sec at 30fps) |
+
+### Pie Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `style` | `"simultaneous"` | All slices grow together |
+|         | `"sequential"` | One slice at a time |
+| `staggerDelay` | frames | Delay between slices |
+
+### Line Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `duration` | frames | Time to draw the complete line |
+
+### Scatter Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `style` | `"simultaneous"` | All points appear together |
+|         | `"sequential"` | Points appear left to right |
+|         | `"random"` | Points appear randomly |
+| `staggerDelay` | frames | Delay between points |
 
 ---
 
@@ -78,30 +157,74 @@ Every chart JSON follows this structure:
 
 | Color | Hex | Use Case |
 |-------|-----|----------|
-| Gold (default) | `#FFD700` | Primary bars, highlights, winners |
-| Bright Gold | `#FFB800` | Chart lines, secondary emphasis |
-| Signal Red | `#FF3B30` | Danger, losses, negative values |
-| Off-White | `#F5F5F5` | Neutral, baseline, "others" |
-| Pure White | `#FFFFFF` | Maximum contrast accent |
-| Muted Gray | `#888888` | De-emphasized, background data |
+| **Gold** | `#FFD700` | Primary, highlights, winners, YOUR data |
+| **Chart Line** | `#FFB800` | Lines, secondary emphasis |
+| **Signal Red** | `#FF3B30` | Danger, losses, negative, problems |
+| **Bright Green** | `#00FF88` | Growth, positive, success |
+| **Blue** | `#007AFF` | Trust, neutral highlight |
+| **Muted Gray** | `#888888` | De-emphasized, competitors, "others" |
+| **Dark Gray** | `#555555` | Very de-emphasized |
+| **Pure White** | `#FFFFFF` | Maximum contrast, labels |
+| **Near Black** | `#0A0A0A` | Background |
 
-### Color Strategy
+### Color Strategy by Chart Type
 
-- **One highlight:** Make all bars gold, highlight one with red or white
-- **Comparison:** Use gold for "us", muted gray for competitors
-- **Positive/Negative:** Gold for gains, red for losses
-- **Timeline:** All same color (gold) for consistency
+- **Comparison:** Gold for "Us", gray for competitors
+- **Highlight:** Gold for winner, muted for others
+- **Positive/Negative:** Gold/green for gains, red for losses
+- **Timeline:** All same color for visual continuity
+
+---
+
+## Green Screen for Transparency
+
+MP4 doesn't support true transparency. For overlay effects in CapCut/editors:
+
+1. Set `background.color` to `"#00FF00"` (bright green)
+2. Render the chart
+3. In CapCut: Apply **Chroma Key** effect
+4. Tap the green area to remove it
+
+```json
+"background": {
+  "color": "#00FF00",
+  "_color_desc": "Green screen - use Chroma Key in editor to remove"
+}
+```
+
+---
+
+## Fonts
+
+Charts use **Google Fonts** (loaded automatically):
+
+| Font | Use | Weights |
+|------|-----|---------|
+| **Montserrat** | Titles, data labels, bold text | 400, 500, 700 |
+| **Inter** | Subtitles, axis labels, body text | 400, 500, 700 |
+
+All font settings are customizable per-element:
+
+```json
+"font": {
+  "family": "Montserrat",
+  "size": 56,
+  "weight": 700
+}
+```
 
 ---
 
 ## Output Specifications
 
-All charts render to:
-- **Resolution:** 1080 × 1920 (9:16 vertical/portrait)
-- **Frame Rate:** 30 fps
-- **Duration:** 3 seconds (90 frames)
-- **Format:** MP4 (H.264)
-- **Background:** Pure black (#000000)
+| Property | Value |
+|----------|-------|
+| **Default Resolution** | 1080 × 1080 (1:1 square) |
+| **Frame Rate** | 30 fps |
+| **Format** | MP4 (H.264) |
+| **Duration** | Calculated from animation settings |
+
+All dimensions are customizable via `dimensions.width` and `dimensions.height`.
 
 ---
 
@@ -109,49 +232,43 @@ All charts render to:
 
 When generating chart JSON for a reel:
 
-1. **Match the narrative:** Chart title should reinforce the voiceover point
-2. **Limit data points:** 3-6 bars is ideal for mobile viewing
-3. **Use round numbers:** 120, not 119.7 (easier to read)
-4. **Highlight strategically:** Only 1 bar should be a different color
-5. **Keep labels short:** 3-8 characters per label is ideal
-6. **Consider reading order:** Bars are shown left-to-right
+1. **Start from a template:** Copy the closest template and modify
+2. **Read `_*_desc` fields:** They explain what each setting does
+3. **Match the narrative:** Chart title should reinforce the voiceover
+4. **Limit data points:** 3-6 items ideal for mobile viewing
+5. **Use round numbers:** 120, not 119.7 (easier to read)
+6. **Highlight strategically:** Only 1-2 items should have distinct colors
+7. **Keep labels short:** 3-8 characters per label is ideal
+8. **Test animation:** `velocityMode: true` with `style: "simultaneous"` creates drama
 
-### Example Generation Flow
+### Example: Creating a Chart for Voice-over
 
 ```
-Voiceover: "May saw a 40% spike in revenue"
+Voiceover: "Our product dominates with 35% market share"
      ↓
-Chart JSON:
-{
-  "title": "Monthly Revenue ($K)",
-  "data": [
-    { "label": "Apr", "value": 200 },
-    { "label": "May", "value": 280, "color": "#FFD700" },  ← Highlighted
-    { "label": "Jun", "value": 220 }
-  ]
-}
+Template: bar-chart-comparison.json
+     ↓
+Customize:
+- title.text = "Market Share 2024"
+- data[0] = { label: "Us", value: 35, color: "#FFD700" }  ← Gold = winner
+- data[1-4] = competitors with default gray
 ```
 
 ---
 
-## File Naming Convention
+## File Reference
 
-When saving chart JSON in a reel folder:
-
-```
-content/reels/my-reel/inputs/data/
-├── chart_revenue_monthly.json
-├── chart_users_growth.json
-└── chart_comparison_competitors.json
-```
-
-Pattern: `chart_[metric]_[dimension].json`
+| File | Purpose |
+|------|---------|
+| **JSON Templates** | `docs/charts/*.json` - Copy and customize |
+| **Components** | `remotion/src/components/charts/*.tsx` - React source |
+| **Renderer** | `src/services/chart_renderer.py` - Python CLI |
+| **Constants** | `remotion/src/lib/constants.ts` - Brand colors |
 
 ---
 
 ## See Also
 
 - `docs/08-chart-components-plan.md` — Technical implementation details
-- `remotion/src/components/charts/BarChart.tsx` — React component source
-- `src/services/chart_renderer.py` — Python rendering service
-
+- `docs/05-visual-style-and-subtitles.md` — Brand visual guidelines
+- `remotion/src/components/charts/` — All chart component source code

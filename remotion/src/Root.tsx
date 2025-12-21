@@ -4,6 +4,9 @@ import { MainReel } from "./compositions/MainReel";
 import { Shorts } from "./compositions/Shorts";
 import { CaptionBurn, CaptionBurnProps } from "./compositions/CaptionBurn";
 import { BarChartDemo, BarChartDemoProps } from "./compositions/BarChartDemo";
+import { PieChartDemo, PieChartDemoProps } from "./compositions/PieChartDemo";
+import { LineChartDemo, LineChartDemoProps } from "./compositions/LineChartDemo";
+import { ScatterChartDemo, ScatterChartDemoProps } from "./compositions/ScatterChartDemo";
 
 type MainReelProps = React.ComponentProps<typeof MainReel>;
 
@@ -97,6 +100,57 @@ const calcBarChartDemoMetadata: CalculateMetadataFunction<BarChartDemoProps> = (
   };
 };
 
+// Calculate metadata for PieChartDemo
+const calcPieChartDemoMetadata: CalculateMetadataFunction<PieChartDemoProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 30;
+  const animStyle = (props as any)?.animation?.style ?? "simultaneous";
+  const staggerDelay = (props as any)?.animation?.staggerDelay ?? 5;
+  const dataLength = Array.isArray((props as any)?.data) ? (props as any).data.length : 5;
+  
+  let totalAnimDuration = animDuration;
+  if (animStyle === "sequential") {
+    totalAnimDuration = animDuration + (dataLength - 1) * staggerDelay;
+  }
+  
+  const durationInFrames = Math.ceil(totalAnimDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
+// Calculate metadata for LineChartDemo
+const calcLineChartDemoMetadata: CalculateMetadataFunction<LineChartDemoProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 45;
+  const durationInFrames = Math.ceil(animDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
+// Calculate metadata for ScatterChartDemo
+const calcScatterChartDemoMetadata: CalculateMetadataFunction<ScatterChartDemoProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 30;
+  const animStyle = (props as any)?.animation?.style ?? "simultaneous";
+  const staggerDelay = (props as any)?.animation?.staggerDelay ?? 3;
+  const dataLength = Array.isArray((props as any)?.data) ? (props as any).data.length : 10;
+  
+  let totalAnimDuration = animDuration;
+  if (animStyle === "sequential" || animStyle === "random") {
+    totalAnimDuration = animDuration / 2 + (dataLength - 1) * staggerDelay;
+  }
+  
+  const durationInFrames = Math.ceil(totalAnimDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -166,6 +220,61 @@ export const RemotionRoot: React.FC = () => {
           ],
         }}
         calculateMetadata={calcBarChartDemoMetadata}
+      />
+      <Composition<PieChartDemoProps, any>
+        id="PieChartDemo"
+        component={PieChartDemo}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          data: [
+            { label: "Category A", value: 35 },
+            { label: "Category B", value: 25 },
+            { label: "Category C", value: 20 },
+            { label: "Category D", value: 12 },
+            { label: "Others", value: 8 },
+          ],
+        }}
+        calculateMetadata={calcPieChartDemoMetadata}
+      />
+      <Composition<LineChartDemoProps, any>
+        id="LineChartDemo"
+        component={LineChartDemo}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          data: [
+            { label: "Jan", y: 45 },
+            { label: "Feb", y: 52 },
+            { label: "Mar", y: 48 },
+            { label: "Apr", y: 61 },
+            { label: "May", y: 78 },
+            { label: "Jun", y: 95 },
+          ],
+        }}
+        calculateMetadata={calcLineChartDemoMetadata}
+      />
+      <Composition<ScatterChartDemoProps, any>
+        id="ScatterChartDemo"
+        component={ScatterChartDemo}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          data: [
+            { x: 10, y: 150 },
+            { x: 20, y: 130 },
+            { x: 30, y: 95 },
+            { x: 40, y: 70 },
+            { x: 50, y: 55 },
+          ],
+        }}
+        calculateMetadata={calcScatterChartDemoMetadata}
       />
     </>
   );

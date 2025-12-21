@@ -1,22 +1,150 @@
 {
-  "_description": "Bar chart with one highlighted bar - emphasize a winner or key insight",
-  "_usage": "uv run chart docs/charts/bar-chart-highlight.json",
-  "_notes": "Use 'color' property on ONE bar to draw attention. Great for 'X is the winner' narratives.",
-  "_color_options": {
-    "gold_bright": "#FFD700 - Winner, positive emphasis",
-    "red_signal": "#FF3B30 - Danger, loss, warning",
-    "white_pure": "#FFFFFF - Maximum contrast standout"
+  "_meta": {
+    "description": "HIGHLIGHT CHART - Emphasize ONE bar as the winner/key insight",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-highlight.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Color ONE bar to draw attention. Great for 'X is the winner' narratives",
+    "colorGuide": {
+      "gold": "#FFD700 - Winner, positive, success",
+      "red": "#FF3B30 - Danger, loss, warning, problem",
+      "green": "#00FF88 - Growth, positive change",
+      "blue": "#007AFF - Trust, neutral highlight"
+    },
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
   },
-  
+
   "chartType": "bar",
-  "title": "Conversion Rate by Channel",
-  "animationDuration": 45,
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square for TikTok/Reels",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "_desc": "Spacing around chart",
+      "top": 200,
+      "right": 60,
+      "bottom": 140,
+      "left": 100
+    }
+  },
+
+  "background": {
+    "_desc": "Dark background for contrast",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black. Use '#00FF00' for green screen transparency"
+  },
+
+  "title": {
+    "_desc": "What metric is being shown",
+    "show": true,
+    "text": "Conversion Rate by Channel",
+    "_text_desc": "Clear, specific metric",
+    "y": 60,
+    "font": {
+      "family": "Montserrat",
+      "size": 56,
+      "_size_desc": "Slightly smaller to fit longer titles",
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "text": "Percentage of visitors who converted",
+    "y": 125,
+    "font": {
+      "family": "Inter",
+      "size": 36,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Channel names",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 36,
+        "weight": 500
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "show": false,
+    "_show_desc": "Hidden - data labels show the values",
+    "label": {
+      "font": { "family": "Inter", "size": 36, "weight": 400 },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#222222"
+    }
+  },
+
+  "bars": {
+    "_desc": "Bar styling - default muted, winner highlighted with color",
+    "gap": 20,
+    "cornerRadius": 8,
+    "defaultColor": "#555555",
+    "_defaultColor_desc": "Muted gray for non-highlighted bars"
+  },
+
+  "dataLabels": {
+    "_desc": "Values on bars",
+    "show": true,
+    "position": "above",
+    "_position_desc": "'above' shows value clearly above each bar",
+    "font": {
+      "family": "Montserrat",
+      "size": 48,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "Animation - staggered builds anticipation for the reveal",
+    "duration": 25,
+    "style": "staggered",
+    "_style_desc": "'staggered' = each bar after previous finishes - builds to the highlight",
+    "velocityMode": false,
+    "_velocityMode_desc": "false = all bars same speed for fair comparison visual",
+    "staggerDelay": 0,
+    "direction": "left-to-right"
+  },
+
   "data": [
-    { "label": "Email", "value": 4.2 },
-    { "label": "Social", "value": 2.8 },
-    { "label": "Search", "value": 7.1, "color": "#FFD700" },
-    { "label": "Direct", "value": 3.5 },
-    { "label": "Referral", "value": 5.2 }
+    {
+      "label": "Email",
+      "value": 4.2,
+      "_value_desc": "Percentage value"
+    },
+    {
+      "label": "Social",
+      "value": 2.8
+    },
+    {
+      "_desc": "THE WINNER - highlighted with gold",
+      "label": "Search",
+      "value": 7.1,
+      "color": "#FFD700",
+      "_color_desc": "Gold to highlight best performer"
+    },
+    {
+      "label": "Direct",
+      "value": 3.5
+    },
+    {
+      "label": "Referral",
+      "value": 5.2
+    }
   ]
 }
-

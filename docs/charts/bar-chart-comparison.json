@@ -1,18 +1,167 @@
 {
-  "_description": "Comparison chart - us vs competitors or before/after",
-  "_usage": "uv run chart docs/charts/bar-chart-comparison.json",
-  "_notes": "Use color to distinguish 'us' (gold) from 'them' (muted). Put the subject first or last for emphasis.",
-  "_strategy": "Gold for your product/company, muted gray (#888888) for competitors",
-  
+  "_meta": {
+    "description": "COMPARISON CHART - Compare your product/company against competitors",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-comparison.json",
+    "outputPath": "Renders to same directory as input JSON",
+    "strategy": "Gold (#FFD700) for YOUR product, muted gray (#888888) for competitors",
+    "bestFor": "Market share, feature comparison, us-vs-them narratives",
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation"
+  },
+
   "chartType": "bar",
-  "title": "Market Share 2024",
-  "animationDuration": 45,
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "Video dimensions - 1080x1080 square for TikTok",
+    "width": 1080,
+    "_width_desc": "Pixel width - 1080 standard for social",
+    "height": 1080,
+    "_height_desc": "Pixel height - square 1:1 for TikTok/Reels",
+    "margin": {
+      "_desc": "Spacing around chart area",
+      "top": 200,
+      "_top_desc": "Space for title - reduced since comparison charts are data-focused",
+      "right": 60,
+      "bottom": 140,
+      "_bottom_desc": "Space for category labels",
+      "left": 100,
+      "_left_desc": "Space for value axis"
+    }
+  },
+
+  "background": {
+    "_desc": "Background color - use green for chroma key transparency",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black for professional look. Use '#00FF00' for green screen"
+  },
+
+  "title": {
+    "_desc": "Main headline - what is being compared",
+    "show": true,
+    "_show_desc": "Toggle title on/off",
+    "text": "Market Share 2024",
+    "_text_desc": "Keep short and punchy",
+    "y": 60,
+    "_y_desc": "Vertical position from top in pixels",
+    "font": {
+      "family": "Montserrat",
+      "_family_desc": "Bold brand font",
+      "size": 64,
+      "_size_desc": "Large for mobile - min 42px",
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "show": true,
+    "_show_desc": "Toggle subtitle on/off",
+    "text": "Percentage of Total Market",
+    "_text_desc": "Context or units",
+    "y": 130,
+    "font": {
+      "family": "Inter",
+      "size": 42,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "xAxis": {
+    "_desc": "Category labels (competitor names)",
+    "show": true,
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 36,
+        "_size_desc": "Smaller to fit more labels",
+        "weight": 500
+      },
+      "color": "#FFFFFF"
+    }
+  },
+
+  "yAxis": {
+    "_desc": "Value scale on left",
+    "show": true,
+    "_show_desc": "Show percentage scale",
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 36,
+        "weight": 400
+      },
+      "color": "#666666"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#333333"
+    }
+  },
+
+  "bars": {
+    "_desc": "Bar styling",
+    "gap": 16,
+    "_gap_desc": "Tighter gap for more bars",
+    "cornerRadius": 6,
+    "defaultColor": "#888888",
+    "_defaultColor_desc": "Muted gray for competitors - YOUR bar uses custom gold color"
+  },
+
+  "dataLabels": {
+    "_desc": "Values on bars",
+    "show": true,
+    "position": "above",
+    "_position_desc": "'above', 'inside-top', 'inside-middle', 'inside-bottom'",
+    "font": {
+      "family": "Montserrat",
+      "size": 42,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "animation": {
+    "_desc": "How bars animate in",
+    "duration": 30,
+    "_duration_desc": "Frames for shortest bar (30 = 1 sec at 30fps)",
+    "style": "wave",
+    "_style_desc": "'simultaneous', 'staggered', 'wave' - wave looks good for comparisons",
+    "velocityMode": true,
+    "_velocityMode_desc": "true = taller bars take longer (dramatic reveal)",
+    "staggerDelay": 8,
+    "_staggerDelay_desc": "Frames between bar starts for wave effect",
+    "direction": "left-to-right"
+  },
+
   "data": [
-    { "label": "Us", "value": 34, "color": "#FFD700" },
-    { "label": "Comp A", "value": 28, "color": "#888888" },
-    { "label": "Comp B", "value": 19, "color": "#888888" },
-    { "label": "Comp C", "value": 12, "color": "#888888" },
-    { "label": "Others", "value": 7, "color": "#555555" }
+    {
+      "_desc": "YOUR COMPANY - use gold to stand out",
+      "label": "Us",
+      "value": 34,
+      "color": "#FFD700",
+      "_color_desc": "Gold highlights YOUR bar"
+    },
+    {
+      "_desc": "Competitor - muted gray",
+      "label": "Comp A",
+      "value": 28
+    },
+    {
+      "label": "Comp B",
+      "value": 19
+    },
+    {
+      "label": "Comp C",
+      "value": 12
+    },
+    {
+      "_desc": "Aggregated others",
+      "label": "Others",
+      "value": 7,
+      "color": "#555555",
+      "_color_desc": "Even more muted for 'others'"
+    }
   ]
 }
-

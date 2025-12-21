@@ -3,33 +3,33 @@
     "width": 1080,
     "height": 1080,
     "margin": {
-      "top": 280,
+      "top": 200,
       "right": 60,
       "bottom": 140,
-      "left": 120
+      "left": 100
     }
   },
   "background": {
-    "color": "#00FF00"
+    "color": "#0A0A0A"
   },
   "title": {
-    "show": false,
-    "text": "Q4 Sales by Region",
+    "show": true,
+    "text": "Revenue Growth",
     "y": 60,
     "font": {
       "family": "Montserrat",
-      "size": 64,
+      "size": 56,
       "weight": 700
     },
     "color": "#FFFFFF"
   },
   "subtitle": {
-    "show": false,
-    "text": "Revenue in $K",
-    "y": 130,
+    "show": true,
+    "text": "Monthly Revenue in $K",
+    "y": 125,
     "font": {
       "family": "Inter",
-      "size": 48,
+      "size": 36,
       "weight": 400
     },
     "color": "#888888"
@@ -39,66 +39,79 @@
     "label": {
       "font": {
         "family": "Inter",
-        "size": 42,
+        "size": 32,
         "weight": 500
       },
       "color": "#FFFFFF"
     }
   },
   "yAxis": {
-    "show": false,
+    "show": true,
     "label": {
       "font": {
         "family": "Inter",
-        "size": 42,
-        "weight": 500
+        "size": 28,
+        "weight": 400
       },
-      "color": "#888888"
+      "color": "#666666"
     },
     "gridLines": {
       "show": true,
       "color": "#333333"
     }
   },
-  "bars": {
-    "gap": 20,
-    "cornerRadius": 8,
-    "defaultColor": "#FFD700"
+  "line": {
+    "color": "#FFD700",
+    "width": 5,
+    "curve": "linear"
+  },
+  "area": {
+    "show": true,
+    "color": "#FFD70040",
+    "gradient": true
+  },
+  "points": {
+    "show": true,
+    "radius": 10,
+    "color": "#FFD700"
   },
   "dataLabels": {
-    "show": true,
-    "position": "inside-top",
+    "show": false,
+    "position": "above",
     "font": {
       "family": "Montserrat",
-      "size": 48,
+      "size": 28,
       "weight": 700
     },
     "color": "#FFFFFF"
   },
   "animation": {
-    "duration": 30,
-    "style": "simultaneous",
-    "velocityMode": true,
-    "staggerDelay": 15,
-    "direction": "left-to-right"
+    "duration": 45
   },
   "data": [
     {
-      "label": "North",
-      "value": 340
+      "label": "Jan",
+      "y": 45
     },
     {
-      "label": "South",
-      "value": 280
+      "label": "Feb",
+      "y": 52
     },
     {
-      "label": "East",
-      "value": 195
+      "label": "Mar",
+      "y": 48
     },
     {
-      "label": "West",
-      "value": 820,
-      "color": "#FF3B30"
+      "label": "Apr",
+      "y": 61
+    },
+    {
+      "label": "May",
+      "y": 78
+    },
+    {
+      "label": "Jun",
+      "y": 95
     }
   ]
 }
