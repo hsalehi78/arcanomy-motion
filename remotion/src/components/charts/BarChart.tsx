@@ -20,6 +20,17 @@ import { useCurrentFrame, interpolate } from "remotion";
 import { COLORS, ANIMATION } from "../../lib/constants";
 
 // =============================================================================
+// GOOGLE FONTS IMPORT URL
+// =============================================================================
+
+/**
+ * Google Fonts CSS import URL for Arcanomy brand fonts
+ * Montserrat: Bold headlines, data labels
+ * Inter: Clean body text, axis labels
+ */
+const GOOGLE_FONTS_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;500;700&display=swap');`;
+
+// =============================================================================
 // TYPE DEFINITIONS
 // =============================================================================
 
@@ -101,10 +112,12 @@ export interface BarChartProps {
   /** 
    * Title can be a simple string or object with styling options
    * String: "My Chart Title"
-   * Object: { text: "My Chart", font: { size: 48 }, color: "#FFF" }
+   * Object: { text: "My Chart", font: { size: 48 }, color: "#FFF", show: true, y: 60 }
    */
   title?: string | {
+    show?: boolean;   // Toggle title visibility on/off (default: true)
     text?: string;
+    y?: number;       // Explicit Y position from top in pixels
     font?: FontConfig;
     color?: string;
   };
@@ -115,7 +128,9 @@ export interface BarChartProps {
   
   /** Subtitle configuration (typically units or context) */
   subtitle?: {
+    show?: boolean;     // Toggle subtitle visibility on/off (default: true)
     text?: string;      // Subtitle text (e.g., "Revenue in $K")
+    y?: number;         // Explicit Y position from top in pixels
     font?: FontConfig;  // Font styling
     color?: string;     // Text color
   };
@@ -126,6 +141,7 @@ export interface BarChartProps {
   
   /** X-axis configuration */
   xAxis?: {
+    show?: boolean;       // Toggle x-axis labels visibility (default: true)
     label?: {
       font?: FontConfig;  // Font for category labels
       color?: string;     // Label color
@@ -138,6 +154,7 @@ export interface BarChartProps {
   
   /** Y-axis configuration */
   yAxis?: {
+    show?: boolean;       // Toggle y-axis labels visibility (default: true)
     label?: {
       font?: FontConfig;  // Font for value labels
       color?: string;     // Label color
@@ -163,9 +180,10 @@ export interface BarChartProps {
   // Data Labels - Values shown above bars
   // -------------------------------------------------------------------------
   
-  /** Data label configuration (values above bars) */
+  /** Data label configuration (values on/near bars) */
   dataLabels?: {
     show?: boolean;       // Whether to show value labels
+    position?: "above" | "inside-top" | "inside-middle" | "inside-bottom";  // Label position
     font?: FontConfig;    // Font for value labels
     color?: string;       // Label color
   };
@@ -178,6 +196,7 @@ export interface BarChartProps {
   animation?: {
     duration?: number;  // Duration per bar in frames (30 = 1 sec at 30fps)
     style?: "simultaneous" | "staggered" | "wave";  // Animation style
+    velocityMode?: boolean;  // true = taller bars take longer (proportional), false = all finish together
     staggerDelay?: number;  // Frames between each bar start (for staggered/wave)
     direction?: "left-to-right" | "right-to-left" | "center-out" | "random";
   };
@@ -227,9 +246,15 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
 
   // --- Title ---
   // Handle both string and object formats
+  const showTitle = typeof props.title === "object" 
+    ? props.title?.show ?? true 
+    : true;
   const titleText = typeof props.title === "string" 
     ? props.title 
     : props.title?.text ?? "";
+  const titleExplicitY = typeof props.title === "object" 
+    ? props.title?.y 
+    : undefined;
   const titleFont: FontConfig = typeof props.title === "object" 
     ? props.title?.font ?? {} 
     : {};
@@ -238,9 +263,17 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
     : props.colors?.textPrimary ?? COLORS.textPrimary;
 
   // --- Subtitle ---
+  const showSubtitle = props.subtitle?.show ?? true;
   const subtitleText = props.subtitle?.text ?? "";
+  const subtitleExplicitY = props.subtitle?.y;
   const subtitleFont = props.subtitle?.font ?? {};
   const subtitleColor = props.subtitle?.color ?? "#888888";
+
+  // --- X-Axis Labels Visibility ---
+  const showXAxisLabels = props.xAxis?.show ?? props.showLabels ?? true;
+
+  // --- Y-Axis Visibility ---
+  const showYAxisLabels = props.yAxis?.show ?? true;
 
   // --- X-Axis Labels ---
   const xLabelFont = props.xAxis?.label?.font ?? {};
@@ -259,17 +292,16 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
 
   // --- Data Labels ---
   const showDataLabels = props.dataLabels?.show ?? props.showValues ?? true;
+  const dataLabelPosition = props.dataLabels?.position ?? "above";  // above, inside-top, inside-middle, inside-bottom
   const dataLabelFont = props.dataLabels?.font ?? {};
   const dataLabelColor = props.dataLabels?.color ?? props.colors?.textPrimary ?? COLORS.textPrimary;
 
   // --- Animation ---
   const animationDuration = props.animation?.duration ?? props.animationDuration ?? ANIMATION.chartDrawDuration;
   const animationStyle = props.animation?.style ?? "simultaneous";
+  const velocityMode = props.animation?.velocityMode ?? false;
   const staggerDelay = props.animation?.staggerDelay ?? 8;
   const animationDirection = props.animation?.direction ?? "left-to-right";
-
-  // --- X-Axis Labels Visibility ---
-  const showLabels = props.showLabels ?? true;
 
   // ==========================================================================
   // LAYOUT CALCULATIONS
@@ -307,29 +339,39 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
       orderIndex = [2, 0, 3, 1, 4, 5, 6, 7][barIndex % 8];
     }
 
+    // Calculate this bar's duration based on velocityMode
+    // velocityMode: true = taller bars take longer (same speed, more distance)
+    // velocityMode: false = all bars take the same time
+    const barValue = data[barIndex].value;
+    const minValue = Math.min(...data.map(d => d.value));
+    const barDuration = velocityMode 
+      ? animationDuration * (barValue / minValue)  // Taller bars take longer (30 frames = shortest bar)
+      : animationDuration;                          // Fixed duration for all
+
     if (animationStyle === "simultaneous") {
-      // All bars animate together
+      // All bars animate together at the same time
       return interpolate(
         frame,
-        [0, animationDuration],
+        [0, barDuration],
         [0, 1],
         { extrapolateRight: "clamp" }
       );
     } else if (animationStyle === "staggered") {
-      // Each bar starts after the previous one finishes
-      const startFrame = orderIndex * staggerDelay;
+      // Each bar starts AFTER the previous one FINISHES
+      // startFrame = (bar index) * (duration + extra delay)
+      const startFrame = orderIndex * (animationDuration + staggerDelay);
       return interpolate(
         frame,
-        [startFrame, startFrame + animationDuration],
+        [startFrame, startFrame + barDuration],
         [0, 1],
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
       );
     } else if (animationStyle === "wave") {
-      // Bars overlap - each starts slightly after previous
+      // Bars overlap - each starts slightly after previous (only staggerDelay apart)
       const startFrame = orderIndex * staggerDelay;
       return interpolate(
         frame,
-        [startFrame, startFrame + animationDuration],
+        [startFrame, startFrame + barDuration],
         [0, 1],
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
       );
@@ -345,9 +387,16 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
     { extrapolateRight: "clamp" }
   );
 
-  // Calculate title and subtitle positions (centered in top margin)
-  const titleY = (margin.top ?? 120) / 2;
-  const subtitleY = titleY + (titleFont.size ?? 48) + 10;
+  // Calculate title and subtitle positions
+  // Use explicit Y if provided, otherwise center in top margin
+  const titleY = titleExplicitY ?? (margin.top ?? 120) / 2;
+  const subtitleY = subtitleExplicitY ?? titleY + (titleFont.size ?? 48) + 20;
+
+  // #region agent log
+  if (frame === 0) {
+    fetch('http://127.0.0.1:7246/ingest/f8eaf619-5d68-4d81-81c1-828880c224eb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'BarChart.tsx:ANIMATION',message:'Animation settings',data:{animationStyle,animationDuration,velocityMode,staggerDelay,animationDirection,barCount:data.length,maxValue,barValues:data.map(d=>d.value)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4-velocity'})}).catch(()=>{});
+  }
+  // #endregion
 
   // ==========================================================================
   // RENDER
@@ -355,11 +404,16 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
 
   return (
     <svg width={width} height={height}>
+      {/* Google Fonts import for Montserrat and Inter */}
+      <defs>
+        <style>{GOOGLE_FONTS_IMPORT}</style>
+      </defs>
+      
       {/* Background rectangle - fills entire canvas */}
       <rect width={width} height={height} fill={bgColor} />
 
-      {/* Title - centered at top */}
-      {titleText && (
+      {/* Title - centered at top (only if show=true and has text) */}
+      {showTitle && titleText && (
         <text
           x={width / 2}
           y={titleY}
@@ -368,14 +422,14 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
           fill={titleColor}
           fontSize={titleFont.size ?? 48}
           fontWeight={titleFont.weight ?? 700}
-          fontFamily={titleFont.family ?? "Inter, system-ui, sans-serif"}
+          fontFamily={titleFont.family ?? "Montserrat, Inter, system-ui, sans-serif"}
         >
           {titleText}
         </text>
       )}
 
-      {/* Subtitle - centered below title */}
-      {subtitleText && (
+      {/* Subtitle - centered below title (only if show=true and has text) */}
+      {showSubtitle && subtitleText && (
         <text
           x={width / 2}
           y={subtitleY}
@@ -406,25 +460,27 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
         </g>
       )}
 
-      {/* Y-Axis labels - value scale on left side */}
-      <g>
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
-          <text
-            key={`y-label-${ratio}`}
-            x={(margin.left ?? 0) - 10}
-            y={(margin.top ?? 0) + chartHeight * (1 - ratio)}
-            textAnchor="end"
-            dominantBaseline="middle"
-            fill={yLabelColor}
-            fontSize={yLabelFont.size ?? 16}
-            fontWeight={yLabelFont.weight ?? 400}
-            fontFamily={yLabelFont.family ?? "Inter, system-ui, sans-serif"}
-            opacity={overallProgress}  // Fade in with animation
-          >
-            {Math.round(maxValue * ratio)}
-          </text>
-        ))}
-      </g>
+      {/* Y-Axis labels - value scale on left side (only if show=true) */}
+      {showYAxisLabels && (
+        <g>
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+            <text
+              key={`y-label-${ratio}`}
+              x={(margin.left ?? 0) - 10}
+              y={(margin.top ?? 0) + chartHeight * (1 - ratio)}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fill={yLabelColor}
+              fontSize={yLabelFont.size ?? 16}
+              fontWeight={yLabelFont.weight ?? 400}
+              fontFamily={yLabelFont.family ?? "Inter, system-ui, sans-serif"}
+              opacity={overallProgress}  // Fade in with animation
+            >
+              {Math.round(maxValue * ratio)}
+            </text>
+          ))}
+        </g>
+      )}
 
       {/* Bars and their labels */}
       {data.map((item, index) => {
@@ -449,23 +505,40 @@ export const BarChart: React.FC<BarChartProps> = (props) => {
               ry={cornerRadius}
             />
 
-            {/* Value label above bar - appears after this bar's animation completes */}
-            {showDataLabels && barProgress >= 1 && (
-              <text
-                x={x + barWidth / 2}
-                y={y - 15}
-                textAnchor="middle"
-                fill={dataLabelColor}
-                fontSize={dataLabelFont.size ?? 20}
-                fontWeight={dataLabelFont.weight ?? 700}
-                fontFamily={dataLabelFont.family ?? "Inter, system-ui, sans-serif"}
-              >
-                {item.value}
-              </text>
-            )}
+            {/* Value label - position based on dataLabelPosition setting */}
+            {showDataLabels && barProgress >= 1 && (() => {
+              // Calculate Y position based on dataLabelPosition
+              // above: outside bar, above it
+              // inside-top: inside bar, near top
+              // inside-middle: inside bar, vertically centered
+              // inside-bottom: inside bar, near bottom
+              let labelY = y - 15;  // default: above
+              if (dataLabelPosition === "inside-top") {
+                labelY = y + 30;
+              } else if (dataLabelPosition === "inside-middle") {
+                labelY = y + barHeight / 2;
+              } else if (dataLabelPosition === "inside-bottom") {
+                labelY = y + barHeight - 15;
+              }
+              
+              return (
+                <text
+                  x={x + barWidth / 2}
+                  y={labelY}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={dataLabelColor}
+                  fontSize={dataLabelFont.size ?? 20}
+                  fontWeight={dataLabelFont.weight ?? 700}
+                  fontFamily={dataLabelFont.family ?? "Montserrat, Inter, system-ui, sans-serif"}
+                >
+                  {item.value}
+                </text>
+              );
+            })()}
 
-            {/* X-Axis category label below bar */}
-            {showLabels && (
+            {/* X-Axis category label below bar (only if show=true) */}
+            {showXAxisLabels && (
               <text
                 x={x + barWidth / 2}
                 y={height - (margin.bottom ?? 0) + 40}

@@ -10,19 +10,23 @@
     }
   },
   "background": {
-    "color": "#0A0A0A"
+    "color": "#00FF00"
   },
   "title": {
+    "show": false,
     "text": "Q4 Sales by Region",
+    "y": 60,
     "font": {
-      "family": "Inter",
+      "family": "Montserrat",
       "size": 64,
       "weight": 700
     },
     "color": "#FFFFFF"
   },
   "subtitle": {
+    "show": false,
     "text": "Revenue in $K",
+    "y": 130,
     "font": {
       "family": "Inter",
       "size": 48,
@@ -31,6 +35,7 @@
     "color": "#888888"
   },
   "xAxis": {
+    "show": true,
     "label": {
       "font": {
         "family": "Inter",
@@ -41,6 +46,7 @@
     }
   },
   "yAxis": {
+    "show": false,
     "label": {
       "font": {
         "family": "Inter",
@@ -61,8 +67,9 @@
   },
   "dataLabels": {
     "show": true,
+    "position": "inside-top",
     "font": {
-      "family": "Inter",
+      "family": "Montserrat",
       "size": 48,
       "weight": 700
     },
@@ -70,8 +77,9 @@
   },
   "animation": {
     "duration": 30,
-    "style": "staggered",
-    "staggerDelay": 0,
+    "style": "simultaneous",
+    "velocityMode": true,
+    "staggerDelay": 15,
     "direction": "left-to-right"
   },
   "data": [
@@ -89,7 +97,7 @@
     },
     {
       "label": "West",
-      "value": 420,
+      "value": 820,
       "color": "#FF3B30"
     }
   ]

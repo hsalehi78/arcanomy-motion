@@ -1,10 +1,14 @@
 {
   "_meta": {
-    "description": "Bar chart optimized for TikTok/Reels (1:1 square format)",
+    "description": "Bar chart configuration for Arcanomy Motion video generation",
     "version": "2.0",
     "usage": "uv run chart docs/charts/bar-chart-basic.json",
-    "aspectRatio": "1:1 (square)",
-    "platform": "TikTok, Instagram Reels, YouTube Shorts"
+    "outputPath": "Renders to same directory as input JSON (e.g., bar-chart-basic.mp4)",
+    "aspectRatio": "1:1 (square) - optimal for TikTok/Reels",
+    "platform": "TikTok, Instagram Reels, YouTube Shorts",
+    "fonts": "Uses Google Fonts: Montserrat (bold headlines), Inter (clean body text)",
+    "transparency": "Set background.color to 'transparent' and render with ProRes for alpha channel",
+    "IMPORTANT_FOR_AGENTS": "All _*_desc fields are inline documentation - read them to understand each setting"
   },
 
   "chartType": "bar",
@@ -30,19 +34,23 @@
   },
 
   "background": {
-    "_desc": "Dark background for better contrast on mobile",
-    "color": "#0A0A0A",
-    "_color_desc": "Near-black for rich contrast"
+    "_desc": "Background color. Use '#00FF00' (green) for chroma key removal in video editors like CapCut",
+    "color": "#00FF00",
+    "_color_desc": "GREEN SCREEN: Use '#00FF00' then apply 'Chroma Key' in CapCut to make transparent. Other options: '#000000' (black), 'transparent' (only works with ProRes)"
   },
 
   "title": {
     "_desc": "Large, bold title for mobile readability",
+    "show": false,
+    "_show_desc": "Toggle title visibility on/off",
     "text": "Q4 Sales by Region",
     "_text_desc": "Keep titles short for square format",
+    "y": 60,
+    "_y_desc": "Vertical position from top in pixels (lower = higher on screen)",
     "font": {
       "_desc": "Optimized for mobile viewing",
-      "family": "Inter",
-      "_family_desc": "Clean, modern sans-serif",
+      "family": "Montserrat",
+      "_family_desc": "Arcanomy brand font - bold, modern",
       "size": 64,
       "_size_desc": "LARGE for mobile - must be readable at a glance",
       "weight": 700,
@@ -54,10 +62,15 @@
 
   "subtitle": {
     "_desc": "Brief context below title",
+    "show": false,
+    "_show_desc": "Toggle subtitle visibility on/off",
     "text": "Revenue in $K",
     "_text_desc": "Keep short - less space in square format",
+    "y": 130,
+    "_y_desc": "Vertical position from top in pixels",
     "font": {
       "family": "Inter",
+      "_family_desc": "Arcanomy brand font - clean, readable",
       "size": 48,
       "_size_desc": "Min 42px for mobile readability",
       "weight": 400,
@@ -69,10 +82,13 @@
 
   "xAxis": {
     "_desc": "Category labels below bars",
+    "show": true,
+    "_show_desc": "Toggle x-axis labels visibility on/off",
     "label": {
       "_desc": "Readable labels for mobile",
       "font": {
         "family": "Inter",
+        "_family_desc": "Arcanomy brand font",
         "size": 42,
         "_size_desc": "Min 42px for mobile readability",
         "weight": 500,
@@ -85,9 +101,12 @@
 
   "yAxis": {
     "_desc": "Value axis on left",
+    "show": false,
+    "_show_desc": "Toggle y-axis labels visibility on/off",
     "label": {
       "font": {
         "family": "Inter",
+        "_family_desc": "Arcanomy brand font",
         "size": 42,
         "_size_desc": "Min 42px for mobile readability",
         "weight": 500
@@ -98,7 +117,7 @@
     "gridLines": {
       "_desc": "Horizontal guide lines",
       "show": true,
-      "_show_desc": "Helps read values",
+      "_show_desc": "Toggle grid lines on/off",
       "color": "#333333",
       "_color_desc": "Subtle but visible lines"
     }
@@ -115,30 +134,35 @@
   },
 
   "dataLabels": {
-    "_desc": "Values above each bar",
+    "_desc": "Values displayed on/near each bar (totals)",
     "show": true,
-    "_show_desc": "Show values for clarity",
+    "_show_desc": "Toggle data labels visibility on/off",
+    "position": "inside-top",
+    "_position_desc": "OPTIONS: 'above' (outside, above bar), 'inside-top', 'inside-middle', 'inside-bottom'",
     "font": {
-      "family": "Inter",
+      "family": "Montserrat",
+      "_family_desc": "Arcanomy brand font - bold for emphasis",
       "size": 48,
       "_size_desc": "Min 42px for mobile readability",
       "weight": 700,
       "_weight_desc": "Bold for emphasis"
     },
     "color": "#FFFFFF",
-    "_color_desc": "White for visibility"
+    "_color_desc": "Bright green for testing"
   },
 
   "animation": {
     "_desc": "Animation settings for bar entrance",
     "duration": 30,
-    "_duration_desc": "Duration per bar in frames (30 = 1 sec at 30fps)",
-    "style": "staggered",
-    "_style_desc": "Animation style: 'simultaneous' (all bars together), 'staggered' (one by one), 'wave' (overlapping wave)",
-    "staggerDelay": 0,
-    "_staggerDelay_desc": "Frames between each bar start (only for staggered/wave)",
+    "_duration_desc": "Base duration in frames (30 = 1 sec). SHORTEST bar uses this; taller bars take longer if velocityMode=true",
+    "style": "simultaneous",
+    "_style_desc": "OPTIONS: 'simultaneous' (all together), 'staggered' (one after another), 'wave' (overlapping)",
+    "velocityMode": true,
+    "_velocityMode_desc": "true = taller bars take longer (builds suspense). false = all bars finish together",
+    "staggerDelay": 15,
+    "_staggerDelay_desc": "Frames between each bar START. For 'staggered': adds extra pause. For 'wave': controls overlap",
     "direction": "left-to-right",
-    "_direction_desc": "Direction: 'left-to-right', 'right-to-left', 'center-out', 'random'"
+    "_direction_desc": "OPTIONS: 'left-to-right', 'right-to-left', 'center-out', 'random'"
   },
 
   "data": [
@@ -160,7 +184,7 @@
     {
       "_desc": "Highlighted bar with custom color",
       "label": "West",
-      "value": 420,
+      "value": 820,
       "color": "#FF3B30",
       "_color_desc": "Red to highlight highest value"
     }

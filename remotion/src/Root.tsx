@@ -59,18 +59,34 @@ const calcBarChartDemoMetadata: CalculateMetadataFunction<BarChartDemoProps> = (
   // Animation settings
   const animDuration = (props as any)?.animation?.duration ?? (props as any)?.animationDuration ?? 45;
   const animStyle = (props as any)?.animation?.style ?? "simultaneous";
+  const velocityMode = (props as any)?.animation?.velocityMode ?? false;
   const staggerDelay = (props as any)?.animation?.staggerDelay ?? 8;
-  const dataLength = Array.isArray((props as any)?.data) ? (props as any).data.length : 4;
+  const dataArray = Array.isArray((props as any)?.data) ? (props as any).data : [];
+  const dataLength = dataArray.length || 4;
+  
+  // Calculate max duration (for velocityMode, tallest bar takes longest)
+  let maxBarDuration = animDuration;
+  if (velocityMode && dataArray.length > 0) {
+    const values = dataArray.map((d: any) => d.value || 0);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    // Tallest bar duration = animDuration * (maxValue / minValue)
+    maxBarDuration = minValue > 0 ? animDuration * (maxValue / minValue) : animDuration;
+  }
   
   // Calculate total duration based on animation style
-  let totalAnimDuration = animDuration;
-  if (animStyle === "staggered" || animStyle === "wave") {
-    // For staggered: last bar starts at (dataLength-1) * staggerDelay
-    totalAnimDuration = animDuration + (dataLength - 1) * staggerDelay;
+  let totalAnimDuration = maxBarDuration;
+  if (animStyle === "staggered") {
+    // For staggered: each bar waits for previous to FINISH
+    totalAnimDuration = (dataLength - 1) * (animDuration + staggerDelay) + maxBarDuration;
+  } else if (animStyle === "wave") {
+    // For wave: bars overlap, each starts staggerDelay after previous
+    totalAnimDuration = maxBarDuration + (dataLength - 1) * staggerDelay;
   }
   
   // Add 30 frames after animation for final state display
-  const durationInFrames = totalAnimDuration + 30;
+  // Round to integer (Remotion requires integer duration)
+  const durationInFrames = Math.ceil(totalAnimDuration + 30);
 
   return {
     durationInFrames,
