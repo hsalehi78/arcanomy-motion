@@ -4,9 +4,9 @@
     "height": 1080,
     "margin": {
       "top": 200,
-      "right": 60,
-      "bottom": 140,
-      "left": 100
+      "right": 80,
+      "bottom": 160,
+      "left": 120
     }
   },
   "background": {
@@ -14,104 +14,125 @@
   },
   "title": {
     "show": true,
-    "text": "Revenue Growth",
+    "text": "Price vs Sales Volume",
     "y": 60,
     "font": {
       "family": "Montserrat",
-      "size": 56,
+      "size": 52,
       "weight": 700
     },
     "color": "#FFFFFF"
   },
   "subtitle": {
     "show": true,
-    "text": "Monthly Revenue in $K",
-    "y": 125,
+    "text": "Product pricing analysis",
+    "y": 120,
     "font": {
       "family": "Inter",
-      "size": 36,
+      "size": 32,
       "weight": 400
     },
     "color": "#888888"
   },
   "xAxis": {
     "show": true,
+    "title": "Price ($)",
     "label": {
       "font": {
         "family": "Inter",
-        "size": 32,
-        "weight": 500
+        "size": 24,
+        "weight": 400
       },
       "color": "#FFFFFF"
     }
   },
   "yAxis": {
     "show": true,
+    "title": "Units Sold",
     "label": {
       "font": {
         "family": "Inter",
-        "size": 28,
+        "size": 24,
         "weight": 400
       },
-      "color": "#666666"
+      "color": "#888888"
     },
     "gridLines": {
       "show": true,
       "color": "#333333"
     }
   },
-  "line": {
-    "color": "#FFD700",
-    "width": 5,
-    "curve": "linear"
-  },
-  "area": {
-    "show": true,
-    "color": "#FFD70040",
-    "gradient": true
-  },
   "points": {
-    "show": true,
-    "radius": 10,
-    "color": "#FFD700"
+    "radius": 14,
+    "color": "#FFD700",
+    "opacity": 0.85,
+    "stroke": {
+      "color": "#FFFFFF",
+      "width": 2
+    }
   },
-  "dataLabels": {
+  "trendLine": {
+    "show": true,
+    "color": "#FF3B30",
+    "width": 3,
+    "style": "dashed"
+  },
+  "pointLabels": {
     "show": false,
-    "position": "above",
     "font": {
-      "family": "Montserrat",
-      "size": 28,
-      "weight": 700
+      "family": "Inter",
+      "size": 20,
+      "weight": 500
     },
     "color": "#FFFFFF"
   },
   "animation": {
-    "duration": 45
+    "duration": 30,
+    "style": "random",
+    "staggerDelay": 3
   },
   "data": [
     {
-      "label": "Jan",
-      "y": 45
+      "x": 10,
+      "y": 150
     },
     {
-      "label": "Feb",
-      "y": 52
+      "x": 15,
+      "y": 140
     },
     {
-      "label": "Mar",
-      "y": 48
+      "x": 20,
+      "y": 130
     },
     {
-      "label": "Apr",
-      "y": 61
+      "x": 25,
+      "y": 120
     },
     {
-      "label": "May",
-      "y": 78
-    },
-    {
-      "label": "Jun",
+      "x": 30,
       "y": 95
+    },
+    {
+      "x": 35,
+      "y": 85
+    },
+    {
+      "x": 40,
+      "y": 70
+    },
+    {
+      "x": 45,
+      "y": 90,
+      "color": "#00FF88",
+      "size": 18
+    },
+    {
+      "x": 50,
+      "y": 55
+    },
+    {
+      "x": 55,
+      "y": 45
     }
   ]
 }
