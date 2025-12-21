@@ -1,5 +1,8 @@
 # 04 — Pipeline Stages (Detailed)
 
+> **Legacy notice (important):** This document describes the **v1 automated pipeline** (FFmpeg final assembly + optional Remotion caption burn-in).  
+> **Canonical v2** is defined in `docs/REFRACTOR_RFC.md`: **CapCut kit + guide**, 10.0s subsegments, Remotion charts-only. Use `--legacy` to run v1.
+
 ## Run Everything Automatically
 
 ```bash

@@ -10,6 +10,13 @@ from src.config import DEFAULT_PROVIDERS
 from src.domain import Objective
 from src.utils.paths import ensure_reel_layout, reel_yaml_path, seed_path
 from src.utils.paths import inputs_dir, json_dir, prompts_dir, renders_dir
+from src.v2.runner import v2_init
+from src.v2.planner import v2_generate_plan
+from src.v2.visuals import v2_generate_subsegments
+from src.v2.voice import v2_generate_voice
+from src.v2.captions import v2_generate_captions_srt
+from src.v2.charts import v2_render_charts
+from src.v2.kit import v2_generate_kit
 from src.services import (
     LLMService,
     fetch_featured_blogs,
@@ -172,6 +179,26 @@ audit_level: "strict"
 @app.command()
 def run(
     reel_path: Path = typer.Argument(..., help="Path to the reel folder"),
+    legacy: bool = typer.Option(
+        False,
+        "--legacy",
+        help="Run legacy v1 pipeline (frozen). Default runs v2 (CapCut kit pipeline).",
+    ),
+    v2_stage: str = typer.Option(
+        "plan",
+        "--v2-stage",
+        help="(v2) How far to run: init|plan|subsegments|voice|captions|charts|kit. Default: plan.",
+    ),
+    fresh: bool = typer.Option(
+        False,
+        "--fresh",
+        help="(v2) Wipe and recreate v2 outputs before running.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="(v2) Allow overwriting immutable outputs (use sparingly).",
+    ),
     stage: Optional[int] = typer.Option(
         None,
         "--stage",
@@ -195,6 +222,68 @@ def run(
         typer.echo(f"Error: Reel not found at {reel_path}", err=True)
         raise typer.Exit(1)
 
+    # V2 default (Phase 1: init-only).
+    if not legacy:
+        if stage is not None:
+            typer.echo("[ERROR] --stage is legacy-only for now. Use --legacy or omit --stage.", err=True)
+            raise typer.Exit(1)
+
+        if v2_stage not in ("init", "plan", "subsegments", "voice", "captions", "charts", "kit"):
+            typer.echo("[ERROR] --v2-stage must be one of: init, plan, subsegments, voice, captions, charts, kit", err=True)
+            raise typer.Exit(1)
+
+        prov_path = v2_init(reel_path, fresh=fresh, force=force)
+        typer.echo("[OK] V2 init complete")
+        typer.echo(f"   Provenance: {prov_path}")
+
+        if v2_stage == "init":
+            return
+
+        plan_path = v2_generate_plan(reel_path, force=force)
+        typer.echo("[OK] V2 plan complete")
+        typer.echo(f"   Plan: {plan_path}")
+        if v2_stage == "plan":
+            return
+
+        outputs = v2_generate_subsegments(reel_path, force=force)
+        typer.echo("[OK] V2 subsegments complete")
+        # Use ASCII only for Windows console compatibility.
+        out_dir = str(Path(outputs[0]).parent) if outputs else "v2/subsegments"
+        typer.echo(f"   Wrote: {len(outputs)} clips -> {out_dir}")
+        if v2_stage == "subsegments":
+            return
+
+        wavs = v2_generate_voice(reel_path, force=force)
+        typer.echo("[OK] V2 voice complete")
+        wav_dir = str(Path(wavs[0]).parent) if wavs else "v2/voice"
+        typer.echo(f"   Wrote: {len(wavs)} wavs -> {wav_dir}")
+        if v2_stage == "voice":
+            return
+
+        srt = v2_generate_captions_srt(reel_path, force=force)
+        typer.echo("[OK] V2 captions complete")
+        typer.echo(f"   SRT: {srt}")
+        if v2_stage == "captions":
+            return
+
+        charts = v2_render_charts(reel_path, force=force)
+        typer.echo("[OK] V2 charts complete")
+        if charts:
+            typer.echo(f"   Wrote: {len(charts)} mp4 -> {Path(charts[0]).parent}")
+        else:
+            typer.echo("   Wrote: 0 (no chart jobs in plan.json)")
+        if v2_stage == "charts":
+            return
+
+        kit = v2_generate_kit(reel_path, force=force)
+        typer.echo("[OK] V2 kit complete")
+        typer.echo(f"   Thumbnail: {kit['thumbnail']}")
+        typer.echo(f"   Guide: {kit['capcut_guide']}")
+        typer.echo(f"   Checklist: {kit['retention_checklist']}")
+        typer.echo(f"   Quality gate: {kit['quality_gate']}")
+        return
+
+    # Legacy v1 pipeline (frozen).
     llm = LLMService(provider=provider)
 
     stages = {
@@ -211,11 +300,11 @@ def run(
             typer.echo(f"Error: Invalid stage {stage}. Must be 1-6.", err=True)
             raise typer.Exit(1)
         name, func = stages[stage]
-        logger.info(f"Running stage {stage}: {name}")
+        logger.info(f"Running legacy stage {stage}: {name}")
         func()
     else:
         for num, (name, func) in stages.items():
-            logger.info(f"Running stage {num}: {name}")
+            logger.info(f"Running legacy stage {num}: {name}")
             try:
                 func()
                 logger.info(f"  [OK] {name} complete")
@@ -223,7 +312,7 @@ def run(
                 logger.error(f"  [FAIL] {name} failed: {e}")
                 raise typer.Exit(1)
 
-    typer.echo("[OK] Pipeline complete")
+    typer.echo("[OK] Legacy pipeline complete")
 
 
 @app.command()

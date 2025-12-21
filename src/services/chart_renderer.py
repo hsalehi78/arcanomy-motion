@@ -125,6 +125,7 @@ class ChartRenderer:
         self,
         json_path: Path,
         output_path: Optional[Path] = None,
+        frames: Optional[str] = None,
     ) -> Path:
         """Render a chart from a JSON props file.
         
@@ -186,6 +187,7 @@ class ChartRenderer:
             composition_id=composition_id,
             output_path=Path(output_path),
             props=props_dict,
+            frames=frames,
         )
 
 
@@ -217,6 +219,7 @@ def render_chart_from_json(
     json_path: Path,
     output_path: Optional[Path] = None,
     remotion_dir: Optional[Path] = None,
+    frames: Optional[str] = None,
 ) -> Path:
     """Convenience function to render a chart from JSON file.
     
@@ -229,5 +232,5 @@ def render_chart_from_json(
         Path to rendered video
     """
     renderer = ChartRenderer(remotion_dir)
-    return renderer.render_from_json(json_path, output_path)
+    return renderer.render_from_json(json_path, output_path, frames=frames)
 

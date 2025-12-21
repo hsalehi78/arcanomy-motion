@@ -106,3 +106,80 @@ def ensure_reel_layout(reel_path: Path) -> None:
         d.mkdir(parents=True, exist_ok=True)
 
 
+# =============================================================================
+# V2 (CapCut kit) paths
+# =============================================================================
+
+
+def v2_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "v2"
+
+
+def v2_meta_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "meta"
+
+
+def v2_subsegments_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "subsegments"
+
+
+def v2_charts_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "charts"
+
+
+def v2_voice_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "voice"
+
+
+def v2_captions_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "captions"
+
+
+def v2_thumbnail_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "thumbnail"
+
+
+def v2_guides_dir(reel_path: Path) -> Path:
+    return v2_dir(reel_path) / "guides"
+
+
+def v2_provenance_path(reel_path: Path) -> Path:
+    return v2_meta_dir(reel_path) / "provenance.json"
+
+
+def v2_quality_gate_path(reel_path: Path) -> Path:
+    return v2_meta_dir(reel_path) / "quality_gate.json"
+
+
+def v2_plan_path(reel_path: Path) -> Path:
+    return v2_meta_dir(reel_path) / "plan.json"
+
+
+def v2_captions_srt_path(reel_path: Path) -> Path:
+    return v2_captions_dir(reel_path) / "captions.srt"
+
+
+def claim_json_path(reel_path: Path) -> Path:
+    """Canonical v2 input."""
+    return inputs_dir(reel_path) / "claim.json"
+
+
+def data_json_path(reel_path: Path) -> Path:
+    """Canonical v2 input."""
+    return inputs_dir(reel_path) / "data.json"
+
+
+def ensure_v2_layout(reel_path: Path) -> None:
+    """Create the canonical v2 output directory structure for a reel."""
+    for d in (
+        v2_meta_dir(reel_path),
+        v2_subsegments_dir(reel_path),
+        v2_charts_dir(reel_path),
+        v2_voice_dir(reel_path),
+        v2_captions_dir(reel_path),
+        v2_thumbnail_dir(reel_path),
+        v2_guides_dir(reel_path),
+    ):
+        d.mkdir(parents=True, exist_ok=True)
+
+

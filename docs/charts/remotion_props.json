@@ -1,36 +1,35 @@
 {
-  "mode": "stacked",
   "dimensions": {
     "width": 1080,
     "height": 1080,
     "margin": {
-      "top": 220,
+      "top": 200,
       "right": 60,
-      "bottom": 120,
+      "bottom": 140,
       "left": 100
     }
   },
   "background": {
-    "color": "#0D0D0D"
+    "color": "#0A0A0A"
   },
   "title": {
     "show": true,
-    "text": "Quarterly Revenue by Region",
-    "y": 50,
+    "text": "Revenue Growth",
+    "y": 60,
     "font": {
-      "family": "Montserrat, Inter, sans-serif",
-      "size": 52,
+      "family": "Montserrat",
+      "size": 56,
       "weight": 700
     },
     "color": "#FFFFFF"
   },
   "subtitle": {
     "show": true,
-    "text": "2024 Fiscal Year ($ Millions)",
-    "y": 110,
+    "text": "Monthly Revenue in $K",
+    "y": 125,
     "font": {
-      "family": "Inter, sans-serif",
-      "size": 32,
+      "family": "Inter",
+      "size": 36,
       "weight": 400
     },
     "color": "#888888"
@@ -39,7 +38,7 @@
     "show": true,
     "label": {
       "font": {
-        "family": "Inter, sans-serif",
+        "family": "Inter",
         "size": 32,
         "weight": 500
       },
@@ -50,82 +49,69 @@
     "show": true,
     "label": {
       "font": {
-        "family": "Inter, sans-serif",
-        "size": 24,
+        "family": "Inter",
+        "size": 28,
         "weight": 400
       },
-      "color": "#888888"
+      "color": "#666666"
     },
     "gridLines": {
       "show": true,
       "color": "#333333"
     }
   },
-  "bars": {
-    "gap": 40,
-    "cornerRadius": 4
+  "line": {
+    "color": "#FFD700",
+    "width": 5,
+    "curve": "linear"
   },
-  "legend": {
+  "area": {
     "show": true,
-    "position": "top",
+    "color": "#FFD70040",
+    "gradient": true
+  },
+  "points": {
+    "show": true,
+    "radius": 10,
+    "color": "#FFD700"
+  },
+  "dataLabels": {
+    "show": false,
+    "position": "above",
     "font": {
-      "family": "Inter, sans-serif",
-      "size": 24,
-      "weight": 500
+      "family": "Montserrat",
+      "size": 28,
+      "weight": 700
     },
     "color": "#FFFFFF"
   },
   "animation": {
-    "duration": 30,
-    "style": "staggered",
-    "staggerDelay": 8
+    "duration": 90
   },
-  "series": [
-    {
-      "name": "North America",
-      "color": "#4ECDC4"
-    },
-    {
-      "name": "Europe",
-      "color": "#FF6B6B"
-    },
-    {
-      "name": "Asia Pacific",
-      "color": "#FFE66D"
-    }
-  ],
   "data": [
     {
-      "label": "Q1",
-      "values": [
-        45,
-        32,
-        28
-      ]
+      "label": "Jan",
+      "y": 45
     },
     {
-      "label": "Q2",
-      "values": [
-        52,
-        38,
-        35
-      ]
+      "label": "Feb",
+      "y": 52
     },
     {
-      "label": "Q3",
-      "values": [
-        48,
-        42,
-        40
-      ]
+      "label": "Mar",
+      "y": 48
     },
     {
-      "label": "Q4",
-      "values": [
-        62,
-        48,
-        52
-      ]
+      "label": "Apr",
+      "y": 61
+    },
+    {
+      "label": "May",
+      "y": 78
+    },
+    {
+      "label": "Jun",
+      "y": 95
     }
   ]
 }

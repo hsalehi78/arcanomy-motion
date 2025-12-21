@@ -1,5 +1,8 @@
 # 05 — Visual Style & Subtitles (Viral Specs)
 
+> **Legacy notice (important):** This doc includes a v1 Remotion karaoke-caption system.  
+> **Canonical v2 captions** are **CapCut preset style** per `docs/principles/arcanomy-reels-operating-system.md` and `docs/REFRACTOR_RFC.md`. V2 outputs `captions.srt` (line-level, voice-aligned) and CapCut applies styling.
+
 ## Core Philosophy: "Stop the Scroll"
 
 This document defines the **Arcanomy Viral Visual System**. These are not just aesthetic choices; they are functional requirements for performance on Instagram Reels, TikTok, and YouTube Shorts.

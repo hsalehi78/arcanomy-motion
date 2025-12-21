@@ -6,6 +6,57 @@ import shutil
 import os
 from pathlib import Path
 from typing import Optional
+import re
+
+
+def _msys_to_windows_path(p: str) -> str:
+    """Convert MSYS/Git-Bash style paths to Windows paths for CreateProcess.
+
+    Examples:
+      /c/Dev/arcanomy-motion -> C:\\Dev\\arcanomy-motion
+      /d/Tools/node -> D:\\Tools\\node
+    """
+    if os.name != "nt":
+        return p
+    if not p:
+        return p
+    m = re.match(r"^/([a-zA-Z])/(.*)$", p)
+    if not m:
+        return p
+    drive = m.group(1).upper()
+    rest = m.group(2).replace("/", "\\")
+    return f"{drive}:\\{rest}"
+
+
+def _normalize_runner_exe(p: str) -> str:
+    """Normalize runner executable path for Windows subprocess.
+
+    On Windows, `shutil.which()` may return POSIX-like paths when running under Git Bash.
+    """
+    if os.name != "nt":
+        return p
+    return _msys_to_windows_path(p)
+
+
+def _to_forward_slash_path(p: Path) -> str:
+    """Represent a Windows path in a Git-Bash-friendly way (C:/... with forward slashes)."""
+    s = str(Path(p).resolve())
+    return s.replace("\\", "/")
+
+
+def _find_git_bash() -> Optional[str]:
+    """Find bash executable for Git Bash on Windows (for reliable PATH resolution)."""
+    if os.name != "nt":
+        return None
+    for candidate in (
+        shutil.which("bash.exe"),
+        shutil.which("bash"),
+        r"C:\Program Files\Git\bin\bash.exe",
+        r"C:\Program Files (x86)\Git\bin\bash.exe",
+    ):
+        if candidate and Path(candidate).exists():
+            return str(Path(candidate))
+    return None
 
 
 def _get_package_runner() -> list[str]:
@@ -14,15 +65,20 @@ def _get_package_runner() -> list[str]:
     Returns the command prefix to use for running remotion commands.
     Tries pnpm first (faster), then npx (comes with Node), then yarn.
     """
-    # Check for pnpm
-    if shutil.which("pnpm"):
-        return ["pnpm", "exec"]
-    # Check for npx (comes with npm/Node.js)
-    if shutil.which("npx"):
-        return ["npx"]
-    # Check for yarn
-    if shutil.which("yarn"):
-        return ["yarn"]
+    # On Windows, prefer explicit .cmd resolution to avoid shell=True PATH mismatches
+    # (e.g., Git Bash can find `npx`, but cmd.exe can't).
+    pnpm = shutil.which("pnpm.cmd") or shutil.which("pnpm")
+    if pnpm:
+        return [_normalize_runner_exe(pnpm), "exec"]
+
+    npx = shutil.which("npx.cmd") or shutil.which("npx")
+    if npx:
+        return [_normalize_runner_exe(npx)]
+
+    yarn = shutil.which("yarn.cmd") or shutil.which("yarn")
+    if yarn:
+        return [_normalize_runner_exe(yarn)]
+
     # Fallback to npx and hope it works
     return ["npx"]
 
@@ -40,6 +96,7 @@ class RemotionCLI:
         output_path: Path,
         props: dict,
         props_file: Optional[Path] = None,
+        frames: Optional[str] = None,
     ) -> Path:
         """Render a Remotion composition to video.
 
@@ -78,16 +135,52 @@ class RemotionCLI:
             "--props",
             str(abs_props_file),
         ]
+        if frames:
+            cmd.extend(["--frames", frames])
 
         # Run Remotion render
-        use_shell = os.name == "nt"  # Windows needs shell=True for .cmd executables
-        result = subprocess.run(
-            cmd,
-            cwd=self.remotion_dir,
-            capture_output=True,
-            text=True,
-            shell=use_shell,
-        )
+        # IMPORTANT (Windows/Git Bash):
+        # `uv run chart ...` is usually executed from Git Bash. The PATH there may contain
+        # shims/functions for pnpm/npx that are NOT visible to plain CreateProcess lookups.
+        # To match the working "uv run chart" behavior, prefer running Remotion through
+        # Git Bash on Windows.
+        bash = _find_git_bash()
+        if os.name == "nt" and bash:
+            remotion_dir = _to_forward_slash_path(self.remotion_dir)
+            out_path = _to_forward_slash_path(abs_output_path)
+            props_path = _to_forward_slash_path(abs_props_file)
+
+            # Try runners in deterministic order. Avoid mixing slashes.
+            candidates = [
+                f'pnpm exec remotion render {entry_file} {composition_id} "{out_path}" --props "{props_path}"'
+                + (f' --frames "{frames}"' if frames else ""),
+                f'npx remotion render {entry_file} {composition_id} "{out_path}" --props "{props_path}"'
+                + (f' --frames "{frames}"' if frames else ""),
+                f'yarn remotion render {entry_file} {composition_id} "{out_path}" --props "{props_path}"'
+                + (f' --frames "{frames}"' if frames else ""),
+            ]
+            last = None
+            for c in candidates:
+                bash_cmd = f'cd "{remotion_dir}" && {c}'
+                last = subprocess.run(
+                    [bash, "-lc", bash_cmd],
+                    capture_output=True,
+                    text=True,
+                )
+                if last.returncode == 0:
+                    result = last
+                    break
+            else:
+                # all failed
+                result = last  # type: ignore[assignment]
+        else:
+            result = subprocess.run(
+                cmd,
+                cwd=self.remotion_dir,
+                capture_output=True,
+                text=True,
+                shell=False,
+            )
 
         if result.returncode != 0:
             raise RuntimeError(f"Remotion render failed:\n{result.stderr}")
@@ -97,20 +190,32 @@ class RemotionCLI:
     def preview(self) -> subprocess.Popen:
         """Start Remotion preview server."""
         cmd = [*self._runner, "remotion", "studio"]
-        use_shell = os.name == "nt"
-        return subprocess.Popen(cmd, cwd=self.remotion_dir, shell=use_shell)
+        bash = _find_git_bash()
+        if os.name == "nt" and bash:
+            remotion_dir = _to_forward_slash_path(self.remotion_dir)
+            bash_cmd = f'cd "{remotion_dir}" && pnpm exec remotion studio'
+            return subprocess.Popen([bash, "-lc", bash_cmd])
+        return subprocess.Popen(cmd, cwd=self.remotion_dir, shell=False)
 
     def get_compositions(self) -> list[str]:
         """List available compositions."""
         cmd = [*self._runner, "remotion", "compositions"]
-        use_shell = os.name == "nt"
-        result = subprocess.run(
-            cmd,
-            cwd=self.remotion_dir,
-            capture_output=True,
-            text=True,
-            shell=use_shell,
-        )
+        bash = _find_git_bash()
+        if os.name == "nt" and bash:
+            remotion_dir = _to_forward_slash_path(self.remotion_dir)
+            result = subprocess.run(
+                [bash, "-lc", f'cd "{remotion_dir}" && pnpm exec remotion compositions'],
+                capture_output=True,
+                text=True,
+            )
+        else:
+            result = subprocess.run(
+                cmd,
+                cwd=self.remotion_dir,
+                capture_output=True,
+                text=True,
+                shell=False,
+            )
 
         if result.returncode != 0:
             raise RuntimeError(f"Failed to list compositions:\n{result.stderr}")

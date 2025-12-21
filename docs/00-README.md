@@ -3,6 +3,8 @@
 These docs are intentionally split into small, focused files in the `docs/` folder.
 
 ## What we agreed (non-negotiables)
+- **Canonical doctrine** is defined in `docs/principles/arcanomy-reels-operating-system.md` and the approved refactor contract is in `docs/REFRACTOR_RFC.md`.
+- **V2 default output** is a **CapCut kit + guide** (no auto final MP4). The automated FFmpeg/Remotion final assembly described in some older docs is **legacy-only**.
 - **Local orchestration** (Python + agents run locally; API calls go out as needed)
 - **CSV is source-of-truth** for any numbers shown on screen (auditability)
 - **ElevenLabs** for voice AND sound effects (TTS + SFX APIs)
