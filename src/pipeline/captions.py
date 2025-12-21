@@ -1,7 +1,7 @@
-"""V2 captions (Phase 4).
+"""Captions generation - line-level SRT for CapCut.
 
 Canonical output:
-- `v2/captions/captions.srt`
+- `captions/captions.srt`
 - Line-level only (no karaoke / word timing)
 - Timings aligned using audio analysis (silence detection)
 - Hard rule: no entry crosses subsegment boundaries
@@ -17,12 +17,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.utils.paths import (
-    ensure_v2_layout,
-    v2_captions_srt_path,
-    v2_plan_path,
-    v2_voice_dir,
+    ensure_pipeline_layout,
+    captions_srt_path,
+    plan_path,
+    pipeline_voice_dir,
 )
-from src.v2.visuals import probe_duration_seconds, validate_duration
+from src.pipeline.visuals import probe_duration_seconds, validate_duration
 
 
 def _format_srt_timestamp(seconds: float) -> str:
@@ -155,24 +155,24 @@ def _split_caption_lines(text: str, *, max_words: int = 9, max_chars: int = 42) 
     return chunks
 
 
-def v2_generate_captions_srt(
+def generate_captions_srt(
     reel_path: Path,
     *,
     force: bool = False,
     fps: int = 30,
 ) -> Path:
     reel_path = Path(reel_path)
-    ensure_v2_layout(reel_path)
+    ensure_pipeline_layout(reel_path)
 
-    plan_path = v2_plan_path(reel_path)
-    if not plan_path.exists():
-        raise FileNotFoundError(f"Missing v2 plan: {plan_path}. Run v2 stage 'plan' first.")
+    plan_file = plan_path(reel_path)
+    if not plan_file.exists():
+        raise FileNotFoundError(f"Missing plan: {plan_file}. Run 'plan' stage first.")
 
     import json
 
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan = json.loads(plan_file.read_text(encoding="utf-8"))
     subsegments = plan.get("subsegments") or []
-    voice_dir = v2_voice_dir(reel_path)
+    voice_dir = pipeline_voice_dir(reel_path)
 
     srt_entries: list[tuple[float, float, str]] = []
     idx_counter = 1
@@ -234,8 +234,12 @@ def v2_generate_captions_srt(
         out_lines.append("")
 
     out_text = "\n".join(out_lines).rstrip() + "\n"
-    out_path = v2_captions_srt_path(reel_path)
-    _write_text_immutable(out_path, out_text, force=force)
-    return out_path
+    out_file = captions_srt_path(reel_path)
+    _write_text_immutable(out_file, out_text, force=force)
+    return out_file
+
+
+# Legacy alias
+v2_generate_captions_srt = generate_captions_srt
 
 

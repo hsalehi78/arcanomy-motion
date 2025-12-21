@@ -1,7 +1,7 @@
-"""V2 provenance helpers.
+"""Provenance helpers for deterministic, auditable runs.
 
-Goal: deterministic, auditable runs. Provenance must be stable (sorted keys),
-and reruns should not rewrite files if content is unchanged.
+Provenance must be stable (sorted keys), and reruns should not
+rewrite files if content is unchanged.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -71,10 +71,10 @@ def write_json_immutable(
 
 
 @dataclass(frozen=True)
-class V2RunContext:
-    """Minimal v2 run context captured in provenance."""
+class RunContext:
+    """Minimal run context captured in provenance."""
 
-    mode: str  # "v2"
+    mode: str  # "pipeline"
     fresh: bool
     force: bool
     audit_level_override: str | None = None
@@ -85,7 +85,7 @@ def build_provenance(
     reel_path: Path,
     claim_path: Path | None,
     data_path: Path | None,
-    ctx: V2RunContext,
+    ctx: RunContext,
     extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     reel_path = Path(reel_path)
@@ -110,7 +110,7 @@ def build_provenance(
     add_input("data_json", data_path)
 
     payload: dict[str, Any] = {
-        "schema_version": "v2.provenance.1",
+        "schema_version": "provenance.1",
         "mode": ctx.mode,
         # Timestamp is intentionally kept (auditable), but does mean reruns differ.
         # For "zero diffs" reruns, callers should avoid writing if unchanged.
@@ -137,5 +137,9 @@ def build_provenance(
     payload["signature_sha256"] = _sha256_bytes(stable_json_dumps(sig_obj).encode("utf-8"))
 
     return payload
+
+
+# Legacy alias for backwards compatibility
+V2RunContext = RunContext
 
 

@@ -107,79 +107,93 @@ def ensure_reel_layout(reel_path: Path) -> None:
 
 
 # =============================================================================
-# V2 (CapCut kit) paths
+# Pipeline output paths (CapCut kit)
 # =============================================================================
 
 
-def v2_dir(reel_path: Path) -> Path:
-    return Path(reel_path) / "v2"
+def meta_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "meta"
 
 
-def v2_meta_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "meta"
+def subsegments_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "subsegments"
 
 
-def v2_subsegments_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "subsegments"
+def charts_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "charts"
 
 
-def v2_charts_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "charts"
+def pipeline_voice_dir(reel_path: Path) -> Path:
+    """Voice output for pipeline (subseg-*.wav)."""
+    return Path(reel_path) / "voice"
 
 
-def v2_voice_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "voice"
+def captions_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "captions"
 
 
-def v2_captions_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "captions"
+def thumbnail_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "thumbnail"
 
 
-def v2_thumbnail_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "thumbnail"
+def guides_dir(reel_path: Path) -> Path:
+    return Path(reel_path) / "guides"
 
 
-def v2_guides_dir(reel_path: Path) -> Path:
-    return v2_dir(reel_path) / "guides"
+def provenance_path(reel_path: Path) -> Path:
+    return meta_dir(reel_path) / "provenance.json"
 
 
-def v2_provenance_path(reel_path: Path) -> Path:
-    return v2_meta_dir(reel_path) / "provenance.json"
+def quality_gate_path(reel_path: Path) -> Path:
+    return meta_dir(reel_path) / "quality_gate.json"
 
 
-def v2_quality_gate_path(reel_path: Path) -> Path:
-    return v2_meta_dir(reel_path) / "quality_gate.json"
+def plan_path(reel_path: Path) -> Path:
+    return meta_dir(reel_path) / "plan.json"
 
 
-def v2_plan_path(reel_path: Path) -> Path:
-    return v2_meta_dir(reel_path) / "plan.json"
-
-
-def v2_captions_srt_path(reel_path: Path) -> Path:
-    return v2_captions_dir(reel_path) / "captions.srt"
+def captions_srt_path(reel_path: Path) -> Path:
+    return captions_dir(reel_path) / "captions.srt"
 
 
 def claim_json_path(reel_path: Path) -> Path:
-    """Canonical v2 input."""
+    """Canonical pipeline input."""
     return inputs_dir(reel_path) / "claim.json"
 
 
 def data_json_path(reel_path: Path) -> Path:
-    """Canonical v2 input."""
+    """Canonical pipeline input."""
     return inputs_dir(reel_path) / "data.json"
 
 
-def ensure_v2_layout(reel_path: Path) -> None:
-    """Create the canonical v2 output directory structure for a reel."""
+def ensure_pipeline_layout(reel_path: Path) -> None:
+    """Create the canonical pipeline output directory structure for a reel."""
     for d in (
-        v2_meta_dir(reel_path),
-        v2_subsegments_dir(reel_path),
-        v2_charts_dir(reel_path),
-        v2_voice_dir(reel_path),
-        v2_captions_dir(reel_path),
-        v2_thumbnail_dir(reel_path),
-        v2_guides_dir(reel_path),
+        inputs_dir(reel_path),
+        meta_dir(reel_path),
+        subsegments_dir(reel_path),
+        charts_dir(reel_path),
+        pipeline_voice_dir(reel_path),
+        captions_dir(reel_path),
+        thumbnail_dir(reel_path),
+        guides_dir(reel_path),
     ):
         d.mkdir(parents=True, exist_ok=True)
+
+
+# Legacy aliases for backwards compatibility during migration
+v2_dir = lambda reel_path: Path(reel_path)  # No more v2 subfolder
+v2_meta_dir = meta_dir
+v2_subsegments_dir = subsegments_dir
+v2_charts_dir = charts_dir
+v2_voice_dir = pipeline_voice_dir
+v2_captions_dir = captions_dir
+v2_thumbnail_dir = thumbnail_dir
+v2_guides_dir = guides_dir
+v2_provenance_path = provenance_path
+v2_quality_gate_path = quality_gate_path
+v2_plan_path = plan_path
+v2_captions_srt_path = captions_srt_path
+ensure_v2_layout = ensure_pipeline_layout
 
 

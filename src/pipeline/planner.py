@@ -1,7 +1,7 @@
-"""V2 plan generator (Phase 2).
+"""Plan generator - deterministic segment/subsegment planning.
 
 This is intentionally rules-first and deterministic.
-It produces `v2/meta/plan.json`, which becomes the contract for later stages.
+It produces `meta/plan.json`, which becomes the contract for later stages.
 """
 
 from __future__ import annotations
@@ -14,10 +14,10 @@ from typing import Any, Literal
 from src.utils.paths import (
     claim_json_path,
     data_json_path,
-    ensure_v2_layout,
-    v2_plan_path,
+    ensure_pipeline_layout,
+    plan_path,
 )
-from src.v2.provenance import write_json_immutable
+from src.pipeline.provenance import write_json_immutable
 
 
 AuditLevel = Literal["basic", "strict"]
@@ -77,29 +77,29 @@ def _zoom_plan_for(duration_seconds: float) -> list[dict[str, float]]:
     return [{"at_seconds": t1}, {"at_seconds": t2}, {"at_seconds": t3}]
 
 
-def v2_generate_plan(
+def generate_plan(
     reel_path: Path,
     *,
     force: bool = False,
 ) -> Path:
-    """Generate `v2/meta/plan.json` deterministically.
+    """Generate `meta/plan.json` deterministically.
 
     Canonical defaults (doctrine):
     - 10.0s atomic subsegments
     - default reel = 50s (5 subsegments) using 10+20+10+10 segment template
     """
     reel_path = Path(reel_path)
-    ensure_v2_layout(reel_path)
+    ensure_pipeline_layout(reel_path)
 
-    claim_path = claim_json_path(reel_path)
-    data_path = data_json_path(reel_path)
-    if not claim_path.exists():
-        raise FileNotFoundError(f"Missing required v2 input: {claim_path}")
-    if not data_path.exists():
-        raise FileNotFoundError(f"Missing required v2 input: {data_path}")
+    claim_file = claim_json_path(reel_path)
+    data_file = data_json_path(reel_path)
+    if not claim_file.exists():
+        raise FileNotFoundError(f"Missing required input: {claim_file}")
+    if not data_file.exists():
+        raise FileNotFoundError(f"Missing required input: {data_file}")
 
-    claim = _parse_claim(_read_json(claim_path))
-    data = _read_json(data_path)  # validated later in Phase 5 (audit DSL)
+    claim = _parse_claim(_read_json(claim_file))
+    data = _read_json(data_file)  # validated later during chart rendering (audit DSL)
 
     # Canonical default: 5 subsegments (50s)
     subsegment_ids = [f"subseg-{i:02d}" for i in range(1, 6)]
@@ -239,8 +239,12 @@ def v2_generate_plan(
         },
     }
 
-    out = v2_plan_path(reel_path)
+    out = plan_path(reel_path)
     write_json_immutable(out, plan, force=force)
     return out
+
+
+# Legacy alias for backwards compatibility
+v2_generate_plan = generate_plan
 
 

@@ -1,11 +1,11 @@
-"""V2 charts stage (Phase 5).
+"""Charts stage - Remotion chart rendering.
 
 Inputs:
-- `v2/meta/plan.json` containing optional per-subsegment chart jobs
+- `meta/plan.json` containing optional per-subsegment chart jobs
 
 Outputs:
-- `v2/charts/chart-<subseg>-<chart_id>.json` (render props, deterministic)
-- `v2/charts/chart-<subseg>-<chart_id>.mp4` (10.0s @ 30fps)
+- `charts/chart-<subseg>-<chart_id>.json` (render props, deterministic)
+- `charts/chart-<subseg>-<chart_id>.mp4` (10.0s @ 30fps)
 
 Canonical approach (aligned with docs/charts):
 - Chart duration is controlled via `animation.*` props.
@@ -28,8 +28,8 @@ from pathlib import Path
 from typing import Any
 
 from src.services.chart_renderer import render_chart_from_json
-from src.utils.paths import ensure_v2_layout, v2_charts_dir, v2_plan_path
-from src.v2.provenance import write_json_immutable
+from src.utils.paths import ensure_pipeline_layout, charts_dir, plan_path
+from src.pipeline.provenance import write_json_immutable
 
 
 TARGET_FPS = 30
@@ -92,22 +92,22 @@ def probe_video_frame_count(path: Path) -> int:
     return int(out)
 
 
-def v2_render_charts(
+def render_charts(
     reel_path: Path,
     *,
     force: bool = False,
     fps: int = TARGET_FPS,
 ) -> list[Path]:
     reel_path = Path(reel_path)
-    ensure_v2_layout(reel_path)
+    ensure_pipeline_layout(reel_path)
 
-    plan_path = v2_plan_path(reel_path)
-    if not plan_path.exists():
-        raise FileNotFoundError(f"Missing v2 plan: {plan_path}. Run v2 stage 'plan' first.")
+    plan_file = plan_path(reel_path)
+    if not plan_file.exists():
+        raise FileNotFoundError(f"Missing plan: {plan_file}. Run 'plan' stage first.")
 
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan = json.loads(plan_file.read_text(encoding="utf-8"))
     subsegments = plan.get("subsegments") or []
-    out_dir = v2_charts_dir(reel_path)
+    out_dir = charts_dir(reel_path)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rendered: list[Path] = []
@@ -149,5 +149,9 @@ def v2_render_charts(
             rendered.append(mp4_path)
 
     return rendered
+
+
+# Legacy alias
+v2_render_charts = render_charts
 
 

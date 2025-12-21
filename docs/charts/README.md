@@ -335,6 +335,6 @@ Customize:
 
 ## See Also
 
-- `docs/08-chart-components-plan.md` — Technical implementation details
-- `docs/05-visual-style-and-subtitles.md` — Brand visual guidelines
 - `remotion/src/components/charts/` — All chart component source code
+- `docs/_archive/08-chart-components-plan.md` — Technical implementation details (legacy)
+- `docs/_archive/05-visual-style-and-subtitles.md` — Brand visual guidelines (legacy)

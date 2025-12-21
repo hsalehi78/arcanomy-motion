@@ -27,32 +27,14 @@ dependencies = [
 
 [project.scripts]
 arcanomy = "src.commands:app"
-commit = "src.commands:run_commit"
 
-# Shorthand stage commands
+# Shorthand commands
 set = "src.commands:_run_set"
-seed = "src.commands:_run_seed"
-research = "src.commands:_run_research"
-script = "src.commands:_run_script"
-plan = "src.commands:_run_plan"
-assets = "src.commands:_run_assets"
-vidprompt = "src.commands:_run_vidprompt"
-videos = "src.commands:_run_videos"
-voice = "src.commands:_run_voice"
-audio = "src.commands:_run_audio"
-sfx = "src.commands:_run_sfx"
-sfxgen = "src.commands:_run_sfxgen"
-final = "src.commands:_run_final"
-captions = "src.commands:_run_captions"
-full = "src.commands:_run_full"
-assemble = "src.commands:_run_assemble"
-deliver = "src.commands:_run_deliver"
 current = "src.commands:_run_current"
 guide = "src.commands:_run_guide"
 reels = "src.commands:_run_reels"
-migrate = "src.commands:_run_migrate"
-credits = "src.commands:_run_credits"
 chart = "src.commands:_run_chart"
+commit = "src.commands:run_commit"
 
 [build-system]
 requires = ["hatchling"]

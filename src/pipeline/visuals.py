@@ -1,9 +1,9 @@
-"""V2 deterministic subsegment visuals (Phase 3).
+"""Deterministic subsegment visuals generation.
 
 Canonical baseline:
-- Produce `v2/subsegments/subseg-XX.mp4`
+- Produce `subsegments/subseg-XX.mp4`
 - Each output is exactly 10.0s (±1 frame tolerance at target fps for validation)
-- No Remotion usage (Remotion is charts-only in v2)
+- No Remotion usage (Remotion is charts-only)
 """
 
 from __future__ import annotations
@@ -13,8 +13,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from src.utils.paths import ensure_v2_layout, v2_plan_path, v2_subsegments_dir
-# (reserved for later) quality gate metadata emission will live next to this stage.
+from src.utils.paths import ensure_pipeline_layout, plan_path, subsegments_dir
 
 
 def _ffmpeg_exists() -> bool:
@@ -124,29 +123,29 @@ def render_subsegment_background(
     _run(cmd)
 
 
-def v2_generate_subsegments(
+def generate_subsegments(
     reel_path: Path,
     *,
     force: bool = False,
     fps: int = 30,
     tolerance_frames: int = 1,
 ) -> list[Path]:
-    """Generate `v2/subsegments/*.mp4` from `v2/meta/plan.json`."""
+    """Generate `subsegments/*.mp4` from `meta/plan.json`."""
     reel_path = Path(reel_path)
-    ensure_v2_layout(reel_path)
+    ensure_pipeline_layout(reel_path)
 
     if not _ffmpeg_exists():
         raise RuntimeError("ffmpeg/ffprobe required but not found on PATH.")
 
-    plan_path = v2_plan_path(reel_path)
-    if not plan_path.exists():
-        raise FileNotFoundError(f"Missing v2 plan: {plan_path}. Run v2 stage 'plan' first.")
+    plan_file = plan_path(reel_path)
+    if not plan_file.exists():
+        raise FileNotFoundError(f"Missing plan: {plan_file}. Run 'plan' stage first.")
 
     import json
 
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan = json.loads(plan_file.read_text(encoding="utf-8"))
     subsegments = plan.get("subsegments") or []
-    out_dir = v2_subsegments_dir(reel_path)
+    out_dir = subsegments_dir(reel_path)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     outputs: list[Path] = []
@@ -159,5 +158,9 @@ def v2_generate_subsegments(
         outputs.append(out_path)
 
     return outputs
+
+
+# Legacy alias
+v2_generate_subsegments = generate_subsegments
 
 

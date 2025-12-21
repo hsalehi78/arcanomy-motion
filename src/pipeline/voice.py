@@ -1,7 +1,7 @@
-"""V2 voice generation (Phase 4).
+"""Voice generation for pipeline.
 
 Canonical output:
-- `v2/voice/subseg-XX.wav` (mono WAV)
+- `voice/subseg-XX.wav` (mono WAV)
 - Exactly 10.0s each (pad/trim)
 
 Provider:
@@ -18,8 +18,8 @@ from pathlib import Path
 
 from src.config import get_default_voice_id
 from src.services.elevenlabs import ElevenLabsService
-from src.utils.paths import ensure_v2_layout, v2_plan_path, v2_voice_dir
-from src.v2.visuals import probe_duration_seconds, validate_duration
+from src.utils.paths import ensure_pipeline_layout, plan_path, pipeline_voice_dir
+from src.pipeline.visuals import probe_duration_seconds, validate_duration
 
 
 def _ffmpeg_exists() -> bool:
@@ -105,7 +105,7 @@ def _render_stub_voice(
     _run(cmd)
 
 
-def v2_generate_voice(
+def generate_voice(
     reel_path: Path,
     *,
     voice_id: str | None = None,
@@ -114,20 +114,20 @@ def v2_generate_voice(
 ) -> list[Path]:
     """Generate per-subsegment 10.0s WAV files."""
     reel_path = Path(reel_path)
-    ensure_v2_layout(reel_path)
+    ensure_pipeline_layout(reel_path)
 
     if not _ffmpeg_exists():
         raise RuntimeError("ffmpeg/ffprobe required but not found on PATH.")
 
-    plan_path = v2_plan_path(reel_path)
-    if not plan_path.exists():
-        raise FileNotFoundError(f"Missing v2 plan: {plan_path}. Run v2 stage 'plan' first.")
+    plan_file = plan_path(reel_path)
+    if not plan_file.exists():
+        raise FileNotFoundError(f"Missing plan: {plan_file}. Run 'plan' stage first.")
 
     import json
 
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan = json.loads(plan_file.read_text(encoding="utf-8"))
     subsegments = plan.get("subsegments") or []
-    out_dir = v2_voice_dir(reel_path)
+    out_dir = pipeline_voice_dir(reel_path)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     api_key = os.getenv("ELEVENLABS_API_KEY") or ""
@@ -172,5 +172,9 @@ def v2_generate_voice(
         outputs.append(out_wav)
 
     return outputs
+
+
+# Legacy alias
+v2_generate_voice = generate_voice
 
 
