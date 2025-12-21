@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.utils.io import read_file, write_file
-from src.config import get_default_provider
+from src.config import get_default_provider, get_image_model, get_video_model
 from src.utils.paths import (
     images_composites_dir,
     json_path,
@@ -65,10 +65,12 @@ def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: 
     images_dir.mkdir(parents=True, exist_ok=True)
     
     # Prepare execution log
+    model = get_image_model(provider)
     execution_log = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "reel_folder": reel_path.name,
         "provider": provider,
+        "model": model,
         "dry_run": dry_run,
         "global_atmosphere": global_atmosphere[:200] + "..." if len(global_atmosphere) > 200 else global_atmosphere,
         "total_assets": len(assets),
@@ -87,7 +89,7 @@ def run_asset_generation(reel_path: Path, provider: str | None = None, dry_run: 
 `03_visual_plan.output.json`
 
 ## Provider
-{provider} ({"DRY RUN - prompts only" if dry_run else "LIVE - generating images"})
+{provider} / {model} ({"DRY RUN - prompts only" if dry_run else "LIVE - generating images"})
 
 ## Global Atmosphere
 ```
@@ -132,6 +134,7 @@ For each asset:
     print(f"Reel: {reel_path.name}")
     print(f"Assets: {len(assets)}")
     print(f"Provider: {provider}")
+    print(f"Model: {model}")
     print(f"{'='*60}\n")
     
     for i, asset in enumerate(assets, 1):
@@ -315,11 +318,13 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
             "Please ensure scripts/generate_video.py exists."
         )
     
+    model = get_video_model(provider)
     execution_log = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "reel_folder": reel_path.name,
         "source_file": source_file,
         "provider": provider,
+        "model": model,
         "dry_run": dry_run,
         "total_clips": len(clips),
         "successful": 0,
@@ -336,6 +341,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
     print(f"Source: {source_file}")
     print(f"Clips: {len(clips)}")
     print(f"Provider: {provider}")
+    print(f"Model: {model}")
     print(f"{'='*60}\n")
     
     # Process each clip
@@ -457,7 +463,7 @@ def run_video_generation(reel_path: Path, provider: str | None = None, dry_run: 
 - Used: `{source_file}`
 
 ## Provider
-{provider} ({"DRY RUN" if dry_run else "LIVE"})
+{provider} / {model} ({"DRY RUN" if dry_run else "LIVE"})
 
 ## Clips to Generate ({len(clips)} total)
 

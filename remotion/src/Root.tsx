@@ -37,9 +37,12 @@ const calcCaptionBurnMetadata: CalculateMetadataFunction<CaptionBurnProps> = ({ 
           )
         : 1;
 
+  // Use FPS from props if provided, otherwise default to 30
+  const fps = typeof (props as any)?.fps === "number" ? (props as any).fps : 30;
+
   return {
     durationInFrames: Math.max(1, totalFrames),
-    fps: 30,
+    fps,
     width: 1080,
     height: 1920,
     props,

@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, Video } from "remotion";
+import { AbsoluteFill, Sequence, Video, staticFile } from "remotion";
 import { Subtitle } from "../components/typography/Subtitle";
 import { COLORS } from "../lib/constants";
 
@@ -29,10 +29,13 @@ export const CaptionBurn: React.FC<CaptionBurnProps> = ({
   segments,
   colors = COLORS,
 }) => {
+  // Use staticFile for video in remotion/public folder
+  const videoSrc = staticFile(baseVideoPath);
+
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg }}>
       <Video
-        src={baseVideoPath}
+        src={videoSrc}
         style={{ width: "100%", height: "100%", objectFit: "cover" }}
       />
 

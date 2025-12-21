@@ -18,6 +18,7 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 4. `04-pipeline-stages.md` — step-by-step pipeline (inputs/outputs per stage)
 5. `05-visual-style-and-subtitles.md` — v1 style rules (Arcanomy look) + subtitle policy
 6. `06-blog-ingestion.md` — importing content from Arcanomy blog
+7. `07-remotion-guide.md` — Remotion framework reference (components, rendering, Player)
 
 ## Pipeline Overview
 

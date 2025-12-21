@@ -186,7 +186,7 @@ def run_audio_generation(
 
     narrations = []
     voice_config = {
-        "stability": 0.40,
+        "stability": 0.5,  # TTD: 0.0=Creative, 0.5=Natural, 1.0=Robust
         "similarity_boost": 0.75,
         "style": 0.12,
     }

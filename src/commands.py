@@ -999,7 +999,7 @@ def final(
     voice_volume: float = typer.Option(1.0, "--voice", "-v", help="Voice volume (0-1, default 1.0)"),
     dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Validate files only, don't process"),
     keep_files: bool = typer.Option(False, "--keep", "-k", help="Keep intermediate files"),
-    captions: bool = typer.Option(True, "--captions/--no-captions", help="Burn karaoke captions into final.mp4 (default: on)"),
+    captions: bool = typer.Option(False, "--captions/--no-captions", help="Also run Stage 7.5 to burn captions (default: off)"),
 ):
     """Run final assembly stage (Stage 7) on current reel.
     

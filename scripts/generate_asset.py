@@ -254,10 +254,6 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
         for attempt in range(max_attempts):
             time.sleep(5)  # Wait 5 seconds between polls
             
-            # #region agent log
-            import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-poll","location":"generate_asset.py:kie_poll","message":"Polling recordInfo","data":{"task_id":task_id,"attempt":attempt+1},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
-            # #endregion
-            
             # Use recordInfo endpoint with taskId as query param
             status_response = httpx.get(
                 "https://api.kie.ai/api/v1/jobs/recordInfo",
@@ -270,10 +266,6 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
             
             status_response.raise_for_status()
             status_data = status_response.json()
-            
-            # #region agent log
-            import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-response","location":"generate_asset.py:kie_status","message":"recordInfo response","data":{"code":status_data.get("code"),"state":status_data.get("data",{}).get("state")},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
-            # #endregion
             
             if status_data.get("code") != 200:
                 print(f"   Waiting... ({attempt + 1}/{max_attempts})")
@@ -291,9 +283,6 @@ def generate_kie(prompt: str, output_path: str, reference_paths: list = None) ->
                     result_urls = result_data.get("resultUrls", [])
                     if result_urls:
                         image_url = result_urls[0]
-                        # #region agent log
-                        import json as _json; open(r"c:\Dev\arcanomy-motion\.cursor\debug.log", "a").write(_json.dumps({"hypothesisId":"kie-success","location":"generate_asset.py:kie_download","message":"Downloading image","data":{"image_url":image_url[:100]},"timestamp":__import__("time").time(),"sessionId":"debug-session"})+"\n")
-                        # #endregion
                         img_response = httpx.get(image_url, timeout=60.0)
                         img_response.raise_for_status()
                         Path(output_path).parent.mkdir(parents=True, exist_ok=True)

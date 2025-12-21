@@ -96,9 +96,9 @@ def run_sfx_generation(
 
         if dry_run:
             # Save prompt to text file
-            prompt_path = output_path.with_suffix(".prompt.txt")
+            dry_run_prompt_file = output_path.with_suffix(".prompt.txt")
             write_file(
-                prompt_path,
+                dry_run_prompt_file,
                 f"# Sound Effect Prompt (Dry Run)\n\n"
                 f"Clip: {clip_num}\n"
                 f"Duration: {duration}s\n"
@@ -111,11 +111,11 @@ def run_sfx_generation(
                     "segment_id": sfx.get("segment_id", clip_num),
                     "prompt": prompt,
                     "audio_path": str(output_path),
-                    "prompt_file": str(prompt_path),
+                    "prompt_file": str(dry_run_prompt_file),
                     "status": "dry_run",
                 }
             )
-            execution_log.append(f"- Status: DRY RUN (prompt saved to {prompt_path.name})")
+            execution_log.append(f"- Status: DRY RUN (prompt saved to {dry_run_prompt_file.name})")
             continue
 
         # Generate sound effect

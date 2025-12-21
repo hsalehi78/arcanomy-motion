@@ -30,7 +30,7 @@ class ElevenLabsService:
         voice_id: str,
         output_path: Path,
         model_id: str = None,
-        stability: float = 0.40,
+        stability: float = 0.5,  # TTD stability: 0.0=Creative, 0.5=Natural, 1.0=Robust
         similarity_boost: float = 0.75,
         style: float = 0.12,
     ) -> Path:
@@ -41,7 +41,7 @@ class ElevenLabsService:
             voice_id: ElevenLabs voice ID
             output_path: Where to save the audio file
             model_id: ElevenLabs model to use
-            stability: Voice stability (0-1). Lower = more natural variation. Documentary style: 0.35-0.45
+            stability: TTD stability (0.0=Creative, 0.5=Natural, 1.0=Robust). Use 0.5 for documentary.
             similarity_boost: Voice similarity boost (0-1). Documentary style: 0.75
             style: Style exaggeration (0-1). Adds theatrical weight. Documentary style: 0.10-0.15
 

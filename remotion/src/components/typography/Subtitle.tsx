@@ -13,6 +13,9 @@ interface SubtitleProps {
   colors?: typeof COLORS;
 }
 
+// Number of words to show in the sliding window (on each side of active word)
+const WINDOW_SIZE = 2; // Shows ~5 words total: 2 before + active + 2 after
+
 export const Subtitle: React.FC<SubtitleProps> = ({
   text,
   words = [],
@@ -20,56 +23,70 @@ export const Subtitle: React.FC<SubtitleProps> = ({
 }) => {
   const frame = useCurrentFrame();
 
+  // Find the currently active word index
+  const activeIndex = words.findIndex(
+    (w) => frame >= w.startFrame && frame < w.endFrame
+  );
+
+  // If no word is active yet, find the next upcoming word
+  const effectiveIndex =
+    activeIndex >= 0
+      ? activeIndex
+      : words.findIndex((w) => frame < w.startFrame);
+
+  // Calculate sliding window bounds
+  const windowStart = Math.max(0, (effectiveIndex >= 0 ? effectiveIndex : 0) - WINDOW_SIZE);
+  const windowEnd = Math.min(
+    words.length,
+    (effectiveIndex >= 0 ? effectiveIndex : 0) + WINDOW_SIZE + 1
+  );
+
+  // Get visible words for this frame
+  const visibleWords = words.slice(windowStart, windowEnd);
+
   // Shorts-optimized subtitle styling (TikTok/IG/Shorts):
-  // - High contrast pill
-  // - Large, bold-enough text
-  // - Explicit font stack (consistent cross-platform)
   const fontFamily =
     '"Inter", "SF Pro Display", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
-  // Responsive sizing for 1080x1920. (42px was too small on mobile.)
-  // Keep it large but not absurdly huge; karaoke pill can be ~8% height overall.
-  const fontSizePx = 86;
-  const lineHeight = 1.12;
+  const fontSizePx = 72; // Slightly smaller for better readability
+  const lineHeight = 1.15;
 
   const outerStyle: React.CSSProperties = {
     position: "absolute",
-    // Keep above platform UI / captions area (bottom ~15% reserved).
-    bottom: "20%",
-    left: "10%",
-    right: "10%",
+    // Position at ~25% from bottom (like TikTok)
+    bottom: "12%",
+    left: "5%",
+    right: "5%",
     display: "flex",
     justifyContent: "center",
     pointerEvents: "none",
   };
 
   const pillStyle: React.CSSProperties = {
-    backgroundColor: "rgba(0, 0, 0, 0.78)",
-    padding: "18px 28px",
-    borderRadius: "14px",
-    boxShadow: "0 14px 40px rgba(0, 0, 0, 0.55)",
-    backdropFilter: "blur(6px)",
-    maxWidth: "80%",
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
+    padding: "16px 32px",
+    borderRadius: "12px",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     justifyContent: "center",
-    gap: "10px",
+    alignItems: "center",
+    gap: "12px",
   };
 
   const baseTextStyle: React.CSSProperties = {
     fontFamily,
     fontSize: `${fontSizePx}px`,
     lineHeight,
-    letterSpacing: "-0.02em",
+    letterSpacing: "-0.01em",
     textAlign: "center",
     color: colors.textPrimary,
     fontWeight: 600,
-    textShadow:
-      "0 3px 10px rgba(0,0,0,0.85), 0 1px 0 rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.35)",
-    WebkitTextStroke: "1px rgba(0,0,0,0.35)",
+    textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+    whiteSpace: "nowrap",
   };
 
-  // If no word-level timing, just show the full text
+  // If no word-level timing, just show the full text (fallback)
   if (words.length === 0) {
     return (
       <div style={outerStyle}>
@@ -80,22 +97,27 @@ export const Subtitle: React.FC<SubtitleProps> = ({
     );
   }
 
-  // Karaoke-style highlighting
+  // Don't render if no visible words
+  if (visibleWords.length === 0) {
+    return null;
+  }
+
+  // Karaoke-style with sliding window
   return (
     <div style={outerStyle}>
       <div style={pillStyle}>
-        {words.map((word, index) => {
+        {visibleWords.map((word, index) => {
           const isActive = frame >= word.startFrame && frame < word.endFrame;
 
           return (
             <span
-              key={index}
+              key={windowStart + index}
               style={{
                 ...baseTextStyle,
                 color: isActive ? colors.highlight : colors.textPrimary,
-                fontWeight: isActive ? 800 : baseTextStyle.fontWeight,
-                transform: isActive ? "scale(1.12)" : "scale(1)",
-                transition: "transform 0.08s linear, color 0.08s linear",
+                fontWeight: isActive ? 800 : 600,
+                transform: isActive ? "scale(1.15)" : "scale(1)",
+                transition: "transform 0.1s ease-out, color 0.1s ease-out",
               }}
             >
               {word.word}

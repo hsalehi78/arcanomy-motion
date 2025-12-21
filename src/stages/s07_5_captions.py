@@ -28,7 +28,6 @@ from pathlib import Path
 from typing import Optional
 
 from src.domain import Objective
-from src.services import RemotionCLI
 from src.utils.io import write_file
 from src.utils.logger import get_logger
 from src.utils.paths import final_dir as reel_final_dir
@@ -39,6 +38,38 @@ logger = get_logger()
 DEFAULT_FPS = 30
 CLIP_SECONDS = 10.0
 CLIP_FRAMES = int(CLIP_SECONDS * DEFAULT_FPS)  # 300
+
+
+def _ffprobe_fps(path: Path) -> Optional[float]:
+    """Return video FPS using ffprobe, or None if unavailable."""
+    if not shutil.which("ffprobe"):
+        return None
+    if not path.exists():
+        return None
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=r_frame_rate",
+                "-of", "csv=p=0",
+                str(path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            # Parse fraction like "24/1" or "30000/1001"
+            fps_str = result.stdout.strip()
+            if "/" in fps_str:
+                num, den = fps_str.split("/")
+                return float(num) / float(den)
+            return float(fps_str)
+    except Exception:
+        pass
+    return None
 
 
 def _ffprobe_duration(path: Path) -> Optional[float]:
@@ -223,6 +254,14 @@ def run_captions(
     if not base_video_path.exists():
         raise FileNotFoundError(f"Base video not found: {base_video_path} (run Stage 7 first)")
 
+    # Detect actual video FPS (override default if detected)
+    detected_fps = _ffprobe_fps(base_video_path)
+    if detected_fps is not None:
+        fps = int(round(detected_fps))
+        logger.info(f"Detected video FPS: {detected_fps:.2f} -> using {fps}")
+    else:
+        logger.warning(f"Could not detect video FPS, using default: {fps}")
+
     # Load script segments for spoken text
     script_path = json_path(reel_path, "02_story_generator.output.json")
     if not script_path.exists():
@@ -252,8 +291,9 @@ def run_captions(
         # Fallback: assume clips 1..N where N is count of script segments
         included_clip_ids = sorted(script_by_id.keys())
 
-    # Load durations from Stage 5.5 output (preferred)
+    # Load durations AND actual spoken text from Stage 5.5 output (preferred)
     duration_by_seq: dict[int, float] = {}
+    spoken_text_by_seq: dict[int, str] = {}  # The actual text that was spoken (may differ from script)
     audio_json_path = json_path(reel_path, "05.5_audio_generation.output.json")
     if audio_json_path.exists():
         try:
@@ -265,10 +305,14 @@ def run_captions(
                     continue
                 seq = int(c.get("sequence", c.get("segment_id", 0)) or 0)
                 dur = c.get("duration_seconds")
+                spoken = c.get("text", "")  # The actual spoken text (may be edited from original)
                 if seq and isinstance(dur, (int, float)) and dur > 0:
                     duration_by_seq[seq] = float(dur)
+                if seq and spoken:
+                    spoken_text_by_seq[seq] = spoken.strip()
         except Exception:
             duration_by_seq = {}
+            spoken_text_by_seq = {}
 
     # Build caption segments in the exact order that final_raw concatenates clips
     caption_segments: list[CaptionSegment] = []
@@ -276,11 +320,13 @@ def run_captions(
     execution_log: list[str] = []
 
     for idx, clip_id in enumerate(included_clip_ids):
-        seg = script_by_id.get(int(clip_id), {})
-        text = (seg.get("text") or "").strip()
+        # Prefer actual spoken text from voice generation over original script
+        # (Voice text may be edited/shortened from original script)
+        text = spoken_text_by_seq.get(int(clip_id), "").strip()
         if not text:
-            # Don't generate empty subtitles, but keep the segment for consistent rendering
-            text = ""
+            # Fallback to original script text
+            seg = script_by_id.get(int(clip_id), {})
+            text = (seg.get("text") or "").strip()
 
         # Determine voice duration for this clip
         voice_duration = duration_by_seq.get(int(clip_id))
@@ -320,11 +366,13 @@ def run_captions(
             )
         )
 
-        # Build SRT chunks (readable lines, not karaoke)
-        if subtitle_words:
-            chunks = _chunks_for_srt(subtitle_words)
-            for ch in chunks:
-                srt_entries.append(ch)
+        # Build SRT entry - sentence-level (one caption per segment, full duration)
+        if text:
+            srt_entries.append({
+                "startFrame": start_frame,
+                "endFrame": start_frame + voice_frames,
+                "text": text,
+            })
 
         execution_log.append(
             f"- Clip {clip_id:02d}: voice={voice_duration:.2f}s padding={padding:.2f}s words={len(words)}"
@@ -338,7 +386,8 @@ def run_captions(
         "title": objective.title,
         "fps": fps,
         "totalFrames": total_frames,
-        "baseVideoPath": str(base_video_path.resolve()),
+        # Use filename for video copied to remotion/public (accessed via staticFile)
+        "baseVideoPath": "base_video.mp4",
         "segments": [s.to_dict() for s in caption_segments],
     }
     captions_json_path = json_path(reel_path, "07.5_captions.output.json")
@@ -371,18 +420,59 @@ def run_captions(
         + "\n",
     )
 
-    # Burn captions via Remotion
+    # Burn captions via FFmpeg (fast and reliable)
     output_mp4 = final_dir / "final.mp4"
     if output_mp4.exists() and not overwrite:
         logger.info(f"Captions output exists, skipping: {output_mp4}")
     else:
-        remotion = RemotionCLI()
-        remotion.render(
-            composition_id="CaptionBurn",
-            output_path=output_mp4,
-            props=captions_payload,
-            props_file=final_dir / "remotion_captions_props.json",
+        if not shutil.which("ffmpeg"):
+            raise RuntimeError("ffmpeg not found in PATH - required for caption burning")
+        
+        # FFmpeg subtitle styling (ASS format)
+        # - Large font for mobile viewing (FontSize=22 scales well on 1080x1920)
+        # - White text with black outline for readability
+        # - Bottom center positioning (Alignment=2)
+        # - Bold weight for visibility
+        subtitle_style = (
+            "FontName=Arial,"
+            "FontSize=22,"
+            "PrimaryColour=&H00FFFFFF,"  # White (ABGR format)
+            "OutlineColour=&H00000000,"  # Black outline
+            "BackColour=&H80000000,"     # Semi-transparent black background
+            "Outline=2,"
+            "Shadow=1,"
+            "Bold=1,"
+            "Alignment=2,"  # Bottom center
+            "MarginV=60"    # 60px from bottom edge
         )
+        
+        # Escape Windows path for FFmpeg filter (need to escape colons and backslashes)
+        srt_path_escaped = str(srt_path).replace("\\", "/").replace(":", "\\:")
+        
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output
+            "-i", str(base_video_path),
+            "-vf", f"subtitles='{srt_path_escaped}':force_style='{subtitle_style}'",
+            "-c:a", "copy",  # Copy audio without re-encoding
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "18",  # High quality
+            str(output_mp4),
+        ]
+        
+        logger.info(f"Burning captions with FFmpeg...")
+        result = subprocess.run(
+            ffmpeg_cmd,
+            capture_output=True,
+            text=True,
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"FFmpeg failed: {result.stderr}")
+            raise RuntimeError(f"FFmpeg caption burn failed: {result.stderr[:500]}")
+        
+        logger.info(f"Caption burn complete: {output_mp4}")
 
     return {
         "status": "success",
