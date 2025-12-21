@@ -1677,6 +1677,41 @@ def guide():
 # =============================================================================
 
 
+@app.command("render-chart")
+def render_chart(
+    json_path: str = typer.Argument(..., help="Path to chart JSON props file"),
+    output: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output video path (default: same folder as JSON, .mp4 extension)",
+    ),
+):
+    """Render a chart to video from a JSON props file.
+    
+    Example:
+        uv run arcanomy render-chart content/reels/my-reel/inputs/data/chart.json
+        uv run arcanomy render-chart chart.json -o output/my-chart.mp4
+    """
+    from src.services import render_chart_from_json
+    
+    json_file = Path(json_path)
+    if not json_file.exists():
+        typer.echo(f"[ERROR] File not found: {json_file}", err=True)
+        raise typer.Exit(1)
+    
+    output_path = Path(output) if output else None
+    
+    typer.echo(f"[Chart] Rendering from: {json_file}")
+    
+    try:
+        result = render_chart_from_json(json_file, output_path)
+        typer.echo(f"[OK] Chart rendered: {result}")
+    except Exception as e:
+        typer.echo(f"[ERROR] Render failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
 @app.command()
 def commit(
     message: Optional[str] = typer.Option(
@@ -2037,6 +2072,15 @@ _credits_app.command()(kie_credits)
 def _run_credits():
     """Entry point for 'uv run credits'."""
     _credits_app()
+
+
+# Chart
+_chart_app = typer.Typer()
+_chart_app.command()(render_chart)
+
+def _run_chart():
+    """Entry point for 'uv run chart'."""
+    _chart_app()
 
 
 if __name__ == "__main__":

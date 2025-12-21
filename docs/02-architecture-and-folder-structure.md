@@ -106,7 +106,8 @@ src/
 │   ├── llm.py                # OpenAI / Anthropic / Google
 │   ├── elevenlabs.py         # Voice generation
 │   ├── image_gen.py          # DALL-E / Midjourney / Gemini
-│   └── remotion_cli.py       # Wrapper for calling `npx remotion render`
+│   ├── remotion_cli.py       # Wrapper for calling `pnpm remotion render`
+│   └── chart_renderer.py     # Chart rendering service (bar, pie, etc.)
 │
 ├── stages/                   # Pipeline Logic (Pure Python)
 │   ├── s01_research.py
@@ -261,12 +262,16 @@ shared/
 │   └── 06.5_sound_effects_generation_system.md  # SFX generation
 │   # Note: Stage 7 (Final Assembly) uses FFmpeg, no LLM needed
 └── templates/                       # User-facing templates
-    └── seed_template.md             # Template for creating new reels
+    ├── seed_template.md             # Template for creating new reels
+    └── charts/                      # Chart JSON templates
+        ├── bar_chart_template.json  # Bar chart example
+        └── README.md                # Chart template docs
 ```
 
 **Distinction:**
 - **`prompts/`**: System prompts define agent behavior and are loaded by the orchestrator. These are internal instructions that apply globally across all reels.
 - **`templates/`**: User-facing templates provide formats/starting points for users to fill in (e.g., `seed_template.md`).
+- **`templates/charts/`**: JSON templates for rendering standalone charts with `uv run chart`.
 
 ---
 

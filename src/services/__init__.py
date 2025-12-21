@@ -8,6 +8,13 @@ from .blog_ingest import (
     extract_seed_and_config,
     regenerate_seed,
 )
+from .chart_renderer import (
+    ChartRenderer,
+    BarChartProps,
+    BarDataPoint,
+    render_bar_chart,
+    render_chart_from_json,
+)
 
 __all__ = [
     "LLMService",
@@ -18,5 +25,10 @@ __all__ = [
     "fetch_blog_mdx",
     "extract_seed_and_config",
     "regenerate_seed",
+    "ChartRenderer",
+    "BarChartProps",
+    "BarDataPoint",
+    "render_bar_chart",
+    "render_chart_from_json",
 ]
 

@@ -323,24 +323,48 @@ KLING_API_KEY=...
 GOOGLE_API_KEY=...
 ```
 
-### CLI Commands (Planned)
+### CLI Commands
 
 ```bash
 # Create new reel from template
 uv run arcanomy new "my-reel-slug"
 
 # Run full pipeline
-uv run arcanomy run content/reels/2024-05-20-sunk-cost/
+uv run full my-reel
 
 # Run specific stage
-uv run arcanomy run --stage 3 content/reels/2024-05-20-sunk-cost/
+uv run research    # Stage 1
+uv run script      # Stage 2
+uv run plan        # Stage 3
+# ... etc
 
 # Preview in Remotion
-cd remotion && npm run preview
+cd remotion && pnpm start
 
-# Render final video
-uv run arcanomy render content/reels/2024-05-20-sunk-cost/
+# Render a chart from JSON
+uv run chart path/to/chart.json
+
+# Render with custom output
+uv run arcanomy render-chart chart.json -o output/my-chart.mp4
 ```
+
+### Chart Rendering
+
+Render animated charts to video from JSON:
+
+```json
+{
+  "chartType": "bar",
+  "title": "Monthly Revenue",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Jan", "value": 120 },
+    { "label": "Feb", "value": 200, "color": "#FFD700" }
+  ]
+}
+```
+
+Templates: `shared/templates/charts/`
 
 ---
 

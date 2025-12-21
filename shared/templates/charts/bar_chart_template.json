@@ -1,0 +1,14 @@
+{
+  "chartType": "bar",
+  "title": "Monthly Revenue ($K)",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Jan", "value": 120 },
+    { "label": "Feb", "value": 85 },
+    { "label": "Mar", "value": 200 },
+    { "label": "Apr", "value": 150 },
+    { "label": "May", "value": 280, "color": "#FFD700" },
+    { "label": "Jun", "value": 190 }
+  ]
+}
+

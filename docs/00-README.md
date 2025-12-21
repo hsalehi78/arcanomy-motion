@@ -19,6 +19,7 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 5. `05-visual-style-and-subtitles.md` — v1 style rules (Arcanomy look) + subtitle policy
 6. `06-blog-ingestion.md` — importing content from Arcanomy blog
 7. `07-remotion-guide.md` — Remotion framework reference (components, rendering, Player)
+8. `08-chart-components-plan.md` — Chart rendering (bar, pie, etc.) with JSON props
 
 ## Pipeline Overview
 
@@ -45,6 +46,7 @@ Or run stages individually:
 | 6.5 | Script | Generate sound effects | `uv run sfxgen` |
 | 7 | Script | Final assembly (FFmpeg) | `uv run final` |
 | 7.5 | Script | Captions burn-in (Remotion) | `uv run captions` |
+| — | Util | Render chart from JSON | `uv run chart <json>` |
 
 ## Configuration
 

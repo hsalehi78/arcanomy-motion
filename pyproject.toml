@@ -52,6 +52,7 @@ guide = "src.commands:_run_guide"
 reels = "src.commands:_run_reels"
 migrate = "src.commands:_run_migrate"
 credits = "src.commands:_run_credits"
+chart = "src.commands:_run_chart"
 
 [build-system]
 requires = ["hatchling"]

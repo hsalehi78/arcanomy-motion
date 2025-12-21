@@ -3,6 +3,7 @@ import { CalculateMetadataFunction, Composition } from "remotion";
 import { MainReel } from "./compositions/MainReel";
 import { Shorts } from "./compositions/Shorts";
 import { CaptionBurn, CaptionBurnProps } from "./compositions/CaptionBurn";
+import { BarChartDemo, BarChartDemoProps } from "./compositions/BarChartDemo";
 
 type MainReelProps = React.ComponentProps<typeof MainReel>;
 
@@ -96,6 +97,26 @@ export const RemotionRoot: React.FC = () => {
         height={1920}
         defaultProps={{
           text: "Your text here",
+        }}
+      />
+      <Composition<BarChartDemoProps, any>
+        id="BarChartDemo"
+        component={BarChartDemo}
+        durationInFrames={90} // 3 seconds
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          title: "Monthly Revenue ($K)",
+          animationDuration: 45,
+          data: [
+            { label: "Jan", value: 120 },
+            { label: "Feb", value: 85 },
+            { label: "Mar", value: 200 },
+            { label: "Apr", value: 150 },
+            { label: "May", value: 280, color: "#FFD700" },
+            { label: "Jun", value: 190 },
+          ],
         }}
       />
     </>

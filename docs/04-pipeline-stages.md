@@ -506,3 +506,52 @@ content/reels/2024-05-20-sunk-cost/
 | 6 | `shared/prompts/06_sound_effects_system.md` |
 | 6.5 | `shared/prompts/06.5_sound_effects_generation_system.md` |
 | 7 | N/A (FFmpeg-based, no LLM) |
+
+---
+
+## Chart Rendering (Standalone)
+
+Charts can be rendered independently from the main pipeline:
+
+```bash
+# Render a chart from JSON
+uv run chart path/to/chart.json
+
+# With custom output
+uv run arcanomy render-chart chart.json -o output/chart.mp4
+```
+
+### Chart JSON Format
+
+```json
+{
+  "chartType": "bar",
+  "title": "Monthly Revenue ($K)",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Jan", "value": 120 },
+    { "label": "Feb", "value": 200, "color": "#FFD700" }
+  ]
+}
+```
+
+### Props Reference
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chartType` | `"bar"` | Required | Chart type identifier |
+| `title` | string | `"Chart"` | Title displayed at top |
+| `animationDuration` | number | `45` | Animation frames (30 = 1 sec) |
+| `data` | array | Required | Array of data points |
+
+### Data Point
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `label` | string | Yes | Category label (x-axis) |
+| `value` | number | Yes | Numeric value (bar height) |
+| `color` | string | No | Hex color override (default: `#FFD700`) |
+
+Templates available in `shared/templates/charts/`
+
+See `docs/08-chart-components-plan.md` for full chart documentation.

@@ -101,6 +101,7 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run sfxgen` | Run Stage 6.5 on current reel |
 | `uv run final` | Run Stage 7 on current reel |
 | `uv run captions` | Run Stage 7.5 on current reel |
+| `uv run chart <json>` | Render chart from JSON props file |
 | `uv run commit` | Git add + commit + push |
 
 ---
@@ -117,7 +118,53 @@ uv run arcanomy status <path>     # Check pipeline progress
 | `uv run arcanomy run <path> -s 2` | Run specific stage only |
 | `uv run arcanomy status <path>` | Show pipeline status |
 | `uv run arcanomy preview` | Start Remotion dev server |
+| `uv run arcanomy render-chart <json>` | Render chart from JSON |
 | `uv run arcanomy guide` | Show workflow guide |
+
+---
+
+## Chart Rendering
+
+Render animated charts from JSON data files:
+
+```bash
+# Render a bar chart
+uv run chart my-chart.json
+
+# With custom output path
+uv run chart my-chart.json -o output/revenue-chart.mp4
+
+# Full command
+uv run arcanomy render-chart path/to/chart.json
+```
+
+### Chart JSON Format
+
+Create a JSON file with your data:
+
+```json
+{
+  "chartType": "bar",
+  "title": "Monthly Revenue ($K)",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Jan", "value": 120 },
+    { "label": "Feb", "value": 85 },
+    { "label": "Mar", "value": 200, "color": "#FF3B30" }
+  ]
+}
+```
+
+### Available Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `chartType` | `"bar"` | Required | Chart type |
+| `title` | string | `"Chart"` | Title at top |
+| `animationDuration` | number | `45` | Animation frames (30 = 1 sec) |
+| `data` | array | Required | Data points |
+
+Templates available in `shared/templates/charts/`
 
 ---
 
