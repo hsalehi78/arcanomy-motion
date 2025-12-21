@@ -1,0 +1,123 @@
+{
+  "_schema_desc": "Horizontal Bar Chart Template v2.0 - Bars grow left to right",
+  "_usage_desc": "Best for: Rankings, leaderboards, long category names. Bars animate from left to right.",
+  
+  "chartType": "horizontalBar",
+  "_chartType_desc": "Identifies this as a horizontal bar chart for the renderer",
+
+  "dimensions": {
+    "_desc": "Canvas dimensions optimized for TikTok 1:1 format",
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "_desc": "Padding inside the canvas. Left margin is larger to fit category labels.",
+      "top": 200,
+      "right": 100,
+      "bottom": 100,
+      "left": 280
+    }
+  },
+
+  "background": {
+    "_desc": "Background color. Use #00FF00 for green screen transparency in CapCut.",
+    "color": "#0D0D0D"
+  },
+
+  "title": {
+    "_desc": "Main title at the top of the chart",
+    "show": true,
+    "text": "Top 5 Countries by GDP",
+    "y": 60,
+    "font": {
+      "family": "Montserrat, Inter, sans-serif",
+      "size": 56,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "_desc": "Secondary text below the title",
+    "show": true,
+    "text": "In Trillions USD (2024)",
+    "y": 130,
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 36,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "labels": {
+    "_desc": "Category labels shown to the left of each bar",
+    "show": true,
+    "position": "left",
+    "_position_options": "left | inside | right",
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 32,
+      "weight": 500
+    },
+    "color": "#FFFFFF"
+  },
+
+  "values": {
+    "_desc": "Value labels shown at the end of each bar",
+    "show": true,
+    "position": "end",
+    "_position_options": "end | inside",
+    "font": {
+      "family": "Montserrat, sans-serif",
+      "size": 36,
+      "weight": 700
+    },
+    "color": "#00FF88"
+  },
+
+  "bars": {
+    "_desc": "Bar styling configuration",
+    "height": 70,
+    "_height_desc": "Height of each bar in pixels",
+    "gap": 30,
+    "_gap_desc": "Vertical spacing between bars",
+    "cornerRadius": 8,
+    "defaultColor": "#4ECDC4"
+  },
+
+  "xAxis": {
+    "_desc": "Horizontal axis configuration",
+    "show": false,
+    "gridLines": {
+      "show": true,
+      "_desc": "Vertical grid lines behind the bars",
+      "color": "#333333"
+    }
+  },
+
+  "animation": {
+    "_desc": "Controls how bars animate into view",
+    "duration": 30,
+    "_duration_desc": "Base animation duration in frames (30 = 1 second at 30fps)",
+    "style": "staggered",
+    "_style_options": "simultaneous | staggered | wave",
+    "_simultaneous_desc": "All bars grow at the same time",
+    "_staggered_desc": "Each bar waits for the previous bar to FINISH before starting",
+    "_wave_desc": "Bars start at staggerDelay intervals, may overlap",
+    "velocityMode": false,
+    "_velocityMode_desc": "When true, shorter bars animate faster (proportional to value)",
+    "staggerDelay": 0,
+    "_staggerDelay_desc": "Extra pause (in frames) between bars. For staggered style, this is added after each bar finishes.",
+    "direction": "top-to-bottom",
+    "_direction_options": "top-to-bottom | bottom-to-top"
+  },
+
+  "data": [
+    { "label": "United States", "value": 28.78, "color": "#4ECDC4" },
+    { "label": "China", "value": 18.53, "color": "#FF6B6B" },
+    { "label": "Germany", "value": 4.59, "color": "#FFE66D" },
+    { "label": "Japan", "value": 4.11, "color": "#C44DFF" },
+    { "label": "India", "value": 3.94, "color": "#00D4FF" }
+  ]
+}
+

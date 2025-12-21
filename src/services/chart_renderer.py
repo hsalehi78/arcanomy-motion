@@ -154,11 +154,24 @@ class ChartRenderer:
             output_path = json_path.parent / f"{json_path.stem}.mp4"
         
         # Map chart types to Remotion composition IDs
+        # =====================================================================
+        # IMPORTANT_FOR_AGENTS: When adding a new chart type:
+        # 1. Create the component in remotion/src/components/charts/
+        # 2. Create the composition wrapper in remotion/src/compositions/
+        # 3. Add calculateMetadata function in Root.tsx
+        # 4. Register the composition in Root.tsx
+        # 5. Add the mapping here
+        # 6. Create a JSON template in docs/charts/
+        # =====================================================================
         chart_type_to_composition = {
             "bar": "BarChartDemo",
+            "horizontalBar": "HorizontalBarChartDemo",
+            "stackedBar": "StackedBarChartDemo",
             "pie": "PieChartDemo",
             "line": "LineChartDemo",
             "scatter": "ScatterChartDemo",
+            "progress": "ProgressChartDemo",
+            "number": "NumberCounterDemo",
         }
         
         if chart_type not in chart_type_to_composition:

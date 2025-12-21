@@ -1,0 +1,87 @@
+{
+  "_schema_desc": "Number Counter Template v2.0 - Animated counting number reveal",
+  "_usage_desc": "Best for: Big number reveals, revenue/metric announcements, key statistics",
+  
+  "chartType": "number",
+  "_chartType_desc": "Identifies this as a number counter for the renderer",
+
+  "value": 1250000,
+  "_value_desc": "The target value to count up to",
+  
+  "startValue": 0,
+  "_startValue_desc": "Starting value for the count (usually 0)",
+  
+  "prefix": "$",
+  "_prefix_desc": "Text before the number (e.g., $, €, #)",
+  
+  "suffix": "",
+  "_suffix_desc": "Text after the number (e.g., K, M, %, +)",
+  
+  "decimals": 0,
+  "_decimals_desc": "Number of decimal places to show",
+  
+  "useLocale": true,
+  "_useLocale_desc": "When true, formats with commas (1,250,000 vs 1250000)",
+
+  "dimensions": {
+    "_desc": "Canvas dimensions optimized for TikTok 1:1 format",
+    "width": 1080,
+    "height": 1080
+  },
+
+  "background": {
+    "_desc": "Background color. Use #00FF00 for green screen transparency in CapCut.",
+    "color": "#0D0D0D"
+  },
+
+  "title": {
+    "_desc": "Label text for the number",
+    "show": true,
+    "text": "Total Revenue",
+    "position": "above",
+    "_position_options": "above | below",
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 48,
+      "weight": 500
+    },
+    "color": "#888888"
+  },
+
+  "subtitle": {
+    "_desc": "Additional context at the bottom",
+    "show": true,
+    "text": "Q4 2024 Results",
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 36,
+      "weight": 400
+    },
+    "color": "#666666"
+  },
+
+  "number": {
+    "_desc": "Main number styling",
+    "font": {
+      "family": "Montserrat, sans-serif",
+      "size": 160,
+      "_size_desc": "Large size for maximum impact",
+      "weight": 700
+    },
+    "color": "#4ECDC4"
+  },
+
+  "animation": {
+    "_desc": "Controls the counting animation",
+    "duration": 60,
+    "_duration_desc": "Animation duration in frames (60 = 2 seconds at 30fps)",
+    "easing": "ease-out",
+    "_easing_options": "linear | ease-out | ease-in-out",
+    "_linear_desc": "Constant speed from start to finish",
+    "_ease_out_desc": "Starts fast, slows down at the end (most satisfying)",
+    "_ease_in_out_desc": "Slow start, fast middle, slow end",
+    "delay": 15,
+    "_delay_desc": "Frames to wait before starting the count (for dramatic effect)"
+  }
+}
+

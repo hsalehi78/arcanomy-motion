@@ -14,9 +14,13 @@ uv run chart path/to/your-chart.json
 | Type | JSON File | Component | Best For |
 |------|-----------|-----------|----------|
 | **Bar Chart** | `bar-chart-*.json` | BarChart.tsx | Comparing categories, rankings, timelines |
+| **Horizontal Bar Chart** | `horizontal-bar-chart-*.json` | HorizontalBarChart.tsx | Rankings, leaderboards, long labels |
+| **Stacked Bar Chart** | `stacked-bar-chart-*.json` | StackedBarChart.tsx | Composition, multi-series comparison |
 | **Pie Chart** | `pie-chart-*.json` | PieChart.tsx | Proportions, market share, composition |
 | **Line Chart** | `line-chart-*.json` | LineChart.tsx | Trends over time, growth, progress |
 | **Scatter Chart** | `scatter-chart-*.json` | ScatterChart.tsx | Correlation, distribution, relationships |
+| **Progress Chart** | `progress-chart-*.json` | ProgressChart.tsx | Single percentage, completion, gauges |
+| **Number Counter** | `number-counter-*.json` | NumberCounter.tsx | Big number reveal, animated counting |
 
 ---
 
@@ -50,6 +54,30 @@ uv run chart path/to/your-chart.json
 |------|-------------|----------|
 | `scatter-chart-basic.json` | Scatter with trend line | Correlation, outliers |
 
+## Horizontal Bar Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `horizontal-bar-chart-basic.json` | Bars grow left to right | Top 5 lists, rankings, leaderboards |
+
+## Stacked Bar Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `stacked-bar-chart-basic.json` | Multi-series stacked bars | Quarterly by region, composition over time |
+
+## Progress Chart Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `progress-chart-basic.json` | Circular progress gauge | Satisfaction %, completion rates, single metrics |
+
+## Number Counter Templates
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `number-counter-basic.json` | Animated counting number | Revenue reveal, big statistics, milestones |
+
 ---
 
 ## JSON Schema v2.0
@@ -66,7 +94,7 @@ All chart JSONs follow the **v2.0 comprehensive schema** with inline documentati
   },
 
   "chartType": "bar",
-  "_chartType_desc": "OPTIONS: 'bar', 'pie', 'line', 'scatter'",
+  "_chartType_desc": "OPTIONS: 'bar', 'horizontalBar', 'stackedBar', 'pie', 'line', 'scatter', 'progress', 'number'",
 
   "dimensions": {
     "width": 1080,
@@ -150,6 +178,44 @@ All chart JSONs follow the **v2.0 comprehensive schema** with inline documentati
 |         | `"sequential"` | Points appear left to right |
 |         | `"random"` | Points appear randomly |
 | `staggerDelay` | frames | Delay between points |
+
+### Horizontal Bar Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `style` | `"simultaneous"` | All bars grow together |
+|         | `"staggered"` | Each bar waits for previous to finish |
+|         | `"wave"` | Bars overlap, flowing effect |
+| `velocityMode` | `true` | Longer bars take proportionally longer |
+| `direction` | `"top-to-bottom"` | First bar animates first |
+|             | `"bottom-to-top"` | Last bar animates first |
+| `staggerDelay` | frames | Extra delay between bars |
+
+### Stacked Bar Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `style` | `"simultaneous"` | All categories animate together |
+|         | `"staggered"` | Categories animate one by one |
+| `staggerDelay` | frames | Delay between categories |
+
+### Progress Chart Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `duration` | frames | Time to fill the arc |
+| `easing` | `"linear"` | Constant speed |
+|          | `"ease-out"` | Fast start, slow finish (satisfying!) |
+
+### Number Counter Animation
+
+| Property | Options | Description |
+|----------|---------|-------------|
+| `duration` | frames | Time to count from start to target |
+| `delay` | frames | Wait before starting (dramatic pause) |
+| `easing` | `"linear"` | Constant counting speed |
+|          | `"ease-out"` | Fast start, slows at end (most satisfying) |
+|          | `"ease-in-out"` | Slow start and end, fast middle |
 
 ---
 

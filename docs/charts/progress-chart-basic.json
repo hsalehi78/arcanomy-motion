@@ -1,0 +1,107 @@
+{
+  "_schema_desc": "Progress/Gauge Chart Template v2.0 - Circular progress indicator",
+  "_usage_desc": "Best for: Single percentage metrics, completion rates, goals, achievements",
+  
+  "chartType": "progress",
+  "_chartType_desc": "Identifies this as a progress/gauge chart for the renderer",
+
+  "value": 85,
+  "_value_desc": "The value to display (0-100 for percentage, or any number with maxValue)",
+  
+  "maxValue": 100,
+  "_maxValue_desc": "Maximum value for calculating percentage fill (default 100)",
+  
+  "format": "percent",
+  "_format_desc": "Display format: percent | number | custom",
+  "_format_percent": "Shows value with % suffix (e.g., 85%)",
+  "_format_number": "Shows value with locale formatting and optional prefix/suffix",
+  "_format_custom": "Shows value with custom prefix/suffix",
+  
+  "prefix": "",
+  "_prefix_desc": "Text before the number (e.g., $, €)",
+  
+  "suffix": "",
+  "_suffix_desc": "Text after the number (e.g., K, M, %)",
+
+  "dimensions": {
+    "_desc": "Canvas dimensions optimized for TikTok 1:1 format",
+    "width": 1080,
+    "height": 1080
+  },
+
+  "background": {
+    "_desc": "Background color. Use #00FF00 for green screen transparency in CapCut.",
+    "color": "#0D0D0D"
+  },
+
+  "title": {
+    "_desc": "Main title at the top of the chart",
+    "show": true,
+    "text": "Customer Satisfaction",
+    "y": 120,
+    "font": {
+      "family": "Montserrat, Inter, sans-serif",
+      "size": 56,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "subtitle": {
+    "_desc": "Secondary text at the bottom",
+    "show": true,
+    "text": "Based on 10,000+ reviews",
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 32,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+
+  "circle": {
+    "_desc": "Circular progress arc configuration",
+    "radius": 300,
+    "_radius_desc": "Radius of the progress circle in pixels",
+    "strokeWidth": 40,
+    "_strokeWidth_desc": "Thickness of the progress arc",
+    "backgroundColor": "#333333",
+    "_backgroundColor_desc": "Color of the unfilled portion of the circle",
+    "fillColor": "#4ECDC4",
+    "_fillColor_desc": "Color of the filled progress arc",
+    "startAngle": -90,
+    "_startAngle_desc": "Starting angle in degrees. -90 = top center (12 o'clock)"
+  },
+
+  "centerValue": {
+    "_desc": "The large percentage/number displayed in the center",
+    "show": true,
+    "font": {
+      "family": "Montserrat, sans-serif",
+      "size": 140,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+
+  "label": {
+    "_desc": "Optional label below the center value",
+    "show": true,
+    "text": "Satisfied",
+    "font": {
+      "family": "Inter, sans-serif",
+      "size": 42,
+      "weight": 500
+    },
+    "color": "#4ECDC4"
+  },
+
+  "animation": {
+    "_desc": "Controls how the progress arc fills",
+    "duration": 45,
+    "_duration_desc": "Animation duration in frames (45 = 1.5 seconds at 30fps)",
+    "easing": "ease-out",
+    "_easing_options": "linear | ease-out"
+  }
+}
+

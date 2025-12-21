@@ -140,7 +140,7 @@
 
   "animation": {
     "_desc": "Line draw animation",
-    "duration": 45,
+    "duration": 90,
     "_duration_desc": "Frames for line to draw (45 = 1.5 sec at 30fps)"
   },
 

@@ -2,9 +2,29 @@
 
 import json
 import subprocess
+import shutil
 import os
 from pathlib import Path
 from typing import Optional
+
+
+def _get_package_runner() -> list[str]:
+    """Detect available package runner (pnpm, npx, or yarn).
+    
+    Returns the command prefix to use for running remotion commands.
+    Tries pnpm first (faster), then npx (comes with Node), then yarn.
+    """
+    # Check for pnpm
+    if shutil.which("pnpm"):
+        return ["pnpm", "exec"]
+    # Check for npx (comes with npm/Node.js)
+    if shutil.which("npx"):
+        return ["npx"]
+    # Check for yarn
+    if shutil.which("yarn"):
+        return ["yarn"]
+    # Fallback to npx and hope it works
+    return ["npx"]
 
 
 class RemotionCLI:
@@ -12,6 +32,7 @@ class RemotionCLI:
 
     def __init__(self, remotion_dir: Optional[Path] = None):
         self.remotion_dir = remotion_dir or Path(__file__).parent.parent.parent / "remotion"
+        self._runner = _get_package_runner()
 
     def render(
         self,
@@ -46,9 +67,9 @@ class RemotionCLI:
         entry_file = "src/index.ts"
         abs_output_path = output_path.resolve()
         abs_props_file = props_file.resolve()
+        
         cmd = [
-            "pnpm",
-            "exec",
+            *self._runner,
             "remotion",
             "render",
             entry_file,
@@ -75,17 +96,20 @@ class RemotionCLI:
 
     def preview(self) -> subprocess.Popen:
         """Start Remotion preview server."""
-        cmd = ["pnpm", "exec", "remotion", "studio"]
-        return subprocess.Popen(cmd, cwd=self.remotion_dir)
+        cmd = [*self._runner, "remotion", "studio"]
+        use_shell = os.name == "nt"
+        return subprocess.Popen(cmd, cwd=self.remotion_dir, shell=use_shell)
 
     def get_compositions(self) -> list[str]:
         """List available compositions."""
-        cmd = ["pnpm", "exec", "remotion", "compositions"]
+        cmd = [*self._runner, "remotion", "compositions"]
+        use_shell = os.name == "nt"
         result = subprocess.run(
             cmd,
             cwd=self.remotion_dir,
             capture_output=True,
             text=True,
+            shell=use_shell,
         )
 
         if result.returncode != 0:

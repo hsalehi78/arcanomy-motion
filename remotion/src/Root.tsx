@@ -7,6 +7,14 @@ import { BarChartDemo, BarChartDemoProps } from "./compositions/BarChartDemo";
 import { PieChartDemo, PieChartDemoProps } from "./compositions/PieChartDemo";
 import { LineChartDemo, LineChartDemoProps } from "./compositions/LineChartDemo";
 import { ScatterChartDemo, ScatterChartDemoProps } from "./compositions/ScatterChartDemo";
+import { HorizontalBarChartDemo } from "./compositions/HorizontalBarChartDemo";
+import { ProgressChartDemo } from "./compositions/ProgressChartDemo";
+import { NumberCounterDemo } from "./compositions/NumberCounterDemo";
+import { StackedBarChartDemo } from "./compositions/StackedBarChartDemo";
+import { HorizontalBarChartProps } from "./components/charts/HorizontalBarChart";
+import { ProgressChartProps } from "./components/charts/ProgressChart";
+import { NumberCounterProps } from "./components/charts/NumberCounter";
+import { StackedBarChartProps } from "./components/charts/StackedBarChart";
 
 type MainReelProps = React.ComponentProps<typeof MainReel>;
 
@@ -151,6 +159,81 @@ const calcScatterChartDemoMetadata: CalculateMetadataFunction<ScatterChartDemoPr
   return { durationInFrames, fps: 30, width, height, props };
 };
 
+// Calculate metadata for HorizontalBarChartDemo
+const calcHorizontalBarChartDemoMetadata: CalculateMetadataFunction<HorizontalBarChartProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 30;
+  const animStyle = (props as any)?.animation?.style ?? "staggered";
+  const velocityMode = (props as any)?.animation?.velocityMode ?? false;
+  const staggerDelay = (props as any)?.animation?.staggerDelay ?? 0;
+  const dataArray = Array.isArray((props as any)?.data) ? (props as any).data : [];
+  const dataLength = dataArray.length || 5;
+  
+  let maxBarDuration = animDuration;
+  if (velocityMode && dataArray.length > 0) {
+    const values = dataArray.map((d: any) => d.value || 0);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    maxBarDuration = minValue > 0 ? animDuration * (maxValue / minValue) : animDuration;
+  }
+  
+  let totalAnimDuration = maxBarDuration;
+  if (animStyle === "staggered") {
+    totalAnimDuration = (dataLength - 1) * (animDuration + staggerDelay) + maxBarDuration;
+  } else if (animStyle === "wave") {
+    totalAnimDuration = maxBarDuration + (dataLength - 1) * staggerDelay;
+  }
+  
+  const durationInFrames = Math.ceil(totalAnimDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
+// Calculate metadata for ProgressChartDemo
+const calcProgressChartDemoMetadata: CalculateMetadataFunction<ProgressChartProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 45;
+  const durationInFrames = Math.ceil(animDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
+// Calculate metadata for NumberCounterDemo
+const calcNumberCounterDemoMetadata: CalculateMetadataFunction<NumberCounterProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 60;
+  const delay = (props as any)?.animation?.delay ?? 0;
+  const durationInFrames = Math.ceil(delay + animDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
+// Calculate metadata for StackedBarChartDemo
+const calcStackedBarChartDemoMetadata: CalculateMetadataFunction<StackedBarChartProps> = ({ props }) => {
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  const animDuration = (props as any)?.animation?.duration ?? 30;
+  const animStyle = (props as any)?.animation?.style ?? "simultaneous";
+  const staggerDelay = (props as any)?.animation?.staggerDelay ?? 8;
+  const dataLength = Array.isArray((props as any)?.data) ? (props as any).data.length : 4;
+  
+  let totalAnimDuration = animDuration;
+  if (animStyle === "staggered") {
+    totalAnimDuration = animDuration + (dataLength - 1) * staggerDelay;
+  }
+  
+  const durationInFrames = Math.ceil(totalAnimDuration + 30);
+
+  return { durationInFrames, fps: 30, width, height, props };
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -275,6 +358,75 @@ export const RemotionRoot: React.FC = () => {
           ],
         }}
         calculateMetadata={calcScatterChartDemoMetadata}
+      />
+      <Composition<HorizontalBarChartProps, any>
+        id="HorizontalBarChartDemo"
+        component={HorizontalBarChartDemo}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          data: [
+            { label: "United States", value: 28.78, color: "#4ECDC4" },
+            { label: "China", value: 18.53, color: "#FF6B6B" },
+            { label: "Germany", value: 4.59, color: "#FFE66D" },
+            { label: "Japan", value: 4.11, color: "#C44DFF" },
+            { label: "India", value: 3.94, color: "#00D4FF" },
+          ],
+        }}
+        calculateMetadata={calcHorizontalBarChartDemoMetadata}
+      />
+      <Composition<ProgressChartProps, any>
+        id="ProgressChartDemo"
+        component={ProgressChartDemo}
+        durationInFrames={90}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          value: 85,
+          maxValue: 100,
+          format: "percent",
+        }}
+        calculateMetadata={calcProgressChartDemoMetadata}
+      />
+      <Composition<NumberCounterProps, any>
+        id="NumberCounterDemo"
+        component={NumberCounterDemo}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          value: 1250000,
+          prefix: "$",
+          useLocale: true,
+        }}
+        calculateMetadata={calcNumberCounterDemoMetadata}
+      />
+      <Composition<StackedBarChartProps, any>
+        id="StackedBarChartDemo"
+        component={StackedBarChartDemo}
+        durationInFrames={120}
+        fps={30}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          mode: "stacked",
+          series: [
+            { name: "North America", color: "#4ECDC4" },
+            { name: "Europe", color: "#FF6B6B" },
+            { name: "Asia Pacific", color: "#FFE66D" },
+          ],
+          data: [
+            { label: "Q1", values: [45, 32, 28] },
+            { label: "Q2", values: [52, 38, 35] },
+            { label: "Q3", values: [48, 42, 40] },
+            { label: "Q4", values: [62, 48, 52] },
+          ],
+        }}
+        calculateMetadata={calcStackedBarChartDemoMetadata}
       />
     </>
   );

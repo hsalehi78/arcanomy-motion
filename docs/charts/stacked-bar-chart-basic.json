@@ -1,19 +1,34 @@
 {
+  "_schema_desc": "Stacked Bar Chart Template v2.0 - Multi-series bar chart",
+  "_usage_desc": "Best for: Comparing composition of categories, showing parts of a whole over time",
+  
+  "chartType": "stackedBar",
+  "_chartType_desc": "Identifies this as a stacked bar chart for the renderer",
+
   "mode": "stacked",
+  "_mode_desc": "stacked = bars on top of each other, grouped = bars side by side",
+  "_mode_options": "stacked | grouped",
+
   "dimensions": {
+    "_desc": "Canvas dimensions optimized for TikTok 1:1 format",
     "width": 1080,
     "height": 1080,
     "margin": {
+      "_desc": "Padding inside the canvas",
       "top": 220,
       "right": 60,
       "bottom": 120,
       "left": 100
     }
   },
+
   "background": {
+    "_desc": "Background color. Use #00FF00 for green screen transparency in CapCut.",
     "color": "#0D0D0D"
   },
+
   "title": {
+    "_desc": "Main title at the top of the chart",
     "show": true,
     "text": "Quarterly Revenue by Region",
     "y": 50,
@@ -24,7 +39,9 @@
     },
     "color": "#FFFFFF"
   },
+
   "subtitle": {
+    "_desc": "Secondary text below the title",
     "show": true,
     "text": "2024 Fiscal Year ($ Millions)",
     "y": 110,
@@ -35,7 +52,9 @@
     },
     "color": "#888888"
   },
+
   "xAxis": {
+    "_desc": "Horizontal axis (categories)",
     "show": true,
     "label": {
       "font": {
@@ -46,7 +65,9 @@
       "color": "#FFFFFF"
     }
   },
+
   "yAxis": {
+    "_desc": "Vertical axis (values)",
     "show": true,
     "label": {
       "font": {
@@ -61,13 +82,19 @@
       "color": "#333333"
     }
   },
+
   "bars": {
+    "_desc": "Bar styling configuration",
     "gap": 40,
+    "_gap_desc": "Horizontal spacing between bar groups",
     "cornerRadius": 4
   },
+
   "legend": {
+    "_desc": "Series legend configuration",
     "show": true,
     "position": "top",
+    "_position_options": "top | bottom | right",
     "font": {
       "family": "Inter, sans-serif",
       "size": 24,
@@ -75,13 +102,20 @@
     },
     "color": "#FFFFFF"
   },
+
   "animation": {
+    "_desc": "Controls how bars animate into view",
     "duration": 30,
+    "_duration_desc": "Animation duration in frames per bar group",
     "style": "staggered",
-    "staggerDelay": 8
+    "_style_options": "simultaneous | staggered",
+    "staggerDelay": 8,
+    "_staggerDelay_desc": "Frames between each bar group starting to animate"
   },
+
   "series": [
     {
+      "_desc": "Define each data series with a name and color",
       "name": "North America",
       "color": "#4ECDC4"
     },
@@ -94,38 +128,25 @@
       "color": "#FFE66D"
     }
   ],
+
   "data": [
     {
+      "_desc": "Each data point has a label (category) and values array matching series order",
       "label": "Q1",
-      "values": [
-        45,
-        32,
-        28
-      ]
+      "values": [45, 32, 28]
     },
     {
       "label": "Q2",
-      "values": [
-        52,
-        38,
-        35
-      ]
+      "values": [52, 38, 35]
     },
     {
       "label": "Q3",
-      "values": [
-        48,
-        42,
-        40
-      ]
+      "values": [48, 42, 40]
     },
     {
       "label": "Q4",
-      "values": [
-        62,
-        48,
-        52
-      ]
+      "values": [62, 48, 52]
     }
   ]
 }
+
