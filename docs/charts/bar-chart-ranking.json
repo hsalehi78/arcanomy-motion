@@ -1,0 +1,18 @@
+{
+  "_description": "Ranking chart - items ordered by value, largest to smallest",
+  "_usage": "uv run chart docs/charts/bar-chart-ranking.json",
+  "_notes": "Pre-sort your data from highest to lowest. Highlight #1 to reinforce the winner. Keep to 5-7 items max.",
+  "_arrangement": "Descending order makes the ranking instantly clear",
+  
+  "chartType": "bar",
+  "title": "Top 5 Revenue Sources",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Product A", "value": 450, "color": "#FFD700" },
+    { "label": "Product B", "value": 320 },
+    { "label": "Services", "value": 280 },
+    { "label": "Licensing", "value": 150 },
+    { "label": "Other", "value": 95 }
+  ]
+}
+

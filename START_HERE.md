@@ -164,7 +164,7 @@ Create a JSON file with your data:
 | `animationDuration` | number | `45` | Animation frames (30 = 1 sec) |
 | `data` | array | Required | Data points |
 
-Templates available in `shared/templates/charts/`
+Templates and full documentation in `docs/charts/`
 
 ---
 

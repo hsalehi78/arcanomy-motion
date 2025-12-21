@@ -1,133 +1,480 @@
+/**
+ * BarChart Component - Comprehensive animated bar chart for Remotion
+ * 
+ * This component renders a fully customizable vertical bar chart with:
+ * - Animated bar entrance (grows from bottom)
+ * - Customizable colors, fonts, margins
+ * - Title and subtitle support
+ * - Grid lines and axis labels
+ * - Data labels above bars
+ * 
+ * Props can be provided in two formats:
+ * 1. Flat format: { title: "...", width: 1080, ... }
+ * 2. Nested format: { title: { text: "...", font: {...} }, dimensions: {...} }
+ * 
+ * The component handles both for backwards compatibility.
+ */
+
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { COLORS, ANIMATION } from "../../lib/constants";
 
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
+
+/**
+ * Single data point for the bar chart
+ * @property label - Category name shown on x-axis (e.g., "North", "Q1")
+ * @property value - Numeric value determining bar height
+ * @property color - Optional hex color override for this specific bar
+ */
 export interface BarData {
   label: string;
   value: number;
   color?: string;
 }
 
-export interface BarChartProps {
-  data: BarData[];
-  width?: number;
-  height?: number;
-  colors?: typeof COLORS;
-  animationDuration?: number;
-  barGap?: number;
-  showLabels?: boolean;
-  showValues?: boolean;
-  title?: string;
+/**
+ * Font configuration for text elements
+ * @property family - Font family name (e.g., "Inter", "Arial")
+ * @property size - Font size in pixels
+ * @property weight - Font weight (400 = normal, 700 = bold)
+ */
+export interface FontConfig {
+  family?: string;
+  size?: number;
+  weight?: number;
 }
 
-export const BarChart: React.FC<BarChartProps> = ({
-  data,
-  width = 800,
-  height = 500,
-  colors = COLORS,
-  animationDuration = ANIMATION.chartDrawDuration,
-  barGap = 20,
-  showLabels = true,
-  showValues = true,
-  title,
-}) => {
+/**
+ * Margin/padding configuration
+ * @property top - Space above the chart area (for title)
+ * @property right - Space to the right of the chart
+ * @property bottom - Space below the chart (for x-axis labels)
+ * @property left - Space to the left of the chart (for y-axis labels)
+ */
+export interface MarginConfig {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
+/**
+ * Comprehensive props for the BarChart component
+ * Supports both flat props and nested configuration objects
+ */
+export interface BarChartProps {
+  /** Required: Array of data points to render as bars */
+  data: BarData[];
+  
+  // -------------------------------------------------------------------------
+  // Dimensions - Chart size and spacing
+  // -------------------------------------------------------------------------
+  
+  /** Nested dimensions config (preferred for v2.0 schema) */
+  dimensions?: {
+    width?: number;
+    height?: number;
+    margin?: MarginConfig;
+  };
+  
+  /** Flat width prop (legacy, for backwards compatibility) */
+  width?: number;
+  /** Flat height prop (legacy, for backwards compatibility) */
+  height?: number;
+  
+  // -------------------------------------------------------------------------
+  // Background
+  // -------------------------------------------------------------------------
+  
+  /** Background configuration */
+  background?: {
+    color?: string;  // Hex color for background (e.g., "#000000")
+  };
+  
+  // -------------------------------------------------------------------------
+  // Title - Main heading at top of chart
+  // -------------------------------------------------------------------------
+  
+  /** 
+   * Title can be a simple string or object with styling options
+   * String: "My Chart Title"
+   * Object: { text: "My Chart", font: { size: 48 }, color: "#FFF" }
+   */
+  title?: string | {
+    text?: string;
+    font?: FontConfig;
+    color?: string;
+  };
+  
+  // -------------------------------------------------------------------------
+  // Subtitle - Secondary heading below title
+  // -------------------------------------------------------------------------
+  
+  /** Subtitle configuration (typically units or context) */
+  subtitle?: {
+    text?: string;      // Subtitle text (e.g., "Revenue in $K")
+    font?: FontConfig;  // Font styling
+    color?: string;     // Text color
+  };
+  
+  // -------------------------------------------------------------------------
+  // X-Axis - Category labels below bars
+  // -------------------------------------------------------------------------
+  
+  /** X-axis configuration */
+  xAxis?: {
+    label?: {
+      font?: FontConfig;  // Font for category labels
+      color?: string;     // Label color
+    };
+  };
+  
+  // -------------------------------------------------------------------------
+  // Y-Axis - Value scale on left side
+  // -------------------------------------------------------------------------
+  
+  /** Y-axis configuration */
+  yAxis?: {
+    label?: {
+      font?: FontConfig;  // Font for value labels
+      color?: string;     // Label color
+    };
+    gridLines?: {
+      show?: boolean;   // Whether to show horizontal grid lines
+      color?: string;   // Grid line color
+    };
+  };
+  
+  // -------------------------------------------------------------------------
+  // Bars - Bar styling
+  // -------------------------------------------------------------------------
+  
+  /** Bar styling configuration */
+  bars?: {
+    gap?: number;          // Space between bars in pixels
+    cornerRadius?: number; // Rounded corner radius (0 for square)
+    defaultColor?: string; // Default bar color if not set per-item
+  };
+  
+  // -------------------------------------------------------------------------
+  // Data Labels - Values shown above bars
+  // -------------------------------------------------------------------------
+  
+  /** Data label configuration (values above bars) */
+  dataLabels?: {
+    show?: boolean;       // Whether to show value labels
+    font?: FontConfig;    // Font for value labels
+    color?: string;       // Label color
+  };
+  
+  // -------------------------------------------------------------------------
+  // Animation
+  // -------------------------------------------------------------------------
+  
+  /** Animation configuration */
+  animation?: {
+    duration?: number;  // Duration per bar in frames (30 = 1 sec at 30fps)
+    style?: "simultaneous" | "staggered" | "wave";  // Animation style
+    staggerDelay?: number;  // Frames between each bar start (for staggered/wave)
+    direction?: "left-to-right" | "right-to-left" | "center-out" | "random";
+  };
+  
+  // -------------------------------------------------------------------------
+  // Legacy flat props (for backwards compatibility)
+  // -------------------------------------------------------------------------
+  
+  animationDuration?: number;  // Legacy: use animation.duration instead
+  barGap?: number;             // Legacy: use bars.gap instead
+  showLabels?: boolean;        // Whether to show x-axis labels
+  showValues?: boolean;        // Legacy: use dataLabels.show instead
+  colors?: typeof COLORS;      // Legacy color palette
+}
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
+export const BarChart: React.FC<BarChartProps> = (props) => {
+  // Get current animation frame from Remotion
   const frame = useCurrentFrame();
+  const { data } = props;
 
-  if (data.length === 0) return null;
+  // Early return if no data provided
+  if (!data || data.length === 0) return null;
 
-  // Layout calculations
-  const padding = { top: title ? 80 : 40, right: 40, bottom: 80, left: 40 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  // ==========================================================================
+  // PROP EXTRACTION
+  // Extract values from nested or flat props with sensible defaults
+  // This allows the component to accept both v1 (flat) and v2 (nested) schemas
+  // ==========================================================================
+  
+  // --- Dimensions ---
+  // Priority: nested dimensions > flat props > defaults
+  const width = props.dimensions?.width ?? props.width ?? 1080;
+  const height = props.dimensions?.height ?? props.height ?? 1920;
+  const margin: MarginConfig = {
+    top: props.dimensions?.margin?.top ?? 120,      // Space for title
+    right: props.dimensions?.margin?.right ?? 60,   // Right padding
+    bottom: props.dimensions?.margin?.bottom ?? 200, // Space for x-axis labels
+    left: props.dimensions?.margin?.left ?? 80,      // Space for y-axis labels
+  };
 
+  // --- Background ---
+  const bgColor = props.background?.color ?? props.colors?.bg ?? COLORS.bg;
+
+  // --- Title ---
+  // Handle both string and object formats
+  const titleText = typeof props.title === "string" 
+    ? props.title 
+    : props.title?.text ?? "";
+  const titleFont: FontConfig = typeof props.title === "object" 
+    ? props.title?.font ?? {} 
+    : {};
+  const titleColor = typeof props.title === "object" 
+    ? props.title?.color 
+    : props.colors?.textPrimary ?? COLORS.textPrimary;
+
+  // --- Subtitle ---
+  const subtitleText = props.subtitle?.text ?? "";
+  const subtitleFont = props.subtitle?.font ?? {};
+  const subtitleColor = props.subtitle?.color ?? "#888888";
+
+  // --- X-Axis Labels ---
+  const xLabelFont = props.xAxis?.label?.font ?? {};
+  const xLabelColor = props.xAxis?.label?.color ?? props.colors?.textPrimary ?? COLORS.textPrimary;
+
+  // --- Y-Axis ---
+  const yLabelFont = props.yAxis?.label?.font ?? {};
+  const yLabelColor = props.yAxis?.label?.color ?? "#888888";
+  const showGridLines = props.yAxis?.gridLines?.show ?? true;
+  const gridLineColor = props.yAxis?.gridLines?.color ?? "#222222";
+
+  // --- Bars ---
+  const barGap = props.bars?.gap ?? props.barGap ?? 24;
+  const cornerRadius = props.bars?.cornerRadius ?? 6;
+  const defaultBarColor = props.bars?.defaultColor ?? props.colors?.highlight ?? COLORS.highlight;
+
+  // --- Data Labels ---
+  const showDataLabels = props.dataLabels?.show ?? props.showValues ?? true;
+  const dataLabelFont = props.dataLabels?.font ?? {};
+  const dataLabelColor = props.dataLabels?.color ?? props.colors?.textPrimary ?? COLORS.textPrimary;
+
+  // --- Animation ---
+  const animationDuration = props.animation?.duration ?? props.animationDuration ?? ANIMATION.chartDrawDuration;
+  const animationStyle = props.animation?.style ?? "simultaneous";
+  const staggerDelay = props.animation?.staggerDelay ?? 8;
+  const animationDirection = props.animation?.direction ?? "left-to-right";
+
+  // --- X-Axis Labels Visibility ---
+  const showLabels = props.showLabels ?? true;
+
+  // ==========================================================================
+  // LAYOUT CALCULATIONS
+  // ==========================================================================
+  
+  // Calculate the drawable chart area (inside margins)
+  const chartWidth = width - (margin.left ?? 0) - (margin.right ?? 0);
+  const chartHeight = height - (margin.top ?? 0) - (margin.bottom ?? 0);
+  
+  // Find the maximum value to scale bars proportionally
   const maxValue = Math.max(...data.map((d) => d.value));
+  
+  // Calculate individual bar width based on chart width and gaps
   const barWidth = (chartWidth - barGap * (data.length - 1)) / data.length;
 
-  // Animation progress (0 to 1)
-  const progress = interpolate(
+  // ==========================================================================
+  // ANIMATION - Per-bar progress calculation
+  // ==========================================================================
+  
+  /**
+   * Calculate animation progress for each bar based on style
+   * @param barIndex - Index of the bar (0 to data.length-1)
+   * @returns Progress value from 0 to 1
+   */
+  const getBarProgress = (barIndex: number): number => {
+    // Calculate the animation order based on direction
+    let orderIndex = barIndex;
+    if (animationDirection === "right-to-left") {
+      orderIndex = data.length - 1 - barIndex;
+    } else if (animationDirection === "center-out") {
+      const center = (data.length - 1) / 2;
+      orderIndex = Math.abs(barIndex - center);
+    } else if (animationDirection === "random") {
+      // Use a deterministic "random" based on index
+      orderIndex = [2, 0, 3, 1, 4, 5, 6, 7][barIndex % 8];
+    }
+
+    if (animationStyle === "simultaneous") {
+      // All bars animate together
+      return interpolate(
+        frame,
+        [0, animationDuration],
+        [0, 1],
+        { extrapolateRight: "clamp" }
+      );
+    } else if (animationStyle === "staggered") {
+      // Each bar starts after the previous one finishes
+      const startFrame = orderIndex * staggerDelay;
+      return interpolate(
+        frame,
+        [startFrame, startFrame + animationDuration],
+        [0, 1],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+      );
+    } else if (animationStyle === "wave") {
+      // Bars overlap - each starts slightly after previous
+      const startFrame = orderIndex * staggerDelay;
+      return interpolate(
+        frame,
+        [startFrame, startFrame + animationDuration],
+        [0, 1],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+      );
+    }
+    return 1;
+  };
+
+  // For non-bar elements, use overall progress
+  const overallProgress = interpolate(
     frame,
-    [0, animationDuration],
+    [0, animationDuration + (data.length - 1) * staggerDelay],
     [0, 1],
     { extrapolateRight: "clamp" }
   );
 
+  // Calculate title and subtitle positions (centered in top margin)
+  const titleY = (margin.top ?? 120) / 2;
+  const subtitleY = titleY + (titleFont.size ?? 48) + 10;
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
+
   return (
     <svg width={width} height={height}>
-      {/* Background */}
-      <rect width={width} height={height} fill={colors.bg} />
+      {/* Background rectangle - fills entire canvas */}
+      <rect width={width} height={height} fill={bgColor} />
 
-      {/* Title */}
-      {title && (
+      {/* Title - centered at top */}
+      {titleText && (
         <text
           x={width / 2}
-          y={40}
+          y={titleY}
           textAnchor="middle"
-          fill={colors.textPrimary}
-          fontSize={24}
-          fontWeight="bold"
-          fontFamily="system-ui, -apple-system, sans-serif"
+          dominantBaseline="middle"
+          fill={titleColor}
+          fontSize={titleFont.size ?? 48}
+          fontWeight={titleFont.weight ?? 700}
+          fontFamily={titleFont.family ?? "Inter, system-ui, sans-serif"}
         >
-          {title}
+          {titleText}
         </text>
       )}
 
-      {/* Horizontal grid lines */}
-      <g stroke={colors.bgSecondary} strokeWidth={1} opacity={0.5}>
+      {/* Subtitle - centered below title */}
+      {subtitleText && (
+        <text
+          x={width / 2}
+          y={subtitleY}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill={subtitleColor}
+          fontSize={subtitleFont.size ?? 24}
+          fontWeight={subtitleFont.weight ?? 400}
+          fontFamily={subtitleFont.family ?? "Inter, system-ui, sans-serif"}
+        >
+          {subtitleText}
+        </text>
+      )}
+
+      {/* Horizontal grid lines - help read bar values */}
+      {showGridLines && (
+        <g stroke={gridLineColor} strokeWidth={1} opacity={0.5}>
+          {/* Draw 5 grid lines at 0%, 25%, 50%, 75%, 100% of max value */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+            <line
+              key={`grid-${ratio}`}
+              x1={margin.left}
+              y1={(margin.top ?? 0) + chartHeight * (1 - ratio)}
+              x2={width - (margin.right ?? 0)}
+              y2={(margin.top ?? 0) + chartHeight * (1 - ratio)}
+            />
+          ))}
+        </g>
+      )}
+
+      {/* Y-Axis labels - value scale on left side */}
+      <g>
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
-          <line
-            key={`grid-${ratio}`}
-            x1={padding.left}
-            y1={padding.top + chartHeight * (1 - ratio)}
-            x2={width - padding.right}
-            y2={padding.top + chartHeight * (1 - ratio)}
-          />
+          <text
+            key={`y-label-${ratio}`}
+            x={(margin.left ?? 0) - 10}
+            y={(margin.top ?? 0) + chartHeight * (1 - ratio)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fill={yLabelColor}
+            fontSize={yLabelFont.size ?? 16}
+            fontWeight={yLabelFont.weight ?? 400}
+            fontFamily={yLabelFont.family ?? "Inter, system-ui, sans-serif"}
+            opacity={overallProgress}  // Fade in with animation
+          >
+            {Math.round(maxValue * ratio)}
+          </text>
         ))}
       </g>
 
-      {/* Bars */}
+      {/* Bars and their labels */}
       {data.map((item, index) => {
-        const barHeight = (item.value / maxValue) * chartHeight * progress;
-        const x = padding.left + index * (barWidth + barGap);
-        const y = padding.top + chartHeight - barHeight;
+        // Get per-bar animation progress (supports staggered animation)
+        const barProgress = getBarProgress(index);
+        
+        // Calculate bar dimensions - height animated based on per-bar progress
+        const barHeight = (item.value / maxValue) * chartHeight * barProgress;
+        const x = (margin.left ?? 0) + index * (barWidth + barGap);
+        const y = (margin.top ?? 0) + chartHeight - barHeight;
 
         return (
           <g key={index}>
-            {/* Bar */}
+            {/* The bar itself */}
             <rect
               x={x}
               y={y}
               width={barWidth}
-              height={Math.max(0, barHeight)}
-              fill={item.color || colors.highlight}
-              rx={4}
-              ry={4}
+              height={Math.max(0, barHeight)}  // Prevent negative height
+              fill={item.color || defaultBarColor}  // Use item color or default
+              rx={cornerRadius}  // Rounded corners
+              ry={cornerRadius}
             />
 
-            {/* Value label (appears after animation) */}
-            {showValues && progress >= 1 && (
+            {/* Value label above bar - appears after this bar's animation completes */}
+            {showDataLabels && barProgress >= 1 && (
               <text
                 x={x + barWidth / 2}
-                y={y - 10}
+                y={y - 15}
                 textAnchor="middle"
-                fill={colors.textPrimary}
-                fontSize={16}
-                fontWeight="bold"
-                fontFamily="system-ui, -apple-system, sans-serif"
+                fill={dataLabelColor}
+                fontSize={dataLabelFont.size ?? 20}
+                fontWeight={dataLabelFont.weight ?? 700}
+                fontFamily={dataLabelFont.family ?? "Inter, system-ui, sans-serif"}
               >
                 {item.value}
               </text>
             )}
 
-            {/* Category label */}
+            {/* X-Axis category label below bar */}
             {showLabels && (
               <text
                 x={x + barWidth / 2}
-                y={height - padding.bottom + 30}
+                y={height - (margin.bottom ?? 0) + 40}
                 textAnchor="middle"
-                fill={colors.textPrimary}
-                fontSize={14}
-                fontFamily="system-ui, -apple-system, sans-serif"
-                opacity={progress}
+                fill={xLabelColor}
+                fontSize={xLabelFont.size ?? 18}
+                fontWeight={xLabelFont.weight ?? 500}
+                fontFamily={xLabelFont.family ?? "Inter, system-ui, sans-serif"}
+                opacity={barProgress}  // Fade in with this bar's animation
               >
                 {item.label}
               </text>
@@ -138,4 +485,3 @@ export const BarChart: React.FC<BarChartProps> = ({
     </svg>
   );
 };
-

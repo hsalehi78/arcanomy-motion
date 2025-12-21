@@ -1,0 +1,18 @@
+{
+  "_description": "Comparison chart - us vs competitors or before/after",
+  "_usage": "uv run chart docs/charts/bar-chart-comparison.json",
+  "_notes": "Use color to distinguish 'us' (gold) from 'them' (muted). Put the subject first or last for emphasis.",
+  "_strategy": "Gold for your product/company, muted gray (#888888) for competitors",
+  
+  "chartType": "bar",
+  "title": "Market Share 2024",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Us", "value": 34, "color": "#FFD700" },
+    { "label": "Comp A", "value": 28, "color": "#888888" },
+    { "label": "Comp B", "value": 19, "color": "#888888" },
+    { "label": "Comp C", "value": 12, "color": "#888888" },
+    { "label": "Others", "value": 7, "color": "#555555" }
+  ]
+}
+

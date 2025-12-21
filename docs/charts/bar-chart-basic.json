@@ -1,0 +1,168 @@
+{
+  "_meta": {
+    "description": "Bar chart optimized for TikTok/Reels (1:1 square format)",
+    "version": "2.0",
+    "usage": "uv run chart docs/charts/bar-chart-basic.json",
+    "aspectRatio": "1:1 (square)",
+    "platform": "TikTok, Instagram Reels, YouTube Shorts"
+  },
+
+  "chartType": "bar",
+  "_chartType_desc": "Chart type: 'bar' for vertical bar chart",
+
+  "dimensions": {
+    "_desc": "1080x1080 square format for maximum TikTok compatibility",
+    "width": 1080,
+    "_width_desc": "Standard TikTok width",
+    "height": 1080,
+    "_height_desc": "Square 1:1 aspect ratio for TikTok",
+    "margin": {
+      "_desc": "Margins sized for large mobile-friendly fonts",
+      "top": 280,
+      "_top_desc": "Extra space at top - easy to crop title if needed",
+      "right": 60,
+      "_right_desc": "Right padding",
+      "bottom": 140,
+      "_bottom_desc": "Space for 42px x-axis labels + padding",
+      "left": 120,
+      "_left_desc": "Space for 42px y-axis labels (e.g. '420')"
+    }
+  },
+
+  "background": {
+    "_desc": "Dark background for better contrast on mobile",
+    "color": "#0A0A0A",
+    "_color_desc": "Near-black for rich contrast"
+  },
+
+  "title": {
+    "_desc": "Large, bold title for mobile readability",
+    "text": "Q4 Sales by Region",
+    "_text_desc": "Keep titles short for square format",
+    "font": {
+      "_desc": "Optimized for mobile viewing",
+      "family": "Inter",
+      "_family_desc": "Clean, modern sans-serif",
+      "size": 64,
+      "_size_desc": "LARGE for mobile - must be readable at a glance",
+      "weight": 700,
+      "_weight_desc": "Bold for emphasis"
+    },
+    "color": "#FFFFFF",
+    "_color_desc": "Pure white for maximum contrast"
+  },
+
+  "subtitle": {
+    "_desc": "Brief context below title",
+    "text": "Revenue in $K",
+    "_text_desc": "Keep short - less space in square format",
+    "font": {
+      "family": "Inter",
+      "size": 48,
+      "_size_desc": "Min 42px for mobile readability",
+      "weight": 400,
+      "_weight_desc": "Regular weight for hierarchy"
+    },
+    "color": "#888888",
+    "_color_desc": "Muted gray for subtitle"
+  },
+
+  "xAxis": {
+    "_desc": "Category labels below bars",
+    "label": {
+      "_desc": "Readable labels for mobile",
+      "font": {
+        "family": "Inter",
+        "size": 42,
+        "_size_desc": "Min 42px for mobile readability",
+        "weight": 600,
+        "_weight_desc": "Semi-bold for visibility"
+      },
+      "color": "#FFFFFF",
+      "_color_desc": "White for visibility"
+    }
+  },
+
+  "yAxis": {
+    "_desc": "Value axis on left",
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 42,
+        "_size_desc": "Min 42px for mobile readability",
+        "weight": 500
+      },
+      "color": "#888888",
+      "_color_desc": "Visible gray"
+    },
+    "gridLines": {
+      "_desc": "Horizontal guide lines",
+      "show": true,
+      "_show_desc": "Helps read values",
+      "color": "#333333",
+      "_color_desc": "Subtle but visible lines"
+    }
+  },
+
+  "bars": {
+    "_desc": "Bar styling optimized for square format",
+    "gap": 20,
+    "_gap_desc": "Good spacing between bars",
+    "cornerRadius": 8,
+    "_cornerRadius_desc": "Rounded corners for modern look",
+    "defaultColor": "#FFD700",
+    "_defaultColor_desc": "Gold - high visibility on dark background"
+  },
+
+  "dataLabels": {
+    "_desc": "Values above each bar",
+    "show": true,
+    "_show_desc": "Show values for clarity",
+    "font": {
+      "family": "Inter",
+      "size": 48,
+      "_size_desc": "Min 42px for mobile readability",
+      "weight": 700,
+      "_weight_desc": "Bold for emphasis"
+    },
+    "color": "#FFFFFF",
+    "_color_desc": "White for visibility"
+  },
+
+  "animation": {
+    "_desc": "Animation settings for bar entrance",
+    "duration": 60,
+    "_duration_desc": "Duration per bar in frames (30 = 1 sec at 30fps)",
+    "style": "staggered",
+    "_style_desc": "Animation style: 'simultaneous' (all bars together), 'staggered' (one by one), 'wave' (overlapping wave)",
+    "staggerDelay": 15,
+    "_staggerDelay_desc": "Frames between each bar start (only for staggered/wave)",
+    "direction": "left-to-right",
+    "_direction_desc": "Direction: 'left-to-right', 'right-to-left', 'center-out', 'random'"
+  },
+
+  "data": [
+    {
+      "_desc": "First data point",
+      "label": "North",
+      "_label_desc": "Keep labels short",
+      "value": 340,
+      "_value_desc": "Numeric value"
+    },
+    {
+      "label": "South",
+      "value": 280
+    },
+    {
+      "label": "East",
+      "value": 195
+    },
+    {
+      "_desc": "Highlighted bar with custom color",
+      "label": "West",
+      "value": 420,
+      "color": "#FF3B30",
+      "_color_desc": "Red to highlight highest value"
+    }
+  ]
+}

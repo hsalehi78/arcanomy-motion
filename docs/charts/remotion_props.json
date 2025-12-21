@@ -1,0 +1,96 @@
+{
+  "dimensions": {
+    "width": 1080,
+    "height": 1080,
+    "margin": {
+      "top": 280,
+      "right": 60,
+      "bottom": 140,
+      "left": 120
+    }
+  },
+  "background": {
+    "color": "#0A0A0A"
+  },
+  "title": {
+    "text": "Q4 Sales by Region",
+    "font": {
+      "family": "Inter",
+      "size": 64,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+  "subtitle": {
+    "text": "Revenue in $K",
+    "font": {
+      "family": "Inter",
+      "size": 48,
+      "weight": 400
+    },
+    "color": "#888888"
+  },
+  "xAxis": {
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 42,
+        "weight": 600
+      },
+      "color": "#FFFFFF"
+    }
+  },
+  "yAxis": {
+    "label": {
+      "font": {
+        "family": "Inter",
+        "size": 42,
+        "weight": 500
+      },
+      "color": "#888888"
+    },
+    "gridLines": {
+      "show": true,
+      "color": "#333333"
+    }
+  },
+  "bars": {
+    "gap": 20,
+    "cornerRadius": 8,
+    "defaultColor": "#FFD700"
+  },
+  "dataLabels": {
+    "show": true,
+    "font": {
+      "family": "Inter",
+      "size": 48,
+      "weight": 700
+    },
+    "color": "#FFFFFF"
+  },
+  "animation": {
+    "duration": 60,
+    "style": "staggered",
+    "staggerDelay": 15,
+    "direction": "left-to-right"
+  },
+  "data": [
+    {
+      "label": "North",
+      "value": 340
+    },
+    {
+      "label": "South",
+      "value": 280
+    },
+    {
+      "label": "East",
+      "value": 195
+    },
+    {
+      "label": "West",
+      "value": 420,
+      "color": "#FF3B30"
+    }
+  ]
+}

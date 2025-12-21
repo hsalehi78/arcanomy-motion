@@ -1,0 +1,18 @@
+{
+  "_description": "Chart showing gains and losses - positive values in gold, negative conceptually shown",
+  "_usage": "uv run chart docs/charts/bar-chart-negative.json",
+  "_notes": "Current implementation only supports positive values. Use red color (#FF3B30) to indicate 'bad' categories, gold for 'good'. For true negative bars, a component update would be needed.",
+  "_workaround": "Show absolute values but use color to indicate positive (gold) vs negative (red)",
+  
+  "chartType": "bar",
+  "title": "Portfolio Performance (%)",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Stocks", "value": 12, "color": "#FFD700" },
+    { "label": "Bonds", "value": 3, "color": "#FFD700" },
+    { "label": "Crypto", "value": 28, "color": "#FF3B30" },
+    { "label": "Real Est", "value": 8, "color": "#FFD700" },
+    { "label": "Cash", "value": 1, "color": "#888888" }
+  ]
+}
+

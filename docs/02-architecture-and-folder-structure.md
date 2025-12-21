@@ -262,16 +262,14 @@ shared/
 │   └── 06.5_sound_effects_generation_system.md  # SFX generation
 │   # Note: Stage 7 (Final Assembly) uses FFmpeg, no LLM needed
 └── templates/                       # User-facing templates
-    ├── seed_template.md             # Template for creating new reels
-    └── charts/                      # Chart JSON templates
-        ├── bar_chart_template.json  # Bar chart example
-        └── README.md                # Chart template docs
+    └── seed_template.md             # Template for creating new reels
 ```
 
 **Distinction:**
 - **`prompts/`**: System prompts define agent behavior and are loaded by the orchestrator. These are internal instructions that apply globally across all reels.
 - **`templates/`**: User-facing templates provide formats/starting points for users to fill in (e.g., `seed_template.md`).
-- **`templates/charts/`**: JSON templates for rendering standalone charts with `uv run chart`.
+
+> **Note:** Chart templates are in `docs/charts/` — see that folder for JSON examples and agent instructions.
 
 ---
 

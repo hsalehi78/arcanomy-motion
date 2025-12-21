@@ -552,6 +552,8 @@ uv run arcanomy render-chart chart.json -o output/chart.mp4
 | `value` | number | Yes | Numeric value (bar height) |
 | `color` | string | No | Hex color override (default: `#FFD700`) |
 
-Templates available in `shared/templates/charts/`
+Templates and examples in `docs/charts/`
 
-See `docs/08-chart-components-plan.md` for full chart documentation.
+See also:
+- `docs/charts/README.md` — Full reference for AI agents
+- `docs/08-chart-components-plan.md` — Technical implementation details

@@ -1,0 +1,15 @@
+{
+  "_description": "Minimal 2-3 bar chart - maximum impact, fewest elements",
+  "_usage": "uv run chart docs/charts/bar-chart-minimal.json",
+  "_notes": "Best for dramatic before/after or simple A vs B comparisons. Larger bars = more visual impact.",
+  "_when_to_use": "Opening hooks, key statistics, simple binary comparisons",
+  
+  "chartType": "bar",
+  "title": "Before vs After",
+  "animationDuration": 30,
+  "data": [
+    { "label": "Before", "value": 23, "color": "#888888" },
+    { "label": "After", "value": 89, "color": "#FFD700" }
+  ]
+}
+

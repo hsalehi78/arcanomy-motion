@@ -20,6 +20,7 @@ These docs are intentionally split into small, focused files in the `docs/` fold
 6. `06-blog-ingestion.md` — importing content from Arcanomy blog
 7. `07-remotion-guide.md` — Remotion framework reference (components, rendering, Player)
 8. `08-chart-components-plan.md` — Chart rendering (bar, pie, etc.) with JSON props
+9. `charts/` — **Chart templates folder** (JSON examples for AI agents)
 
 ## Pipeline Overview
 

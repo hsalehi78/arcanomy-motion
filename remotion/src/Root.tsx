@@ -50,6 +50,37 @@ const calcCaptionBurnMetadata: CalculateMetadataFunction<CaptionBurnProps> = ({ 
   };
 };
 
+// Calculate metadata for BarChartDemo - reads dimensions from props
+const calcBarChartDemoMetadata: CalculateMetadataFunction<BarChartDemoProps> = ({ props }) => {
+  // Extract dimensions from nested or flat props
+  const width = (props as any)?.dimensions?.width ?? (props as any)?.width ?? 1080;
+  const height = (props as any)?.dimensions?.height ?? (props as any)?.height ?? 1080;
+  
+  // Animation settings
+  const animDuration = (props as any)?.animation?.duration ?? (props as any)?.animationDuration ?? 45;
+  const animStyle = (props as any)?.animation?.style ?? "simultaneous";
+  const staggerDelay = (props as any)?.animation?.staggerDelay ?? 8;
+  const dataLength = Array.isArray((props as any)?.data) ? (props as any).data.length : 4;
+  
+  // Calculate total duration based on animation style
+  let totalAnimDuration = animDuration;
+  if (animStyle === "staggered" || animStyle === "wave") {
+    // For staggered: last bar starts at (dataLength-1) * staggerDelay
+    totalAnimDuration = animDuration + (dataLength - 1) * staggerDelay;
+  }
+  
+  // Add 30 frames after animation for final state display
+  const durationInFrames = totalAnimDuration + 30;
+
+  return {
+    durationInFrames,
+    fps: 30,
+    width,
+    height,
+    props,
+  };
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -102,10 +133,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition<BarChartDemoProps, any>
         id="BarChartDemo"
         component={BarChartDemo}
-        durationInFrames={90} // 3 seconds
+        durationInFrames={90}
         fps={30}
         width={1080}
-        height={1920}
+        height={1080}
         defaultProps={{
           title: "Monthly Revenue ($K)",
           animationDuration: 45,
@@ -118,6 +149,7 @@ export const RemotionRoot: React.FC = () => {
             { label: "Jun", value: 190 },
           ],
         }}
+        calculateMetadata={calcBarChartDemoMetadata}
       />
     </>
   );

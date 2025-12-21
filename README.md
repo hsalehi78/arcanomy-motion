@@ -364,7 +364,7 @@ Render animated charts to video from JSON:
 }
 ```
 
-Templates: `shared/templates/charts/`
+Templates & docs: `docs/charts/`
 
 ---
 

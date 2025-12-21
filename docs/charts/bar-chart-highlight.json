@@ -1,0 +1,22 @@
+{
+  "_description": "Bar chart with one highlighted bar - emphasize a winner or key insight",
+  "_usage": "uv run chart docs/charts/bar-chart-highlight.json",
+  "_notes": "Use 'color' property on ONE bar to draw attention. Great for 'X is the winner' narratives.",
+  "_color_options": {
+    "gold_bright": "#FFD700 - Winner, positive emphasis",
+    "red_signal": "#FF3B30 - Danger, loss, warning",
+    "white_pure": "#FFFFFF - Maximum contrast standout"
+  },
+  
+  "chartType": "bar",
+  "title": "Conversion Rate by Channel",
+  "animationDuration": 45,
+  "data": [
+    { "label": "Email", "value": 4.2 },
+    { "label": "Social", "value": 2.8 },
+    { "label": "Search", "value": 7.1, "color": "#FFD700" },
+    { "label": "Direct", "value": 3.5 },
+    { "label": "Referral", "value": 5.2 }
+  ]
+}
+

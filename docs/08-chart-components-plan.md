@@ -188,7 +188,7 @@ uv run chart chart.json
 
 ### JSON Template
 
-Templates available in `shared/templates/charts/`:
+Templates and examples available in `docs/charts/`:
 
 ```json
 {
