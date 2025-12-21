@@ -81,17 +81,6 @@ def _strip_comment_fields(obj):
         return obj
 
 
-# #region agent log
-LOG_PATH = r"c:\Dev\arcanomy-motion\.cursor\debug.log"
-def _debug_log(location: str, message: str, data: dict):
-    import time
-    entry = {"location": location, "message": message, "data": data, "timestamp": int(time.time() * 1000), "sessionId": "debug-session"}
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        import json as json_mod
-        f.write(json_mod.dumps(entry) + "\n")
-# #endregion
-
-
 class ChartRenderer:
     """Service for rendering charts to video using Remotion."""
     
@@ -160,15 +149,6 @@ class ChartRenderer:
         # Determine chart type from props or filename
         chart_type = props_dict.pop("chartType", "bar")
         
-        # #region agent log
-        _debug_log("render_from_json", "Props after strip", {
-            "keys": list(props_dict.keys()),
-            "title_font_size": props_dict.get("title", {}).get("font", {}).get("size") if isinstance(props_dict.get("title"), dict) else "N/A",
-            "yAxis_font_size": props_dict.get("yAxis", {}).get("label", {}).get("font", {}).get("size") if isinstance(props_dict.get("yAxis"), dict) else "N/A",
-            "xAxis_font_size": props_dict.get("xAxis", {}).get("label", {}).get("font", {}).get("size") if isinstance(props_dict.get("xAxis"), dict) else "N/A",
-        })
-        # #endregion
-        
         # Default output path: same folder as JSON, same name but .mp4
         if output_path is None:
             output_path = json_path.parent / f"{json_path.stem}.mp4"
@@ -176,9 +156,6 @@ class ChartRenderer:
         if chart_type == "bar":
             # Pass comprehensive props directly to Remotion
             # The TypeScript BarChart component handles all nested props
-            # #region agent log
-            _debug_log("render_from_json", "Passing to Remotion", {"props_sample": str(props_dict)[:500]})
-            # #endregion
             return self.cli.render(
                 composition_id="BarChartDemo",
                 output_path=Path(output_path),
