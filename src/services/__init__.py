@@ -6,6 +6,8 @@ from .blog_ingest import (
     fetch_featured_blogs,
     fetch_blog_mdx,
     extract_seed_and_config,
+    extract_seed_pipeline,
+    generate_chart_json,
     regenerate_seed,
 )
 from .chart_renderer import (
@@ -24,6 +26,8 @@ __all__ = [
     "fetch_featured_blogs",
     "fetch_blog_mdx",
     "extract_seed_and_config",
+    "extract_seed_pipeline",
+    "generate_chart_json",
     "regenerate_seed",
     "ChartRenderer",
     "BarChartProps",

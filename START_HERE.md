@@ -8,47 +8,43 @@ Run `uv run arcanomy guide` anytime to see this in your terminal.
 
 ## Quick Start
 
-### 1. Create a new reel
+### Option A: Create from a Blog (Recommended)
 
 ```bash
+# Pick a blog and create a reel from it
+uv run arcanomy ingest-blog
+
+# Run with AI script generation
+uv run arcanomy run --ai
+```
+
+The blog picker fetches content from Arcanomy CDN and uses AI to extract the hook, insight, and visual vibe.
+
+### Option B: Create from Scratch
+
+```bash
+# Create a new reel
 uv run arcanomy new my-reel-slug
-```
 
-This creates:
-- `content/reels/YYYY-MM-DD-my-reel-slug/inputs/claim.json`
-- `content/reels/YYYY-MM-DD-my-reel-slug/inputs/data.json`
+# Edit the claim
+# (opens content/reels/YYYY-MM-DD-my-reel-slug/inputs/claim.json)
 
-### 2. Edit the inputs
-
-**claim.json** (required):
-```json
-{
-  "claim_id": "my-reel",
-  "claim_text": "The average person wastes 10 years waiting for the right moment.",
-  "supporting_data_ref": "ds-01",
-  "audit_level": "basic"
-}
-```
-
-**data.json** (required, even if empty):
-```json
-{
-  "type": "none",
-  "datasets": [],
-  "charts": []
-}
+# Run with AI script generation
+uv run arcanomy run --ai
 ```
 
 ### 3. Run the pipeline
 
 ```bash
-uv run arcanomy run content/reels/YYYY-MM-DD-my-reel-slug
-```
-
-Or set the reel as current and run:
-```bash
-uv run arcanomy set my-reel-slug
+# Run the current reel:
 uv run arcanomy run
+
+# With AI script generation:
+uv run arcanomy run --ai
+
+# Pick a different reel first:
+uv run arcanomy reels
+uv run arcanomy run --ai
 ```
 
 ### 4. Assemble in CapCut
@@ -132,18 +128,50 @@ content/reels/<reel-slug>/
 ## CLI Commands
 
 ```bash
-uv run arcanomy new <slug>           # Create new reel
-uv run arcanomy run <path>           # Run full pipeline
-uv run arcanomy run <path> -s plan   # Run to specific stage
-uv run arcanomy run <path> --fresh   # Wipe and rerun
-uv run arcanomy status <path>        # Show pipeline status
-uv run arcanomy reels                # List/select reels
+# Blog ingestion (recommended starting point)
+uv run arcanomy list-blogs           # List available blogs from CDN
+uv run arcanomy ingest-blog          # Pick a blog → create reel
+uv run arcanomy ingest-blog --run    # Pick → create → run pipeline
+
+# Reel creation
+uv run arcanomy new <slug>           # Create new reel from scratch
+uv run arcanomy reels                # List/select existing reels
+
+# Pipeline
+uv run arcanomy run                  # Run current reel
+uv run arcanomy run --ai             # Run with AI script generation
+uv run arcanomy run -s plan          # Run to specific stage
+uv run arcanomy run --fresh          # Wipe and rerun
+uv run arcanomy status               # Show pipeline status
+
+# Utilities
 uv run arcanomy current              # Show current reel
 uv run arcanomy set <path>           # Set current reel
 uv run arcanomy preview              # Start Remotion preview
 uv run arcanomy render-chart <json>  # Render standalone chart
 uv run arcanomy guide                # Show help
 ```
+
+### AI Script Generation
+
+Use `--ai` to enable AI-powered script generation:
+
+```bash
+# Pick a reel and run with AI:
+uv run arcanomy reels
+uv run arcanomy run --ai
+
+# Or directly:
+uv run arcanomy run my-reel --ai
+```
+
+This uses LLM to transform your claim into a compelling script with:
+- Hook that stops the scroll
+- Evidence and proof with specific data
+- Emotional implication (the stakes)
+- Reframe and call to action
+
+Requires an API key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY`).
 
 ---
 

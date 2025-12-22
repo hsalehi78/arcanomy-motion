@@ -195,6 +195,25 @@ DEFAULT_PROVIDERS = {
 
 
 # =============================================================================
+# SEED EXTRACTION PIPELINE (for blog ingestion)
+# =============================================================================
+# When extracting seed content from blogs, use a 3-step LLM pipeline:
+# 1. Extractor (Anthropic): Creative extraction of hook, insight, vibe
+# 2. Verifier (OpenAI): Fact-check claims against the original blog
+# 3. Refiner (Anthropic): Final polish and enhancement
+#
+# This leverages each model's strengths:
+# - Anthropic: Creative writing, narrative understanding
+# - OpenAI: Analytical, fact-checking
+
+SEED_EXTRACTION = {
+    "extractor": "anthropic",   # Step 1: Creative extraction (opus 4.5)
+    "verifier": "openai",       # Step 2: Fact verification (gpt-5.2)
+    "refiner": "anthropic",     # Step 3: Final polish (opus 4.5)
+}
+
+
+# =============================================================================
 # DATA EXTRACTION & VERIFICATION (for --data flag on blog reels)
 # =============================================================================
 # When extracting data points from blogs, use two different LLMs:

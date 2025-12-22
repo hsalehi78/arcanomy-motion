@@ -34,16 +34,45 @@ logger = get_logger()
 CURRENT_REEL_FILE = Path(".current_reel")
 
 
-def _get_current_reel() -> Path:
-    """Get the current reel path from context file."""
+def _get_current_reel(*, allow_missing: bool = False) -> Path | None:
+    """Get the current reel path from context file.
+    
+    Args:
+        allow_missing: If True, return None instead of raising when no valid reel.
+                       If False (default), raise typer.Exit(1) on error.
+    """
     if not CURRENT_REEL_FILE.exists():
-        typer.echo("[ERROR] No reel selected. Run: uv run arcanomy set <reel-path>", err=True)
-        raise typer.Exit(1)
+        if allow_missing:
+            return None
+        typer.echo("[INFO] No reel selected.")
+        typer.echo("")
+        typer.echo("   Pick a reel:")
+        typer.echo("     uv run arcanomy reels")
+        typer.echo("")
+        typer.echo("   Or create one:")
+        typer.echo("     uv run arcanomy ingest-blog")
+        typer.echo("     uv run arcanomy new <slug>")
+        raise typer.Exit(0)  # Not an error, just informational
     
     reel_path = Path(CURRENT_REEL_FILE.read_text().strip())
     if not reel_path.exists():
-        typer.echo(f"[ERROR] Reel folder no longer exists: {reel_path}", err=True)
-        raise typer.Exit(1)
+        # Clean up stale reference - then behave as if no reel was selected
+        try:
+            CURRENT_REEL_FILE.unlink()
+        except Exception:
+            pass
+        # Now behave as if no current reel was set
+        if allow_missing:
+            return None
+        typer.echo("[INFO] No reel selected.")
+        typer.echo("")
+        typer.echo("   Pick a reel:")
+        typer.echo("     uv run arcanomy reels")
+        typer.echo("")
+        typer.echo("   Or create one:")
+        typer.echo("     uv run arcanomy ingest-blog")
+        typer.echo("     uv run arcanomy new <slug>")
+        raise typer.Exit(0)  # Not an error, just informational
     
     return reel_path
 
@@ -165,7 +194,10 @@ The canonical inputs are claim.json and data.json.
 
 @app.command()
 def run(
-    reel_path: Path = typer.Argument(..., help="Path to the reel folder"),
+    reel_path: Optional[Path] = typer.Argument(
+        None, 
+        help="Path to the reel folder (optional - uses current reel if not specified)",
+    ),
     stage: str = typer.Option(
         "kit",
         "--stage",
@@ -182,25 +214,73 @@ def run(
         "--force",
         help="Allow overwriting immutable outputs (use sparingly).",
     ),
+    ai: bool = typer.Option(
+        False,
+        "--ai",
+        help="Use AI/LLM to generate compelling script text (requires API key).",
+    ),
+    ai_provider: Optional[str] = typer.Option(
+        None,
+        "--ai-provider",
+        help="Override LLM provider for AI mode (openai|anthropic|gemini).",
+    ),
 ):
     """Run the pipeline for a reel.
     
     Generates a CapCut-ready assembly kit from claim.json + data.json inputs.
     Output: subsegments, charts, voice, captions, guides, thumbnail.
+    
+    If no reel path is provided, uses the current reel (set via 'arcanomy set' or 'arcanomy reels').
+    Use --ai to enable AI-powered script generation from your claim.
     """
     from dotenv import load_dotenv
 
     load_dotenv()
 
-    reel_path = Path(reel_path)
+    # If no path provided, use current reel
+    if reel_path is None:
+        if not CURRENT_REEL_FILE.exists():
+            typer.echo("[ERROR] No reel specified and no current reel set.", err=True)
+            typer.echo("", err=True)
+            typer.echo("   Either provide a path:", err=True)
+            typer.echo("     uv run arcanomy run content/reels/my-reel", err=True)
+            typer.echo("", err=True)
+            typer.echo("   Or select a reel first:", err=True)
+            typer.echo("     uv run arcanomy reels   # Interactive picker", err=True)
+            typer.echo("     uv run arcanomy run     # Run the selected reel", err=True)
+            raise typer.Exit(1)
+        reel_path = _get_current_reel()
+        typer.echo(f"[Reel] Using current reel: {reel_path.name}")
+    else:
+        reel_path = Path(reel_path)
+        # Also try to find by partial name in content/reels
+        if not reel_path.exists():
+            reels_dir = Path("content/reels")
+            if reels_dir.exists():
+                matches = [d for d in reels_dir.iterdir() if d.is_dir() and str(reel_path) in d.name]
+                if len(matches) == 1:
+                    reel_path = matches[0]
+                    typer.echo(f"[Reel] Found: {reel_path.name}")
+                elif len(matches) > 1:
+                    typer.echo(f"[ERROR] Multiple reels match '{reel_path}':", err=True)
+                    for m in matches:
+                        typer.echo(f"   - {m.name}")
+                    raise typer.Exit(1)
+    
     if not reel_path.exists():
         typer.echo(f"Error: Reel not found at {reel_path}", err=True)
         raise typer.Exit(1)
+    
+    # Auto-set as current reel for convenience
+    CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
     valid_stages = ("init", "plan", "subsegments", "voice", "captions", "charts", "kit")
     if stage not in valid_stages:
         typer.echo(f"[ERROR] --stage must be one of: {', '.join(valid_stages)}", err=True)
         raise typer.Exit(1)
+
+    if ai:
+        typer.echo("[AI] AI script generation enabled")
 
     prov_path = pipeline_init(reel_path, fresh=fresh, force=force)
     typer.echo("[OK] Init complete")
@@ -209,7 +289,7 @@ def run(
     if stage == "init":
         return
 
-    plan_file = generate_plan(reel_path, force=force)
+    plan_file = generate_plan(reel_path, force=force, ai=ai, ai_provider=ai_provider)
     typer.echo("[OK] Plan complete")
     typer.echo(f"   Plan: {plan_file}")
     if stage == "plan":
@@ -254,10 +334,16 @@ def run(
 
 @app.command()
 def status(
-    reel_path: Path = typer.Argument(..., help="Path to the reel folder"),
+    reel_path: Optional[Path] = typer.Argument(
+        None, 
+        help="Path to the reel folder (optional - uses current reel if not specified)",
+    ),
 ):
     """Show pipeline status for a reel."""
-    reel_path = Path(reel_path)
+    if reel_path is None:
+        reel_path = _get_current_reel()
+    else:
+        reel_path = Path(reel_path)
 
     if not reel_path.exists():
         typer.echo(f"Error: Reel not found at {reel_path}", err=True)
@@ -311,13 +397,8 @@ def preview():
 @app.command()
 def current():
     """Show the current reel context."""
-    if not CURRENT_REEL_FILE.exists():
-        typer.echo("[ERROR] No reel selected.")
-        typer.echo("   Run: uv run arcanomy set <reel-path>")
-        typer.echo("   Or:  uv run arcanomy reels  (to list available reels)")
-        raise typer.Exit(1)
-    
-    reel_path = _get_current_reel()
+    # _get_current_reel handles all error cases gracefully (no reel, deleted reel)
+    reel_path = _get_current_reel(allow_missing=False)
     typer.echo(f"[Reel] {reel_path.name}")
     typer.echo(f"   Path: {reel_path}")
     
@@ -521,6 +602,260 @@ def commit(
         raise typer.Exit(1)
 
     typer.echo("[OK] Committed and pushed successfully")
+
+
+@app.command("list-blogs")
+def list_blogs(
+    limit: int = typer.Option(10, "--limit", "-n", help="Number of blogs to show"),
+):
+    """List available blog posts from Arcanomy CDN."""
+    from rich.console import Console
+    from rich.table import Table
+    from src.services import fetch_featured_blogs
+
+    console = Console()
+    
+    try:
+        blogs = fetch_featured_blogs(limit=limit)
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to fetch blogs: {e}", err=True)
+        raise typer.Exit(1)
+    
+    if not blogs:
+        typer.echo("No blogs found.")
+        return
+    
+    table = Table(title=f"Available Blogs ({len(blogs)})")
+    table.add_column("#", style="bold cyan", width=3)
+    table.add_column("Published", style="dim")
+    table.add_column("Title", style="bold")
+    table.add_column("Category")
+    
+    for i, blog in enumerate(blogs, 1):
+        table.add_row(
+            str(i),
+            blog.published_date[:10] if blog.published_date else "",
+            blog.title[:40] + ("..." if len(blog.title) > 40 else ""),
+            blog.category,
+        )
+    
+    console.print(table)
+
+
+@app.command("ingest-blog")
+def ingest_blog(
+    identifier: Optional[str] = typer.Argument(
+        None,
+        help="Blog identifier (optional - interactive picker if not provided)",
+    ),
+    output_dir: Path = typer.Option(
+        Path("content/reels"),
+        "--output",
+        "-o",
+        help="Output directory for reels",
+    ),
+    provider: Optional[str] = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="LLM provider override (default: uses config)",
+    ),
+    limit: int = typer.Option(10, "--limit", "-n", help="Number of blogs to show in picker"),
+    focus: Optional[str] = typer.Option(
+        None,
+        "--focus",
+        "-f",
+        help="Creative direction (e.g., 'focus on the psychological trap')",
+    ),
+    slug: Optional[str] = typer.Option(
+        None,
+        "--slug",
+        "-s",
+        help="Custom slug for reel folder (allows multiple reels from same blog)",
+    ),
+    run_pipeline: bool = typer.Option(
+        False,
+        "--run",
+        "-r",
+        help="Immediately run the pipeline after ingestion",
+    ),
+    ai: bool = typer.Option(
+        False,
+        "--ai",
+        help="Use AI script generation when running pipeline",
+    ),
+):
+    """Create a reel from a blog post. Interactive picker if no identifier provided."""
+    from rich.console import Console
+    from rich.table import Table
+    from dotenv import load_dotenv
+    from src.services import fetch_featured_blogs, fetch_blog_mdx, extract_seed_and_config, LLMService
+    
+    load_dotenv()
+    console = Console()
+    
+    # Fetch blogs
+    try:
+        blogs = fetch_featured_blogs(limit=limit)
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to fetch blogs: {e}", err=True)
+        raise typer.Exit(1)
+    
+    if not blogs:
+        typer.echo("No blogs found.")
+        raise typer.Exit(1)
+    
+    # If no identifier, show interactive picker
+    selected_blog = None
+    if identifier is None:
+        table = Table(title="Pick a blog")
+        table.add_column("#", style="bold cyan", width=3)
+        table.add_column("Published", style="dim")
+        table.add_column("Title", style="bold")
+        table.add_column("Category")
+        
+        for i, blog in enumerate(blogs, 1):
+            table.add_row(
+                str(i),
+                blog.published_date[:10] if blog.published_date else "",
+                blog.title[:50] + ("..." if len(blog.title) > 50 else ""),
+                blog.category,
+            )
+        
+        console.print(table)
+        console.print()
+        
+        choice = typer.prompt("Enter number to select", default="1")
+        
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(blogs):
+                selected_blog = blogs[idx]
+            else:
+                typer.echo(f"[ERROR] Invalid selection. Enter 1-{len(blogs)}", err=True)
+                raise typer.Exit(1)
+        except ValueError:
+            typer.echo("[ERROR] Enter a number", err=True)
+            raise typer.Exit(1)
+    else:
+        # Find by identifier
+        selected_blog = next((b for b in blogs if b.identifier == identifier), None)
+        if not selected_blog:
+            # Try partial match
+            matches = [b for b in blogs if identifier.lower() in b.identifier.lower()]
+            if len(matches) == 1:
+                selected_blog = matches[0]
+            elif len(matches) > 1:
+                typer.echo(f"[ERROR] Multiple blogs match '{identifier}':", err=True)
+                for m in matches:
+                    typer.echo(f"   - {m.identifier}")
+                raise typer.Exit(1)
+            else:
+                typer.echo(f"[ERROR] No blog found matching: {identifier}", err=True)
+                raise typer.Exit(1)
+    
+    typer.echo(f"\n[Blog] Selected: {selected_blog.title}")
+    typer.echo(f"   Identifier: {selected_blog.identifier}")
+    
+    # Fetch MDX content
+    typer.echo("[Blog] Fetching content...")
+    try:
+        mdx_content = fetch_blog_mdx(selected_blog.identifier)
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to fetch blog content: {e}", err=True)
+        raise typer.Exit(1)
+    
+    # Extract seed using 3-step LLM pipeline
+    # Anthropic (opus 4.5) → OpenAI (gpt-5.2) → Anthropic (opus 4.5)
+    from src.services.blog_ingest import extract_seed_pipeline
+    
+    typer.echo("[LLM] Starting 3-step extraction pipeline...")
+    typer.echo("   (Anthropic → OpenAI → Anthropic)")
+    
+    try:
+        seed_content, config, chart_json = extract_seed_pipeline(
+            mdx_content=mdx_content,
+            blog=selected_blog,
+            focus=focus,
+            log_fn=typer.echo,
+        )
+    except Exception as e:
+        typer.echo(f"[ERROR] Seed extraction failed: {e}", err=True)
+        raise typer.Exit(1)
+    
+    # Create reel folder - use custom slug if provided, otherwise use blog identifier
+    from datetime import date
+    if slug:
+        # Custom slug: prefix with date for sorting
+        reel_name = f"{date.today().isoformat()}-{slug}"
+    else:
+        reel_name = selected_blog.identifier
+    
+    reel_path = output_dir / reel_name
+    
+    # Check if folder exists and warn if it will be overwritten
+    if reel_path.exists():
+        if slug:
+            typer.echo(f"[WARN] Reel folder already exists, will update: {reel_name}")
+        else:
+            typer.echo(f"[INFO] Updating existing reel: {reel_name}")
+            typer.echo(f"   (Use --slug to create a separate reel from same blog)")
+    
+    reel_path.mkdir(parents=True, exist_ok=True)
+    ensure_pipeline_layout(reel_path)
+    
+    # Write claim.json (from extracted config)
+    claim_id = slug or selected_blog.identifier
+    claim = {
+        "claim_id": claim_id,
+        "claim_text": seed_content.split("# Hook\n")[1].split("\n\n")[0] if "# Hook\n" in seed_content else selected_blog.title,
+        "supporting_data_ref": f"blog:{selected_blog.identifier}",
+        "audit_level": "basic",
+        "tags": selected_blog.tags,
+        "thumbnail_text": selected_blog.title,
+    }
+    claim_path = inputs_dir(reel_path) / "claim.json"
+    claim_path.write_text(json.dumps(claim, indent=2) + "\n", encoding="utf-8")
+    
+    # Write seed.md
+    seed_file = seed_path(reel_path)
+    seed_file.write_text(seed_content, encoding="utf-8")
+    
+    # Write chart.json if generated (for math_slap format)
+    chart_file = None
+    if chart_json:
+        chart_file = inputs_dir(reel_path) / "chart.json"
+        chart_file.write_text(json.dumps(chart_json, indent=2) + "\n", encoding="utf-8")
+    
+    # Set as current reel
+    CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
+    
+    typer.echo(f"\n[OK] Created reel: {reel_path.name}")
+    typer.echo(f"   Claim: {claim_path}")
+    typer.echo(f"   Seed: {seed_file}")
+    if chart_file:
+        typer.echo(f"   Chart: {chart_file}")
+    typer.echo(f"   (Set as current reel)")
+    
+    # Optionally run pipeline
+    if run_pipeline:
+        typer.echo("\n" + "=" * 40)
+        typer.echo("[Pipeline] Running...")
+        
+        prov_path = pipeline_init(reel_path, force=True)
+        typer.echo("[OK] Init complete")
+        
+        plan_file = generate_plan(reel_path, force=True, ai=ai)
+        typer.echo("[OK] Plan complete")
+        
+        if ai:
+            typer.echo("   (AI script generation enabled)")
+        
+        typer.echo(f"\n   Next: uv run arcanomy run")
+    else:
+        typer.echo(f"\n   Next steps:")
+        typer.echo(f"   1. Review: {claim_path}")
+        typer.echo(f"   2. Run:    uv run arcanomy run --ai")
 
 
 @app.command()

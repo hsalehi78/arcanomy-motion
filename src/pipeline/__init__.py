@@ -11,6 +11,12 @@ from src.pipeline.voice import generate_voice, v2_generate_voice
 from src.pipeline.captions import generate_captions_srt, v2_generate_captions_srt
 from src.pipeline.charts import render_charts, v2_render_charts
 from src.pipeline.kit import generate_kit, v2_generate_kit
+from src.pipeline.scriptwriter import (
+    generate_script,
+    generate_script_from_claim,
+    Script,
+    ScriptSubsegment,
+)
 
 __all__ = [
     # Primary exports (new naming)
@@ -21,6 +27,11 @@ __all__ = [
     "generate_captions_srt",
     "render_charts",
     "generate_kit",
+    # AI Script generation
+    "generate_script",
+    "generate_script_from_claim",
+    "Script",
+    "ScriptSubsegment",
     # Legacy aliases (for backwards compatibility)
     "v2_init",
     "v2_generate_plan",

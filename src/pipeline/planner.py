@@ -2,6 +2,9 @@
 
 This is intentionally rules-first and deterministic.
 It produces `meta/plan.json`, which becomes the contract for later stages.
+
+When `ai=True`, uses LLM to generate compelling scripts.
+When `ai=False` (default), uses deterministic placeholder text.
 """
 
 from __future__ import annotations
@@ -18,7 +21,9 @@ from src.utils.paths import (
     plan_path,
 )
 from src.pipeline.provenance import write_json_immutable
+from src.utils.logger import get_logger
 
+logger = get_logger()
 
 AuditLevel = Literal["basic", "strict"]
 
@@ -81,12 +86,20 @@ def generate_plan(
     reel_path: Path,
     *,
     force: bool = False,
+    ai: bool = False,
+    ai_provider: str | None = None,
 ) -> Path:
-    """Generate `meta/plan.json` deterministically.
+    """Generate `meta/plan.json`.
 
     Canonical defaults (doctrine):
     - 10.0s atomic subsegments
     - default reel = 50s (5 subsegments) using 10+20+10+10 segment template
+    
+    Args:
+        reel_path: Path to the reel folder
+        force: Allow overwriting existing plan.json
+        ai: If True, use LLM to generate compelling script text
+        ai_provider: Override LLM provider for AI mode (default: config default)
     """
     reel_path = Path(reel_path)
     ensure_pipeline_layout(reel_path)
@@ -140,15 +153,48 @@ def generate_plan(
         },
     ]
 
-    # Minimal deterministic voice text placeholders (Phase 4 will generate voice audio).
-    # Subseg-01 uses the sacred claim sentence verbatim.
-    voice_text = {
-        subsegment_ids[0]: claim.claim_text,
-        subsegment_ids[1]: "Here’s the proof.",
-        subsegment_ids[2]: "And why it matters.",
-        subsegment_ids[3]: "The hidden cost is time.",
-        subsegment_ids[4]: "Decide—then move.",
-    }
+    # Generate voice text - AI or deterministic
+    script_metadata: dict[str, Any] | None = None
+    
+    if ai:
+        logger.info("[Plan] AI mode enabled - generating script...")
+        try:
+            from src.pipeline.scriptwriter import generate_script
+            
+            script = generate_script(
+                claim_text=claim.claim_text,
+                data=data,
+                subsegment_count=len(subsegment_ids),
+                provider=ai_provider,
+            )
+            voice_text = script.voice_text_by_subsegment
+            script_metadata = {
+                "ai_generated": True,
+                "title": script.title,
+                "hook_type": script.hook_type,
+                "total_word_count": script.total_word_count,
+            }
+            logger.info(f"[Plan] AI script generated: '{script.title}'")
+        except Exception as e:
+            logger.warning(f"[Plan] AI script generation failed: {e}")
+            logger.info("[Plan] Falling back to deterministic placeholders...")
+            from src.pipeline.scriptwriter import get_fallback_voice_text
+            voice_text = get_fallback_voice_text(claim.claim_text, subsegment_ids)
+            script_metadata = {
+                "ai_generated": False,
+                "ai_error": str(e),
+            }
+    else:
+        # Minimal deterministic voice text placeholders
+        # Subseg-01 uses the sacred claim sentence verbatim.
+        voice_text = {
+            subsegment_ids[0]: claim.claim_text,
+            subsegment_ids[1]: "Here's the proof.",
+            subsegment_ids[2]: "And why it matters.",
+            subsegment_ids[3]: "The hidden cost is time.",
+            subsegment_ids[4]: "Decide—then move.",
+        }
+        script_metadata = {"ai_generated": False}
 
     # Overlays: always one emotional overlay instruction. Informational overlay optional.
     # Chart planning is not included here unless data contains explicit chart intents (future).
@@ -210,7 +256,7 @@ def generate_plan(
                 overlays.append({"type": "informational", "ref": f"chart:{chart_id}"})
 
     plan = {
-        "version": "2.0",
+        "version": "2.1",
         "reel": {
             "reel_id": reel_path.name,
             "claim_id": claim.claim_id,
@@ -232,9 +278,10 @@ def generate_plan(
         },
         "segments": segments,
         "subsegments": subsegments,
+        "script": script_metadata,
         "notes": {
             "phase": "2",
-            "determinism": "rules_only",
+            "ai_mode": ai,
             "chart_planning": "not_implemented",
         },
     }
