@@ -159,6 +159,7 @@ DEFAULT_PROVIDERS = {
     "research": "openai",       # → gpt-5.2
     "script": "anthropic",      # → claude-opus-4.5
     "plan": "anthropic",        # → claude-opus-4.5
+    "visual_plan": "anthropic", # → claude-opus-4.5  (image/motion prompts)
     "vidprompt": "anthropic",   # → claude-opus-4.5
     "voice": "anthropic",       # → claude-opus-4.5  (writes narration TEXT)
     "sfx": "anthropic",         # → claude-opus-4.5  (writes SFX prompts)

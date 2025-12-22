@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 
 from src.utils.paths import (
+    chart_json_path,
     claim_json_path,
-    data_json_path,
     ensure_pipeline_layout,
     inputs_dir,
     meta_dir,
@@ -52,7 +52,7 @@ def init(
     prov_payload = build_provenance(
         reel_path=reel_path,
         claim_path=claim_json_path(reel_path),
-        data_path=data_json_path(reel_path),
+        chart_path=chart_json_path(reel_path),
         ctx=RunContext(
             mode="pipeline",
             fresh=fresh,

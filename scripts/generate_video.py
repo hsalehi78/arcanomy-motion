@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+"""
+Video Generator CLI for Arcanomy Motion
+Uses Kling 2.5/2.6 (via Kie.ai) to animate seed images into video clips.
+
+Usage:
+    python scripts/generate_video.py \
+        --image "renders/images/asset.png" \
+        --prompt "Motion description. Slow zoom in." \
+        --output "renders/videos/clip_01.mp4"
+"""
+
+import argparse
+import base64
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+import httpx
+from dotenv import load_dotenv
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.config import get_default_provider, get_video_model
+
+# Load environment variables
+load_dotenv()
+
+
+def upload_image_to_imgbb(image_path: str) -> str | None:
+    """Upload image to imgbb.com for temporary hosting."""
+    api_key = os.getenv("IMGBB_API_KEY")
+    if not api_key:
+        print("[WARNING] IMGBB_API_KEY not set, trying catbox.moe...", file=sys.stderr)
+        return upload_image_to_catbox(image_path)
+    
+    try:
+        image_bytes = Path(image_path).read_bytes()
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+        
+        response = httpx.post(
+            "https://api.imgbb.com/1/upload",
+            data={
+                "key": api_key,
+                "image": image_b64,
+                "expiration": 600,  # 10 minutes
+            },
+            timeout=60.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        if data.get("success"):
+            url = data["data"]["url"]
+            print(f"   Image uploaded: {url[:50]}...")
+            return url
+        else:
+            print(f"[ERROR] imgbb upload failed: {data}", file=sys.stderr)
+            return None
+            
+    except Exception as e:
+        print(f"[ERROR] imgbb upload error: {e}", file=sys.stderr)
+        return None
+
+
+def upload_image_to_catbox(image_path: str) -> str | None:
+    """Upload image to catbox.moe (free, no account needed)."""
+    try:
+        with open(image_path, "rb") as f:
+            response = httpx.post(
+                "https://catbox.moe/user/api.php",
+                data={"reqtype": "fileupload"},
+                files={"fileToUpload": (Path(image_path).name, f, "image/png")},
+                timeout=120.0,
+            )
+        
+        if response.status_code == 200 and response.text.startswith("https://"):
+            url = response.text.strip()
+            print(f"   Image uploaded: {url}")
+            return url
+        else:
+            print(f"[ERROR] catbox upload failed: {response.text[:200]}", file=sys.stderr)
+            return None
+            
+    except Exception as e:
+        print(f"[ERROR] catbox upload error: {e}", file=sys.stderr)
+        return None
+
+
+def generate_kling(
+    image_path: str,
+    prompt: str,
+    output_path: str,
+    model: str = None,
+    duration: str = "10",
+    negative_prompt: str = "blur, distort, low quality, morphing, glitch",
+    cfg_scale: float = 0.5,
+) -> bool:
+    """Generate video using Kling via Kie.ai API (Image-to-Video mode)."""
+    api_key = os.getenv("KIE_API_KEY")
+    if not api_key:
+        print("[ERROR] KIE_API_KEY not set", file=sys.stderr)
+        return False
+
+    # Strip any smart quotes or whitespace from API key
+    api_key = api_key.strip().strip('"').strip('"').strip('"').strip("'").strip("'")
+    
+    # Get model from config if not provided
+    if model is None:
+        model = get_video_model("kling")
+
+    # Verify image exists
+    if not Path(image_path).exists():
+        print(f"[ERROR] Image not found: {image_path}", file=sys.stderr)
+        return False
+
+    try:
+        # Sanitize prompt
+        prompt = prompt.replace('"', '"').replace('"', '"').replace("'", "'").replace("'", "'")
+        prompt = prompt.replace('—', '-').replace('–', '-').replace('…', '...')
+
+        print(f"   [Kling] Model: {model}")
+        print(f"   Image: {image_path}")
+        print(f"   Prompt: {prompt[:100]}...")
+
+        # Step 1: Upload image to get a URL
+        print(f"   Uploading image...")
+        image_url = upload_image_to_imgbb(image_path)
+        if not image_url:
+            image_url = upload_image_to_catbox(image_path)
+        
+        if not image_url:
+            print("[ERROR] Failed to upload image for video generation", file=sys.stderr)
+            return False
+
+        # Step 2: Create video generation task
+        print(f"   Creating video task...")
+        payload = {
+            "model": model,
+            "input": {
+                "prompt": prompt,
+                "image_url": image_url,
+                "duration": duration,
+                "negative_prompt": negative_prompt,
+                "cfg_scale": cfg_scale,
+            }
+        }
+        response = httpx.post(
+            "https://api.kie.ai/api/v1/jobs/createTask",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=120.0,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+
+        if data.get("code") != 200:
+            print(f"[ERROR] Task creation failed: {data.get('message') or data.get('msg')}", file=sys.stderr)
+            return False
+
+        task_id = data.get("data", {}).get("taskId")
+        if not task_id:
+            print("[ERROR] No taskId in response", file=sys.stderr)
+            return False
+
+        print(f"   Task created: {task_id}")
+
+        # Step 3: Poll for result (video generation takes 2-5 min typically)
+        max_attempts = 120  # 10 minutes max
+        poll_interval = 5  # seconds
+
+        for attempt in range(max_attempts):
+            time.sleep(poll_interval)
+
+            status_response = httpx.get(
+                "https://api.kie.ai/api/v1/jobs/recordInfo",
+                headers={"Authorization": f"Bearer {api_key}"},
+                params={"taskId": task_id},
+                timeout=30.0,
+            )
+
+            if status_response.status_code == 404:
+                elapsed = (attempt + 1) * poll_interval
+                print(f"   Waiting... ({elapsed}s elapsed)")
+                continue
+
+            status_response.raise_for_status()
+            status_data = status_response.json()
+
+            if status_data.get("code") != 200:
+                elapsed = (attempt + 1) * poll_interval
+                print(f"   Waiting... ({elapsed}s elapsed)")
+                continue
+
+            task_info = status_data.get("data", {})
+            state = str(task_info.get("state", "")).lower()
+
+            if state == "success":
+                result_json_str = task_info.get("resultJson", "{}")
+                try:
+                    result_json = json.loads(result_json_str) if isinstance(result_json_str, str) else result_json_str
+                except json.JSONDecodeError:
+                    result_json = {}
+                
+                video_url = None
+                
+                # Try resultUrls array first
+                result_urls = result_json.get("resultUrls", [])
+                if result_urls and len(result_urls) > 0:
+                    video_url = result_urls[0]
+                
+                # Fallback: try other field names
+                if not video_url:
+                    for field in ["video_url", "videoUrl", "url", "video", "result", "output_url"]:
+                        if field in result_json:
+                            val = result_json[field]
+                            if isinstance(val, str) and val.startswith("http"):
+                                video_url = val
+                                break
+                            elif isinstance(val, list) and len(val) > 0:
+                                video_url = val[0] if isinstance(val[0], str) else val[0].get("url")
+                                break
+
+                if video_url:
+                    print(f"   Downloading video...")
+                    video_response = httpx.get(video_url, timeout=180.0)
+                    video_response.raise_for_status()
+                    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+                    Path(output_path).write_bytes(video_response.content)
+                    elapsed = (attempt + 1) * poll_interval
+                    print(f"[OK] Video saved: {output_path} ({elapsed}s total)")
+                    return True
+                else:
+                    print(f"[ERROR] No video URL in completed task", file=sys.stderr)
+                    return False
+
+            elif state == "fail":
+                error_msg = task_info.get("failMsg", task_info.get("failCode", "Unknown error"))
+                print(f"[ERROR] Task failed: {error_msg}", file=sys.stderr)
+                return False
+
+            elif state in ("waiting", "queuing", "generating"):
+                elapsed = (attempt + 1) * poll_interval
+                status_msg = {"waiting": "Waiting", "queuing": "In queue", "generating": "Generating"}.get(state, state)
+                print(f"   {status_msg}... ({elapsed}s elapsed)")
+            else:
+                elapsed = (attempt + 1) * poll_interval
+                print(f"   Waiting... ({elapsed}s elapsed) state: {state}")
+
+        print("[ERROR] Task timed out after 10 minutes", file=sys.stderr)
+        return False
+
+    except httpx.HTTPStatusError as e:
+        print(f"[ERROR] Kie.ai API error: {e.response.status_code}", file=sys.stderr)
+        print(f"   {e.response.text[:500]}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"[ERROR] Video generation error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def dry_run(image_path: str, prompt: str, output_path: str) -> bool:
+    """Save prompt to text file without calling API (for testing)."""
+    try:
+        if not Path(image_path).exists():
+            print(f"[WARNING] Image not found: {image_path}", file=sys.stderr)
+
+        prompt_path = Path(output_path).with_suffix(".prompt.txt")
+        prompt_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(prompt_path, "w", encoding="utf-8") as f:
+            f.write(f"# Video Generation Prompt (Dry Run)\n\n")
+            f.write(f"Image: {image_path}\n")
+            f.write(f"Output: {output_path}\n\n")
+            f.write(f"## Motion Prompt:\n{prompt}\n")
+
+        print(f"[DRY RUN] Prompt saved: {prompt_path}")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] Dry run failed: {e}", file=sys.stderr)
+        return False
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Arcanomy Motion Video Generator - Animate seed images with AI"
+    )
+
+    parser.add_argument("--image", required=True, help="Path to seed image to animate")
+    parser.add_argument("--prompt", required=True, help="Video motion prompt")
+    parser.add_argument("--output", required=True, help="Output video file path (.mp4)")
+    parser.add_argument(
+        "--provider",
+        default=get_default_provider("videos"),
+        choices=["kling", "kling-2.5", "kling-2.6"],
+        help="Video generation API provider"
+    )
+    parser.add_argument("--duration", default="10", choices=["5", "10"], help="Video duration in seconds")
+    parser.add_argument("--negative-prompt", default="blur, distort, low quality, morphing, glitch")
+    parser.add_argument("--cfg-scale", type=float, default=0.5)
+    parser.add_argument("--dry-run", action="store_true", help="Save prompt without calling API")
+
+    args = parser.parse_args()
+
+    print(f"\n{'='*60}")
+    print(f"Arcanomy Motion - Video Generator")
+    print(f"{'='*60}")
+    print(f"Image:    {args.image}")
+    print(f"Output:   {args.output}")
+    print(f"Provider: {args.provider}")
+    print(f"Duration: {args.duration}s")
+    print(f"{'='*60}\n")
+
+    if args.dry_run:
+        print(f"Mode: Dry Run (no API call)")
+        success = dry_run(args.image, args.prompt, args.output)
+    else:
+        model = get_video_model("kling")
+        print(f"Mode: Generate ({model})")
+        success = generate_kling(
+            image_path=args.image,
+            prompt=args.prompt,
+            output_path=args.output,
+            model=model,
+            duration=args.duration,
+            negative_prompt=args.negative_prompt,
+            cfg_scale=args.cfg_scale,
+        )
+
+    print(f"\n{'='*60}\n")
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()
+

@@ -1,10 +1,7 @@
-"""Plan generator - deterministic segment/subsegment planning.
+"""Plan generator - LLM-powered segment/subsegment planning.
 
-This is intentionally rules-first and deterministic.
-It produces `meta/plan.json`, which becomes the contract for later stages.
-
-When `ai=True`, uses LLM to generate compelling scripts.
-When `ai=False` (default), uses deterministic placeholder text.
+Reads seed.md + claim.json (+ optional chart.json) and uses LLM to generate
+a production-ready plan.json with voice scripts, chart assignments, and structure.
 """
 
 from __future__ import annotations
@@ -14,11 +11,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from src.config import get_default_provider
+from src.services import LLMService
 from src.utils.paths import (
+    chart_json_path,
     claim_json_path,
-    data_json_path,
     ensure_pipeline_layout,
     plan_path,
+    seed_path,
 )
 from src.pipeline.provenance import write_json_immutable
 from src.utils.logger import get_logger
@@ -26,6 +26,9 @@ from src.utils.logger import get_logger
 logger = get_logger()
 
 AuditLevel = Literal["basic", "strict"]
+
+# Path to system prompt
+SYSTEM_PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "plan_system.md"
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,10 @@ class ClaimInput:
 
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _read_text(path: Path) -> str:
+    return Path(path).read_text(encoding="utf-8")
 
 
 def _parse_claim(obj: dict[str, Any]) -> ClaimInput:
@@ -67,57 +74,275 @@ def _parse_claim(obj: dict[str, Any]) -> ClaimInput:
     )
 
 
-def _zoom_plan_for(duration_seconds: float) -> list[dict[str, float]]:
-    """Deterministic 3-zoom schedule.
+def _load_system_prompt() -> str:
+    """Load the plan system prompt from file."""
+    if not SYSTEM_PROMPT_PATH.exists():
+        raise FileNotFoundError(f"System prompt not found: {SYSTEM_PROMPT_PATH}")
+    return _read_text(SYSTEM_PROMPT_PATH)
 
-    Uses 15%, 45%, 75% marks, rounded to 0.1s.
-    """
+
+def _build_user_prompt(
+    claim: ClaimInput,
+    seed_content: str,
+    chart_props: dict[str, Any] | None = None,
+) -> str:
+    """Build the user prompt for plan generation."""
+    parts = []
+    
+    # Claim section
+    parts.append("## CLAIM.JSON")
+    parts.append(f"claim_id: {claim.claim_id}")
+    parts.append(f"claim_text: {claim.claim_text}")
+    parts.append(f"audit_level: {claim.audit_level}")
+    if claim.tags:
+        parts.append(f"tags: {', '.join(claim.tags)}")
+    parts.append("")
+    
+    # Seed section
+    parts.append("## SEED.MD")
+    parts.append(seed_content)
+    parts.append("")
+    
+    # Chart section
+    if chart_props:
+        parts.append("## CHART.JSON (Assign to subseg-02)")
+        parts.append(f"chartType: {chart_props.get('chartType', 'bar')}")
+        data = chart_props.get("data", [])
+        if data:
+            parts.append("data:")
+            for item in data:
+                if isinstance(item, dict):
+                    label = item.get("label", "?")
+                    value = item.get("value", 0)
+                    parts.append(f"  - {label}: {value}")
+        narrative = chart_props.get("_narrative")
+        if narrative:
+            parts.append(f"narrative: {narrative}")
+        parts.append("")
+        parts.append("IMPORTANT: Assign this chart to subseg-02 (the evidence/proof segment).")
+    else:
+        parts.append("## CHART.JSON")
+        parts.append("No chart provided. This is a text-only reel.")
+    
+    parts.append("")
+    parts.append("---")
+    parts.append("")
+    parts.append("Generate the plan.json following the system prompt instructions.")
+    parts.append("Return ONLY valid JSON, no markdown code blocks.")
+    
+    return "\n".join(parts)
+
+
+def _zoom_plan_for(duration_seconds: float) -> list[dict[str, float]]:
+    """Deterministic 3-zoom schedule."""
     t1 = round(duration_seconds * 0.15, 1)
     t2 = round(duration_seconds * 0.45, 1)
     t3 = round(duration_seconds * 0.75, 1)
-    # Ensure within bounds and monotonic (avoid 0.0 edge cases)
     t1 = max(0.1, min(duration_seconds - 0.1, t1))
     t2 = max(t1 + 0.1, min(duration_seconds - 0.1, t2))
     t3 = max(t2 + 0.1, min(duration_seconds - 0.1, t3))
     return [{"at_seconds": t1}, {"at_seconds": t2}, {"at_seconds": t3}]
 
 
+def _enrich_plan(
+    llm_plan: dict[str, Any],
+    claim: ClaimInput,
+    chart_props: dict[str, Any] | None,
+    reel_path: Path,
+) -> dict[str, Any]:
+    """Enrich LLM-generated plan with additional metadata."""
+    
+    subsegments = llm_plan.get("subsegments", [])
+    segments = llm_plan.get("segments", [])
+    
+    # Ensure subsegment structure is complete
+    for ss in subsegments:
+        ss.setdefault("duration_seconds", 10.0)
+        ss.setdefault("overlays", [{"type": "emotional", "ref": "emoji:money_mouth"}])
+        ss.setdefault("charts", [])
+        
+        # Ensure visual structure
+        if "visual" not in ss:
+            ss["visual"] = {"type": "still", "source": "library", "prompt_ref": None}
+        elif isinstance(ss["visual"], dict):
+            ss["visual"].setdefault("source", "library")
+            ss["visual"].setdefault("prompt_ref", None)
+        
+        # If this subsegment has a chart assignment, add it
+        if ss.get("chart_id") and chart_props:
+            ss["charts"] = [{
+                "chart_id": ss["chart_id"],
+                "props": chart_props,
+            }]
+            # Add informational overlay
+            if not any(o.get("type") == "informational" for o in ss.get("overlays", [])):
+                ss.setdefault("overlays", [])
+                ss["overlays"].append({"type": "informational", "ref": f"chart:{ss['chart_id']}"})
+    
+    # Ensure segment structure is complete
+    for seg in segments:
+        seg.setdefault("zoom_plan", _zoom_plan_for(seg.get("duration_seconds", 10.0)))
+        seg.setdefault("sound_reset", {"sfx_id": "tap_01", "at_seconds": 0.0})
+    
+    # Build final plan structure
+    plan = {
+        "version": "2.1",
+        "reel": {
+            "reel_id": reel_path.name,
+            "claim_id": claim.claim_id,
+            "subsegment_count": len(subsegments),
+            "duration_seconds": sum(ss.get("duration_seconds", 10.0) for ss in subsegments),
+            "audit_level": claim.audit_level,
+        },
+        "inputs": {
+            "claim": {
+                "claim_id": claim.claim_id,
+                "claim_text": claim.claim_text,
+                "supporting_data_ref": claim.supporting_data_ref,
+                "audit_level": claim.audit_level,
+                "tags": claim.tags or [],
+                "risk_notes": claim.risk_notes,
+                "thumbnail_text": claim.thumbnail_text,
+            },
+        },
+        "segments": segments,
+        "subsegments": subsegments,
+        "script": {
+            "ai_generated": True,
+            "title": llm_plan.get("title", "Untitled"),
+            "total_word_count": sum(ss.get("word_count", 0) for ss in subsegments),
+        },
+        "notes": {
+            "phase": "2",
+            "ai_mode": True,
+        },
+    }
+    
+    return plan
+
+
 def generate_plan(
     reel_path: Path,
     *,
     force: bool = False,
-    ai: bool = False,
+    ai: bool = True,  # Now defaults to True - we always use AI
     ai_provider: str | None = None,
 ) -> Path:
-    """Generate `meta/plan.json`.
+    """Generate `meta/plan.json` using LLM.
 
-    Canonical defaults (doctrine):
-    - 10.0s atomic subsegments
-    - default reel = 50s (5 subsegments) using 10+20+10+10 segment template
+    Reads seed.md + claim.json (+ optional chart.json) and uses AI to generate
+    a production-ready plan with voice scripts and structure.
     
     Args:
         reel_path: Path to the reel folder
         force: Allow overwriting existing plan.json
-        ai: If True, use LLM to generate compelling script text
-        ai_provider: Override LLM provider for AI mode (default: config default)
+        ai: If True, use LLM (default). If False, use minimal placeholders.
+        ai_provider: Override LLM provider (default: config default for 'plan')
     """
     reel_path = Path(reel_path)
     ensure_pipeline_layout(reel_path)
 
+    # Load inputs
     claim_file = claim_json_path(reel_path)
-    data_file = data_json_path(reel_path)
+    seed_file = seed_path(reel_path)
+    chart_file = chart_json_path(reel_path)
+    
     if not claim_file.exists():
         raise FileNotFoundError(f"Missing required input: {claim_file}")
-    if not data_file.exists():
-        raise FileNotFoundError(f"Missing required input: {data_file}")
-
+    
     claim = _parse_claim(_read_json(claim_file))
-    data = _read_json(data_file)  # validated later during chart rendering (audit DSL)
+    
+    # Load seed.md (required for AI mode)
+    seed_content = ""
+    if seed_file.exists():
+        seed_content = _read_text(seed_file)
+        logger.info(f"[Plan] Loaded seed.md ({len(seed_content)} chars)")
+    elif ai:
+        logger.warning(f"[Plan] seed.md not found, using claim text only")
+        seed_content = f"# Hook\n{claim.claim_text}\n"
+    
+    # Load chart.json (optional)
+    chart_props = None
+    if chart_file.exists():
+        chart_props = _read_json(chart_file)
+        logger.info(f"[Plan] Loaded chart.json ({chart_props.get('chartType', 'unknown')} chart)")
+    
+    if ai:
+        # Load system prompt
+        system_prompt = _load_system_prompt()
+        logger.info(f"[Plan] Using AI mode with system prompt")
+        
+        # Build user prompt
+        user_prompt = _build_user_prompt(claim, seed_content, chart_props)
+        
+        # Get LLM provider
+        provider = ai_provider or get_default_provider("plan")
+        llm = LLMService(provider=provider)
+        
+        logger.info(f"[Plan] Calling {provider} for plan generation...")
+        
+        try:
+            llm_plan = llm.complete_json(
+                prompt=user_prompt,
+                system=system_prompt,
+                stage="plan",
+            )
+            logger.info(f"[Plan] LLM generated plan: '{llm_plan.get('title', 'Untitled')}'")
+        except Exception as e:
+            logger.error(f"[Plan] LLM call failed: {e}")
+            raise
+        
+        # Enrich with metadata
+        plan = _enrich_plan(llm_plan, claim, chart_props, reel_path)
+        
+    else:
+        # Fallback: minimal deterministic plan (for testing without API)
+        logger.info("[Plan] Using deterministic fallback (no AI)")
+        plan = _generate_fallback_plan(claim, chart_props, reel_path)
+    
+    # Write plan
+    out = plan_path(reel_path)
+    write_json_immutable(out, plan, force=force)
+    return out
 
-    # Canonical default: 5 subsegments (50s)
+
+def _generate_fallback_plan(
+    claim: ClaimInput,
+    chart_props: dict[str, Any] | None,
+    reel_path: Path,
+) -> dict[str, Any]:
+    """Generate a minimal fallback plan without AI."""
+    
     subsegment_ids = [f"subseg-{i:02d}" for i in range(1, 6)]
-
-    # Canonical segment template for 50s: 10 + 20 + 10 + 10
+    
+    # Minimal voice text placeholders
+    voice_text = {
+        subsegment_ids[0]: claim.claim_text,
+        subsegment_ids[1]: "Here's the proof.",
+        subsegment_ids[2]: "And why it matters.",
+        subsegment_ids[3]: "The hidden cost is time.",
+        subsegment_ids[4]: "Decide. Then move.",
+    }
+    
+    subsegments = []
+    for i, sid in enumerate(subsegment_ids):
+        ss = {
+            "subsegment_id": sid,
+            "duration_seconds": 10.0,
+            "voice": {"text": voice_text[sid]},
+            "visual": {"type": "still", "source": "library", "prompt_ref": None},
+            "overlays": [{"type": "emotional", "ref": "emoji:money_mouth"}],
+            "charts": [],
+            "word_count": len(voice_text[sid].split()),
+        }
+        
+        # Assign chart to subseg-02
+        if sid == "subseg-02" and chart_props:
+            ss["charts"] = [{"chart_id": "chart-01", "props": chart_props}]
+            ss["overlays"].append({"type": "informational", "ref": "chart:chart-01"})
+        
+        subsegments.append(ss)
+    
     segments = [
         {
             "segment_id": "seg-01",
@@ -152,116 +377,14 @@ def generate_plan(
             "sound_reset": {"sfx_id": "tap_01", "at_seconds": 0.0},
         },
     ]
-
-    # Generate voice text - AI or deterministic
-    script_metadata: dict[str, Any] | None = None
     
-    if ai:
-        logger.info("[Plan] AI mode enabled - generating script...")
-        try:
-            from src.pipeline.scriptwriter import generate_script
-            
-            script = generate_script(
-                claim_text=claim.claim_text,
-                data=data,
-                subsegment_count=len(subsegment_ids),
-                provider=ai_provider,
-            )
-            voice_text = script.voice_text_by_subsegment
-            script_metadata = {
-                "ai_generated": True,
-                "title": script.title,
-                "hook_type": script.hook_type,
-                "total_word_count": script.total_word_count,
-            }
-            logger.info(f"[Plan] AI script generated: '{script.title}'")
-        except Exception as e:
-            logger.warning(f"[Plan] AI script generation failed: {e}")
-            logger.info("[Plan] Falling back to deterministic placeholders...")
-            from src.pipeline.scriptwriter import get_fallback_voice_text
-            voice_text = get_fallback_voice_text(claim.claim_text, subsegment_ids)
-            script_metadata = {
-                "ai_generated": False,
-                "ai_error": str(e),
-            }
-    else:
-        # Minimal deterministic voice text placeholders
-        # Subseg-01 uses the sacred claim sentence verbatim.
-        voice_text = {
-            subsegment_ids[0]: claim.claim_text,
-            subsegment_ids[1]: "Here's the proof.",
-            subsegment_ids[2]: "And why it matters.",
-            subsegment_ids[3]: "The hidden cost is time.",
-            subsegment_ids[4]: "Decide—then move.",
-        }
-        script_metadata = {"ai_generated": False}
-
-    # Overlays: always one emotional overlay instruction. Informational overlay optional.
-    # Chart planning is not included here unless data contains explicit chart intents (future).
-    subsegments = []
-    for sid in subsegment_ids:
-        subsegments.append(
-            {
-                "subsegment_id": sid,
-                "duration_seconds": 10.0,
-                "voice": {"text": voice_text[sid]},
-                "visual": {
-                    "type": "still",
-                    "source": "library",
-                    "prompt_ref": None,
-                },
-                "overlays": [
-                    {"type": "emotional", "ref": "emoji:money_mouth"},
-                ],
-                "charts": [],
-            }
-        )
-
-    # Optional v2 hook: allow data.json to provide fully-formed chart JSON props
-    # using the docs/charts v2.0 schema. This is deterministic and keeps chart
-    # authoring simple while strict audit DSL is implemented later.
-    charts = data.get("charts") if isinstance(data, dict) else None
-    if isinstance(charts, list):
-        # Deterministic mapping: if chart specifies subsegment_id, use it; otherwise assign
-        # in order to subseg-02, subseg-03, ... (skip subseg-01 by default).
-        fallback_targets = subsegment_ids[1:] if len(subsegment_ids) > 1 else subsegment_ids
-        fallback_i = 0
-
-        by_id = {ss["subsegment_id"]: ss for ss in subsegments}
-        for i, chart in enumerate(charts, start=1):
-            if not isinstance(chart, dict):
-                continue
-            chart_id = str(chart.get("chart_id") or f"chart-{i:02d}")
-            target = chart.get("subsegment_id")
-            if not target:
-                target = fallback_targets[min(fallback_i, len(fallback_targets) - 1)]
-                fallback_i += 1
-            target = str(target)
-            if target not in by_id:
-                continue
-            props = chart.get("props")
-            if not isinstance(props, dict):
-                continue
-            ss_obj = by_id[target]
-            ss_obj["charts"].append({"chart_id": chart_id, "props": props})
-
-            # Doctrine: 2 overlays per subsegment (1 informational max, 1 emotional).
-            # If a chart is present, informational overlay becomes required.
-            overlays = ss_obj.get("overlays")
-            if not isinstance(overlays, list):
-                overlays = []
-                ss_obj["overlays"] = overlays
-            has_info = any(isinstance(o, dict) and o.get("type") == "informational" for o in overlays)
-            if not has_info:
-                overlays.append({"type": "informational", "ref": f"chart:{chart_id}"})
-
-    plan = {
+    return {
         "version": "2.1",
         "reel": {
             "reel_id": reel_path.name,
             "claim_id": claim.claim_id,
             "subsegment_count": len(subsegment_ids),
-            "duration_seconds": len(subsegment_ids) * 10,
+            "duration_seconds": 50,
             "audit_level": claim.audit_level,
         },
         "inputs": {
@@ -274,24 +397,13 @@ def generate_plan(
                 "risk_notes": claim.risk_notes,
                 "thumbnail_text": claim.thumbnail_text,
             },
-            "data": data,
         },
         "segments": segments,
         "subsegments": subsegments,
-        "script": script_metadata,
-        "notes": {
-            "phase": "2",
-            "ai_mode": ai,
-            "chart_planning": "not_implemented",
-        },
+        "script": {"ai_generated": False},
+        "notes": {"phase": "2", "ai_mode": False},
     }
-
-    out = plan_path(reel_path)
-    write_json_immutable(out, plan, force=force)
-    return out
 
 
 # Legacy alias for backwards compatibility
 v2_generate_plan = generate_plan
-
-

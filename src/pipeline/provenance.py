@@ -84,7 +84,7 @@ def build_provenance(
     *,
     reel_path: Path,
     claim_path: Path | None,
-    data_path: Path | None,
+    chart_path: Path | None,
     ctx: RunContext,
     extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -107,7 +107,7 @@ def build_provenance(
         }
 
     add_input("claim_json", claim_path)
-    add_input("data_json", data_path)
+    add_input("chart_json", chart_path)
 
     payload: dict[str, Any] = {
         "schema_version": "provenance.1",

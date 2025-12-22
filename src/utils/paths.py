@@ -152,6 +152,14 @@ def plan_path(reel_path: Path) -> Path:
     return meta_dir(reel_path) / "plan.json"
 
 
+def visual_plan_path(reel_path: Path) -> Path:
+    return meta_dir(reel_path) / "visual_plan.json"
+
+
+def video_prompts_path(reel_path: Path) -> Path:
+    return meta_dir(reel_path) / "video_prompts.json"
+
+
 def captions_srt_path(reel_path: Path) -> Path:
     return captions_dir(reel_path) / "captions.srt"
 
@@ -162,8 +170,13 @@ def claim_json_path(reel_path: Path) -> Path:
 
 
 def data_json_path(reel_path: Path) -> Path:
-    """Canonical pipeline input."""
+    """Legacy pipeline input (deprecated, use chart_json_path)."""
     return inputs_dir(reel_path) / "data.json"
+
+
+def chart_json_path(reel_path: Path) -> Path:
+    """Canonical chart input - Remotion-ready chart props."""
+    return inputs_dir(reel_path) / "chart.json"
 
 
 def ensure_pipeline_layout(reel_path: Path) -> None:

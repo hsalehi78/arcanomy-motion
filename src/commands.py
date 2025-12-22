@@ -20,6 +20,10 @@ from src.pipeline import (
     render_charts,
     generate_kit,
 )
+from src.pipeline.visual_plan import generate_visual_plan
+from src.pipeline.assets import generate_assets
+from src.pipeline.vidprompt import generate_video_prompts
+from src.pipeline.videos import generate_videos
 from src.services import LLMService
 from src.utils.logger import get_logger
 
@@ -132,7 +136,8 @@ def new(
 ):
     """Create a new reel from template.
     
-    Creates the reel folder with claim.json and data.json templates.
+    Creates the reel folder with claim.json template.
+    Add chart.json (optional) for chart-based reels.
     """
     from datetime import date
 
@@ -158,20 +163,11 @@ def new(
     claim_path = inputs_dir(reel_path) / "claim.json"
     claim_path.write_text(json.dumps(claim, indent=2) + "\n", encoding="utf-8")
 
-    # Create data.json template
-    data = {
-        "type": "none",
-        "datasets": [],
-        "charts": []
-    }
-    data_path = inputs_dir(reel_path) / "data.json"
-    data_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-
     # Create optional seed.md for notes
     seed_content = """# Notes (Optional)
 
 This file is for your personal notes and ideas. It is NOT processed by the pipeline.
-The canonical inputs are claim.json and data.json.
+The canonical input is claim.json. Add chart.json for chart-based reels.
 
 ## Idea
 [Your concept here]
@@ -188,7 +184,7 @@ The canonical inputs are claim.json and data.json.
     typer.echo(f"   (Also set as current reel)")
     typer.echo(f"\n   Edit these files:")
     typer.echo(f"   - {claim_path} (required)")
-    typer.echo(f"   - {data_path} (required)")
+    typer.echo(f"   - inputs/chart.json (optional, for chart reels)")
     typer.echo(f"\n   Then run: uv run arcanomy run {reel_path}")
 
 
@@ -202,7 +198,7 @@ def run(
         "kit",
         "--stage",
         "-s",
-        help="How far to run: init|plan|subsegments|voice|captions|charts|kit. Default: kit (full).",
+        help="How far to run: init|plan|visual_plan|assets|vidprompt|videos|subsegments|voice|captions|charts|kit. Default: kit (full).",
     ),
     fresh: bool = typer.Option(
         False,
@@ -214,24 +210,25 @@ def run(
         "--force",
         help="Allow overwriting immutable outputs (use sparingly).",
     ),
-    ai: bool = typer.Option(
+    no_ai: bool = typer.Option(
         False,
-        "--ai",
-        help="Use AI/LLM to generate compelling script text (requires API key).",
+        "--no-ai",
+        help="Disable AI/LLM and use placeholder scripts (for testing without API key).",
     ),
     ai_provider: Optional[str] = typer.Option(
         None,
         "--ai-provider",
-        help="Override LLM provider for AI mode (openai|anthropic|gemini).",
+        help="Override LLM provider (openai|anthropic|gemini).",
     ),
 ):
     """Run the pipeline for a reel.
     
-    Generates a CapCut-ready assembly kit from claim.json + data.json inputs.
+    Generates a CapCut-ready assembly kit from claim.json + seed.md (+ optional chart.json).
+    Uses AI (Opus 4.5 by default) to generate scripts from seed.md.
     Output: subsegments, charts, voice, captions, guides, thumbnail.
     
     If no reel path is provided, uses the current reel (set via 'arcanomy set' or 'arcanomy reels').
-    Use --ai to enable AI-powered script generation from your claim.
+    Use --no-ai to disable AI and use placeholder scripts.
     """
     from dotenv import load_dotenv
 
@@ -274,13 +271,16 @@ def run(
     # Auto-set as current reel for convenience
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
-    valid_stages = ("init", "plan", "subsegments", "voice", "captions", "charts", "kit")
+    valid_stages = ("init", "plan", "visual_plan", "assets", "vidprompt", "videos", "subsegments", "voice", "captions", "charts", "kit")
     if stage not in valid_stages:
         typer.echo(f"[ERROR] --stage must be one of: {', '.join(valid_stages)}", err=True)
         raise typer.Exit(1)
 
-    if ai:
-        typer.echo("[AI] AI script generation enabled")
+    ai = not no_ai  # AI is default, --no-ai disables it
+    if no_ai:
+        typer.echo("[Mode] Using placeholder scripts (--no-ai)")
+    else:
+        typer.echo("[Mode] AI script generation enabled")
 
     prov_path = pipeline_init(reel_path, fresh=fresh, force=force)
     typer.echo("[OK] Init complete")
@@ -293,6 +293,36 @@ def run(
     typer.echo("[OK] Plan complete")
     typer.echo(f"   Plan: {plan_file}")
     if stage == "plan":
+        return
+
+    # Visual plan (image/motion prompts)
+    vp_file = generate_visual_plan(reel_path, force=force, ai=ai, provider_override=ai_provider)
+    typer.echo("[OK] Visual plan complete")
+    typer.echo(f"   Visual plan: {vp_file}")
+    if stage == "visual_plan":
+        return
+
+    # Asset generation (images)
+    assets = generate_assets(reel_path, force=force)
+    typer.echo("[OK] Assets complete")
+    success = len([a for a in assets if a.get("status") == "success"])
+    typer.echo(f"   Generated: {success} images")
+    if stage == "assets":
+        return
+
+    # Video prompt refinement
+    vp_prompts = generate_video_prompts(reel_path, force=force, ai=ai, provider_override=ai_provider)
+    typer.echo("[OK] Video prompts complete")
+    typer.echo(f"   Prompts: {vp_prompts}")
+    if stage == "vidprompt":
+        return
+
+    # Video generation
+    videos = generate_videos(reel_path, force=force)
+    typer.echo("[OK] Videos complete")
+    success = len([v for v in videos if v.get("status") == "success"])
+    typer.echo(f"   Generated: {success} clips")
+    if stage == "videos":
         return
 
     outputs = generate_subsegments(reel_path, force=force)
@@ -351,9 +381,13 @@ def status(
 
     stages = [
         ("inputs/claim.json", "Claim (input)"),
-        ("inputs/data.json", "Data (input)"),
+        ("inputs/chart.json", "Chart (optional)"),
         ("meta/provenance.json", "Provenance"),
         ("meta/plan.json", "Plan"),
+        ("meta/visual_plan.json", "Visual Plan"),
+        ("renders/images/composites", "Assets (images)"),
+        ("meta/video_prompts.json", "Video Prompts"),
+        ("renders/videos", "Videos"),
         ("subsegments/subseg-01.mp4", "Subsegments"),
         ("voice/subseg-01.wav", "Voice"),
         ("captions/captions.srt", "Captions"),
@@ -679,10 +713,10 @@ def ingest_blog(
         "-r",
         help="Immediately run the pipeline after ingestion",
     ),
-    ai: bool = typer.Option(
+    no_ai: bool = typer.Option(
         False,
-        "--ai",
-        help="Use AI script generation when running pipeline",
+        "--no-ai",
+        help="Disable AI and use placeholder scripts",
     ),
 ):
     """Create a reel from a blog post. Interactive picker if no identifier provided."""
@@ -845,17 +879,15 @@ def ingest_blog(
         prov_path = pipeline_init(reel_path, force=True)
         typer.echo("[OK] Init complete")
         
+        ai = not no_ai
         plan_file = generate_plan(reel_path, force=True, ai=ai)
         typer.echo("[OK] Plan complete")
-        
-        if ai:
-            typer.echo("   (AI script generation enabled)")
         
         typer.echo(f"\n   Next: uv run arcanomy run")
     else:
         typer.echo(f"\n   Next steps:")
         typer.echo(f"   1. Review: {claim_path}")
-        typer.echo(f"   2. Run:    uv run arcanomy run --ai")
+        typer.echo(f"   2. Run:    uv run arcanomy run")
 
 
 @app.command()
@@ -881,7 +913,7 @@ def guide():
 
 2. [cyan]Edit the inputs:[/cyan]
    - inputs/claim.json  (your main claim)
-   - inputs/data.json   (chart data if any)
+   - inputs/chart.json  (optional, for chart-based reels)
 
 3. [cyan]Run the pipeline:[/cyan]
    $ uv run arcanomy run content/reels/YYYY-MM-DD-my-reel-slug
@@ -894,7 +926,7 @@ def guide():
 content/reels/<reel>/
   inputs/
     claim.json       <- Your claim (required)
-    data.json        <- Chart data (required)
+    chart.json       <- Chart props (optional)
   meta/
     provenance.json  <- Run metadata
     plan.json        <- Segment/subsegment plan
