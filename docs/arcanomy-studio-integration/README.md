@@ -16,6 +16,25 @@ Arcanomy Motion is a video production pipeline that generates **CapCut-ready ass
 
 Your job as Arcanomy Studio is to generate these files from blog content or other sources **and upload them to R2**.
 
+Arcanomy Motion’s job is to take those seeds and produce a **CapCut-ready kit** + **10-second assets**.
+
+### What Motion Outputs (Locally)
+
+After running the pipeline, Motion writes:
+- `subsegments/subseg-XX.mp4` (10.0s each; background/base visuals)
+- `charts/chart-subseg-XX-*.mp4` (10.0s each; green-screen overlays for CapCut chroma key)
+- `voice/subseg-XX.wav` (10.0s each)
+- `captions/captions.srt` (line-level; voice-aligned; never crosses 10-second boundaries)
+- `guides/capcut_assembly_guide.md` and `guides/retention_checklist.md`
+- `thumbnail/thumbnail.png`
+- `meta/quality_gate.json` (pass/fail + reasons; enforces doctrine constraints)
+
+### Pro Mode + Overrides (While Learning)
+
+Motion can optionally generate “pro” visual assets (seed images + 10-second AI clips). When you’re learning, you can also **override** visuals:
+- If `renders/videos/clip_XX.mp4` already exists locally, Motion should **use it** and skip regenerating that clip.
+- Same concept for seed images under `renders/images/composites/`.
+
 ---
 
 ## ⚠️ IMPORTANT: R2 Storage
@@ -67,6 +86,10 @@ https://cdn.arcanomydata.com/content/reels/{reel-identifier}/
 
 **Reel Identifier:** `YYYY-MM-DD-{section}-{slug}`  
 **Example:** `2025-12-26-knowledge-permission-trap`
+
+### Reel Length (10-second blocks)
+
+A reel is typically **5–6 subsegments** = **50–60 seconds**.
 
 ### Minimal Valid Output
 

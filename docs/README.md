@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Arcanomy Motion generates **CapCut-ready assembly kits** for short-form video reels.
+Arcanomy Motion converts **Arcanomy Studio reel seeds** into **CapCut-ready assembly kits** for short-form video reels.
 
 **Output:** Subsegments, charts, voice, captions, thumbnail, and assembly guides.  
 **Assembly:** Manual in CapCut Desktop (not automated MP4 export).
@@ -32,8 +32,8 @@ All design decisions are governed by **`docs/principles/`**:
 INPUTS                          PIPELINE                         OUTPUTS
 ─────────────────────────────────────────────────────────────────────────────
 inputs/claim.json    ──┐
-                       ├──►  init ──► plan ──► subsegments ──► voice
-inputs/data.json     ──┘                            │
+inputs/seed.md       ──┤──►  init ──► plan ──► subsegments ──► voice
+inputs/chart.json?   ──┘                            │
                                                     ▼
                                               captions ──► charts ──► kit
                                                                       │
@@ -58,32 +58,33 @@ inputs/data.json     ──┘                            │
 
 ## Quick Start
 
-### Option A: Create from a Blog (Recommended)
+### Canonical: Studio Seeds → Motion Kit → CapCut Assembly
+
+Arcanomy Studio produces the seed files. Arcanomy Motion renders the kit.
+
+Required inputs (from Studio):
+- `inputs/claim.json`
+- `inputs/seed.md`
+
+Optional inputs (from Studio):
+- `inputs/chart.json` (for chart overlays)
+
+A reel is typically **5–6 subsegments** = **50–60 seconds** (10-second blocks).
 
 ```bash
-# Pick a blog from Arcanomy CDN and create a reel
-uv run arcanomy ingest-blog
-
-# Run with AI script generation
-uv run arcanomy run --ai
+# Run the pipeline on a reel folder
+uv run arcanomy run content/reels/<reel-id>
 ```
 
-The blog picker:
-1. Shows recent Arcanomy blog posts
-2. Uses AI to extract hook, insight, and visual vibe
-3. Creates the reel folder with claim.json and seed.md
-4. Sets it as the current reel
+### Pro Mode (Optional): Visual Planning + Seed Images + 10s AI Clips
 
-### Option B: Create from Scratch
+Motion supports an optional “pro” path driven by system prompts:
+- `meta/visual_plan.json` (image + motion prompts)
+- `renders/images/composites/*.png` (seed images)
+- `meta/video_prompts.json` (refined prompts)
+- `renders/videos/clip_XX.mp4` (10-second clips)
 
-```bash
-# Create a new reel manually
-uv run arcanomy new my-reel-slug
-
-# Edit inputs/claim.json with your claim
-# Run with AI script generation
-uv run arcanomy run --ai
-```
+**Overrides while learning:** if a `renders/videos/clip_XX.mp4` file already exists, Motion should use it (skip regeneration) and still produce the CapCut kit.
 
 ### 3. Run the pipeline
 
@@ -111,8 +112,8 @@ Open `guides/capcut_assembly_guide.md` and follow the instructions.
 content/reels/<reel-slug>/
   inputs/
     claim.json           # Required: the sacred claim
-    data.json            # Required: chart data (or type: "none")
-    seed.md              # Optional: personal notes
+    seed.md              # Required: creative brief from Studio
+    chart.json           # Optional: Remotion chart props (charts-only)
 
   meta/
     provenance.json      # Run metadata and hashes
@@ -123,6 +124,10 @@ content/reels/<reel-slug>/
     subseg-01.mp4        # 10.0s video clips
     subseg-02.mp4
     ...
+
+  renders/               # Optional "pro" assets (if enabled/used)
+    images/composites/   # Seed images
+    videos/              # 10s AI clips (clip_XX.mp4)
 
   voice/
     subseg-01.wav        # Voice per subsegment (10.0s)
@@ -169,15 +174,6 @@ uv run arcanomy render-chart docs/charts/bar-chart-basic.json
 ## CLI Reference
 
 ```bash
-# Blog ingestion (recommended starting point)
-uv run arcanomy list-blogs           # List available blogs from CDN
-uv run arcanomy ingest-blog          # Pick a blog → create reel
-uv run arcanomy ingest-blog --run    # Pick → create → run pipeline
-
-# Reel creation
-uv run arcanomy new <slug>           # Create new reel from scratch
-uv run arcanomy reels                # List/select existing reels
-
 # Pipeline
 uv run arcanomy run                  # Run current reel
 uv run arcanomy run --ai             # Run with AI script generation
@@ -234,3 +230,7 @@ See **`docs/principles/`** for the canonical operating doctrine:
 
 The pipeline exists to serve these principles, not the other way around.
 
+## Production Quality
+
+If you’re still learning to make pro reels, start here:
+- `docs/production/quality-playbook.md`

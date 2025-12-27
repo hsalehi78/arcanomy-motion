@@ -2,7 +2,11 @@
 
 **CapCut-kit pipeline for short-form video production.**
 
-Arcanomy Motion generates assembly kits for Instagram Reels, TikTok, and YouTube Shorts. The pipeline outputs subsegments, charts, voice audio, captions, and assembly guides—you assemble the final video in CapCut Desktop.
+Arcanomy Motion converts **Arcanomy Studio reel seeds** into a **CapCut-ready assembly kit** for Instagram Reels, TikTok, and YouTube Shorts.
+
+- Seeds (from Studio): `inputs/claim.json`, `inputs/seed.md`, optional `inputs/chart.json`
+- Outputs (from Motion): 10-second subsegments, 10-second chart overlays, voice WAVs, line-level SRT captions, guides, thumbnail, and a quality gate
+- Final assembly: **manual in CapCut Desktop** (canonical doctrine)
 
 ---
 
@@ -25,13 +29,13 @@ Arcanomy Motion generates assembly kits for Instagram Reels, TikTok, and YouTube
 │                          ARCANOMY MOTION                                 │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌──────────────┐    ┌──────────────────┐    ┌────────────────────┐     │
-│  │   Inputs     │    │  Python          │    │   External APIs    │     │
-│  │              │───▶│  Orchestrator    │───▶│                    │     │
-│  │ • claim.json │    │                  │    │  • ElevenLabs      │     │
-│  │ • data.json  │    │  • Planner       │    │  • OpenAI/Claude   │     │
-│  │              │    │  • Stage Runner  │    │  • Gemini          │     │
-│  └──────────────┘    └────────┬─────────┘    └────────────────────┘     │
+│  ┌──────────────────────┐    ┌──────────────────┐    ┌────────────────┐ │
+│  │ Inputs (from Studio)  │    │  Python          │    │ External APIs   │ │
+│  │                      │───▶│  Orchestrator    │───▶│ (optional)      │ │
+│  │ • claim.json         │    │                  │    │ • ElevenLabs    │ │
+│  │ • seed.md            │    │  • Planner       │    │ • LLMs          │ │
+│  │ • chart.json (opt)   │    │  • Stage Runner  │    │ • Image/Video   │ │
+│  └──────────────────────┘    └────────┬─────────┘    └────────────────┘ │
 │                               │                                          │
 │                               ▼                                          │
 │  ┌────────────────────────────────────────────────────────────────┐     │
@@ -59,13 +63,11 @@ Arcanomy Motion generates assembly kits for Instagram Reels, TikTok, and YouTube
 ## Quick Start
 
 ```bash
-# Create a new reel
-uv run arcanomy new my-reel-slug
+# 1) Get a reel seed from Arcanomy Studio (claim.json + seed.md + optional chart.json)
+#    Place it under: content/reels/<reel-id>/inputs/
 
-# Edit inputs/claim.json and inputs/data.json
-
-# Run the pipeline
-uv run arcanomy run content/reels/YYYY-MM-DD-my-reel-slug
+# 2) Run the pipeline (produces CapCut kit + 10s assets)
+uv run arcanomy run content/reels/<reel-id>
 
 # Assemble in CapCut using guides/capcut_assembly_guide.md
 ```
@@ -80,6 +82,10 @@ See `START_HERE.md` for the full quick start guide.
 |-------|--------|-------------|
 | **init** | `meta/provenance.json` | Initialize run context |
 | **plan** | `meta/plan.json` | Generate segments and subsegments |
+| **visual_plan** | `meta/visual_plan.json` | (Optional) Visual prompts for seed images + 10s clips |
+| **assets** | `renders/images/composites/*.png` | (Optional) Generate seed images |
+| **vidprompt** | `meta/video_prompts.json` | (Optional) Refine motion prompts for 10s clips |
+| **videos** | `renders/videos/clip_XX.mp4` | (Optional) Generate 10s AI video clips (or use overrides) |
 | **subsegments** | `subsegments/subseg-*.mp4` | 10.0s background videos |
 | **voice** | `voice/subseg-*.wav` | Voice audio per subsegment |
 | **captions** | `captions/captions.srt` | Line-level SRT captions |
@@ -118,8 +124,9 @@ arcanomy-motion/
 ```
 content/reels/<slug>/
   inputs/
-    claim.json           # The claim (required)
-    data.json            # Chart data (required)
+    claim.json           # Required
+    seed.md              # Required
+    chart.json           # Optional (Remotion chart props)
 
   meta/
     provenance.json      # Run metadata

@@ -1,5 +1,11 @@
 # 05 — Visual Style & Subtitles (Viral Specs)
 
+> **LEGACY (v1) NOTICE:** This doc includes v1 burned-in/karaoke captions guidance.  
+> **Canonical** today is: Motion outputs `captions/captions.srt` and **CapCut applies the preset styling**.  
+> See:
+> - `docs/principles/arcanomy-reels-operating-system.md`
+> - `docs/README.md`
+
 > **Legacy notice (important):** This doc includes a v1 Remotion karaoke-caption system.  
 > **Canonical v2 captions** are **CapCut preset style** per `docs/principles/arcanomy-reels-operating-system.md` and `docs/REFRACTOR_RFC.md`. V2 outputs `captions.srt` (line-level, voice-aligned) and CapCut applies styling.
 

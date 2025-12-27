@@ -1,5 +1,13 @@
 # 03 — Seed & Config Format
 
+> **LEGACY (v1) NOTICE:** This document describes `inputs/reel.yaml` and a v1-style seed workflow.  
+> **Canonical** inputs today (from Arcanomy Studio) are:
+> - `inputs/claim.json`
+> - `inputs/seed.md`
+> - optional `inputs/chart.json`
+>
+> See `docs/arcanomy-studio-integration/01-file-formats.md` and `docs/README.md`.
+
 ## Overview
 
 In the new architecture, the "Objective" is split into two distinct user-input files:

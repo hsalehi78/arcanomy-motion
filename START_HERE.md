@@ -8,46 +8,50 @@ Run `uv run arcanomy guide` anytime to see this in your terminal.
 
 ## Quick Start
 
-### Option A: Create from a Blog (Recommended)
+### Canonical Workflow: Studio Seeds → Motion Kit → CapCut Assembly
 
-```bash
-# Pick a blog and create a reel from it
-uv run arcanomy ingest-blog
+Arcanomy Motion does **not** originate reel concepts anymore.
+**Arcanomy Studio produces reel seeds**, and Arcanomy Motion converts those seeds into:
 
-# Run with AI script generation
-uv run arcanomy run --ai
+- **10.0s assets** (subsegments, charts, voice, captions)
+- a **CapCut-ready assembly kit** (guides, thumbnail, quality gate)
+
+CapCut Desktop remains the final editor (canonical doctrine).
+
+### 1) Get a reel seed from Arcanomy Studio
+
+You need these inputs inside a reel folder:
+
+```
+content/reels/<reel-id>/
+  inputs/
+    claim.json      # required
+    seed.md         # required
+    chart.json      # optional (for data-driven reels)
 ```
 
-The blog picker fetches content from Arcanomy CDN and uses AI to extract the hook, insight, and visual vibe.
-
-### Option B: Create from Scratch
-
-```bash
-# Create a new reel
-uv run arcanomy new my-reel-slug
-
-# Edit the claim
-# (opens content/reels/YYYY-MM-DD-my-reel-slug/inputs/claim.json)
-
-# Run with AI script generation
-uv run arcanomy run --ai
-```
-
-### 3. Run the pipeline
+Notes:
+- A reel is typically **5–6 subsegments** = **50–60 seconds** (10-second blocks).
+- `chart.json` is only needed when the reel benefits from a chart overlay.
 
 ```bash
-# Run the current reel:
-uv run arcanomy run
-
-# With AI script generation:
-uv run arcanomy run --ai
-
-# Pick a different reel first:
-uv run arcanomy reels
-uv run arcanomy run --ai
+# Run the pipeline on the reel
+uv run arcanomy run content/reels/<reel-id>
 ```
 
-### 4. Assemble in CapCut
+### 2) (Optional) Pro visuals + overrides
+
+Arcanomy Motion supports a “pro” path where it can generate:
+- seed images (`renders/images/composites/*.png`)
+- 10-second AI video clips (`renders/videos/clip_XX.mp4`)
+
+You can also **override** visuals while learning:
+- If you drop in your own `renders/videos/clip_XX.mp4` files, Motion should use them on the next run (and skip regenerating those clips).
+- Same idea for seed images in `renders/images/composites/`.
+
+The kit output (voice/captions/charts/guides/quality gate) remains the same.
+
+### 3) Assemble in CapCut
 
 Open `guides/capcut_assembly_guide.md` and follow the instructions.
 
@@ -61,8 +65,8 @@ The pipeline generates a **CapCut-ready assembly kit**, not a final MP4.
 INPUTS                          PIPELINE                         OUTPUTS
 ─────────────────────────────────────────────────────────────────────────────
 inputs/claim.json    ──┐
-                       ├──►  init ──► plan ──► subsegments ──► voice
-inputs/data.json     ──┘                            │
+inputs/seed.md       ──┤──►  init ──► plan ──► subsegments ──► voice
+inputs/chart.json?   ──┘                            │
                                                     ▼
                                               captions ──► charts ──► kit
                                                                       │
@@ -91,8 +95,8 @@ inputs/data.json     ──┘                            │
 content/reels/<reel-slug>/
   inputs/
     claim.json           # Required: the sacred claim
-    data.json            # Required: chart data (or type: "none")
-    seed.md              # Optional: personal notes
+    seed.md              # Required: creative brief from Studio
+    chart.json           # Optional: chart props (Remotion charts-only)
 
   meta/
     provenance.json      # Run metadata and hashes
@@ -103,6 +107,10 @@ content/reels/<reel-slug>/
     subseg-01.mp4        # 10.0s video clips
     subseg-02.mp4
     ...
+
+  renders/               # Optional "pro" assets (if enabled/used)
+    images/composites/   # Seed images (inputs to video gen)
+    videos/              # 10s AI clips (clip_XX.mp4)
 
   voice/
     subseg-01.wav        # Voice per subsegment (10.0s)
@@ -128,18 +136,8 @@ content/reels/<reel-slug>/
 ## CLI Commands
 
 ```bash
-# Blog ingestion (recommended starting point)
-uv run arcanomy list-blogs           # List available blogs from CDN
-uv run arcanomy ingest-blog          # Pick a blog → create reel
-uv run arcanomy ingest-blog --run    # Pick → create → run pipeline
-
-# Reel creation
-uv run arcanomy new <slug>           # Create new reel from scratch
-uv run arcanomy reels                # List/select existing reels
-
 # Pipeline
 uv run arcanomy run                  # Run current reel
-uv run arcanomy run --ai             # Run with AI script generation
 uv run arcanomy run -s plan          # Run to specific stage
 uv run arcanomy run --fresh          # Wipe and rerun
 uv run arcanomy status               # Show pipeline status
@@ -152,20 +150,12 @@ uv run arcanomy render-chart <json>  # Render standalone chart
 uv run arcanomy guide                # Show help
 ```
 
-### AI Script Generation
+### Notes on legacy commands
 
-Use `--ai` to enable AI-powered script generation:
+Some legacy commands still exist in the repo for convenience (e.g. blog-based seed creation), but the **canonical path** is:
+**Arcanomy Studio generates seeds** → Arcanomy Motion renders the kit → CapCut assembly.
 
-```bash
-# Pick a reel and run with AI:
-uv run arcanomy reels
-uv run arcanomy run --ai
-
-# Or directly:
-uv run arcanomy run my-reel --ai
-```
-
-This uses LLM to transform your claim into a compelling script with:
+The pipeline uses LLM to transform your Studio seed into a compelling script with:
 - Hook that stops the scroll
 - Evidence and proof with specific data
 - Emotional implication (the stakes)
@@ -210,7 +200,7 @@ See `docs/charts/` for all templates and documentation.
 
 ```bash
 uv run arcanomy new my-first-reel
-# Edit inputs/claim.json and inputs/data.json
-uv run arcanomy run
-# Open guides/capcut_assembly_guide.md in CapCut
+# Put Studio seeds in inputs/ (claim.json + seed.md + optional chart.json)
+uv run arcanomy run content/reels/<reel-id>
+# Open guides/capcut_assembly_guide.md in CapCut Desktop
 ```

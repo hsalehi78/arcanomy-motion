@@ -1,5 +1,11 @@
 # 06 — Blog Ingestion
 
+> **LEGACY (v1) NOTICE:** This document describes a legacy workflow where Arcanomy Motion creates seeds from blogs.  
+> **Canonical** workflow today is: **Arcanomy Studio generates seeds** → Arcanomy Motion renders the CapCut kit.  
+> See:
+> - `docs/README.md`
+> - `docs/arcanomy-studio-integration/`
+
 ## Overview
 
 Arcanomy Motion can automatically create reel projects from published Arcanomy blog posts. This workflow fetches blog content from the CDN, uses an LLM to extract the key elements (hook, core insight, visual vibe), and generates the required `inputs/seed.md` and `inputs/reel.yaml` files.

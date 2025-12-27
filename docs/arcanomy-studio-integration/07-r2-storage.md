@@ -156,24 +156,32 @@ Update `_indexes/ready.json` to include the new reel.
 
 Once files are on R2, Arcanomy Motion can:
 
-### Option 1: Fetch and Run
+### Option 1 (Canonical today): Download seeds to local `content/reels/` and run
 
 ```bash
-# Fetch reel from R2 to local content/reels/
-uv run arcanomy fetch 2025-12-26-knowledge-permission-trap
+# Download the three seed files to:
+#   content/reels/<reel-identifier>/inputs/
+#     claim.json
+#     seed.md
+#     chart.json (optional)
+#
+# Then run:
+uv run arcanomy run content/reels/2025-12-26-knowledge-permission-trap
 
-# Run the pipeline
-uv run arcanomy run
+# The pipeline outputs a CapCut kit locally:
+# - 10s subsegments
+# - 10s chart overlays (if chart.json provided)
+# - voice wavs, captions.srt
+# - guides + thumbnail + quality_gate
 ```
 
-### Option 2: List Available Reels
+### Option 2 (Planned): List and fetch from an index
 
 ```bash
-# List reels ready for processing from R2
-uv run arcanomy list-reels --source r2
-
-# Interactive picker
-uv run arcanomy ingest-reel
+# Planned CLI commands (documented for future implementation):
+# uv run arcanomy list-reels --source r2
+# uv run arcanomy fetch <reel-identifier>
+# uv run arcanomy ingest-reel
 ```
 
 ---

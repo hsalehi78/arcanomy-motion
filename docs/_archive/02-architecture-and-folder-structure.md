@@ -1,5 +1,12 @@
 # 02 — Architecture & Folder Structure (Monorepo)
 
+> **LEGACY (v1) NOTICE:** This architecture doc includes v1 artifacts like `inputs/reel.yaml`, final assembly, and “prompt audit trail” folders.  
+> **Canonical** today is: **Studio seeds** → **Motion renders CapCut kit + 10s assets** (Remotion charts-only).  
+> See:
+> - `docs/README.md`
+> - `docs/principles/`
+> - `docs/arcanomy-studio-integration/`
+
 ## Overview
 
 Arcanomy Motion is a **hybrid monorepo** combining:

@@ -55,6 +55,8 @@ Complete specifications for the three input files consumed by Arcanomy Motion.
 **Location:** `content/reels/YYYY-MM-DD-{slug}/inputs/seed.md`  
 **Purpose:** Human-readable creative brief
 
+**Note:** A reel is typically **5–6 subsegments** = **50–60 seconds** (10-second blocks). Seed content should support that pacing.
+
 ### Required Sections
 
 The file MUST contain these exact markdown headers:

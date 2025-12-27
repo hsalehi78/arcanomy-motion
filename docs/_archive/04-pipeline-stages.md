@@ -1,5 +1,12 @@
 # 04 — Pipeline Stages (Detailed)
 
+> **LEGACY (v1) NOTICE:** This document is preserved for historical context.  
+> **Canonical** workflow and constraints live in:
+> - `docs/principles/arcanomy-reels-operating-system.md`
+> - `docs/README.md`
+>
+> Current mainline is **CapCut kit + 10-second assets** (no automated final assembly by default).
+
 > **Legacy notice (important):** This document describes the **v1 automated pipeline** (FFmpeg final assembly + optional Remotion caption burn-in).  
 > **Canonical v2** is defined in `docs/REFRACTOR_RFC.md`: **CapCut kit + guide**, 10.0s subsegments, Remotion charts-only. Use `--legacy` to run v1.
 
