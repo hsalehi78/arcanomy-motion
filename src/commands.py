@@ -657,12 +657,16 @@ def list_reels_cmd(
         help="Source to list from: cdn (remote) or local",
     ),
 ):
-    """List available reels from CDN or local folder."""
+    """List available reels from CDN or local folder.
+    
+    Shows which CDN reels are already fetched locally.
+    Select a number to fetch and set as current reel.
+    """
     from rich.console import Console
-    from rich.table import Table
-    from src.services import list_reels as fetch_cdn_reels, ReelEntry
+    from src.services import list_reels as fetch_cdn_reels, fetch_reel
 
     console = Console()
+    reels_dir = Path("content/reels")
 
     if source == "cdn":
         try:
@@ -677,19 +681,52 @@ def list_reels_cmd(
             typer.echo("   The reels index may not exist yet.")
             return
 
+        # Check which are already fetched locally
+        local_ids = set()
+        if reels_dir.exists():
+            local_ids = {d.name for d in reels_dir.iterdir() if d.is_dir()}
+
         console.print(f"\n[bold]Available Reels on CDN ({len(reels)})[/bold]\n")
         
         for i, reel in enumerate(reels, 1):
+            # Check if already fetched
+            is_local = reel.identifier in local_ids
+            local_marker = " [green](fetched)[/green]" if is_local else " [yellow](new)[/yellow]"
             chart_info = " [cyan](chart)[/cyan]" if reel.has_chart else ""
-            console.print(f"  {i}. [bold]{reel.identifier}[/bold]{chart_info}")
+            
+            console.print(f"  {i}. [bold]{reel.identifier}[/bold]{local_marker}{chart_info}")
             console.print(f"     {reel.format_type} | {reel.created_date}")
         
         console.print()
-        console.print("[dim]To fetch: uv run arcanomy fetch <identifier>[/dim]")
+        
+        # Interactive selection
+        choice = typer.prompt("Select # to fetch (or Enter to skip)", default="", show_default=False)
+        
+        if choice.strip():
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(reels):
+                    selected = reels[idx]
+                    typer.echo(f"\n[Fetch] Fetching: {selected.identifier}")
+                    
+                    try:
+                        reel_path = fetch_reel(
+                            selected.identifier, 
+                            output_dir=reels_dir, 
+                            overwrite=True
+                        )
+                        CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
+                        typer.echo(f"[OK] Fetched and set as current reel")
+                        typer.echo(f"\n   Next: uv run arcanomy run")
+                    except Exception as e:
+                        typer.echo(f"[ERROR] {e}", err=True)
+                else:
+                    typer.echo(f"[ERROR] Invalid selection. Enter 1-{len(reels)}", err=True)
+            except ValueError:
+                typer.echo("[ERROR] Enter a number", err=True)
 
     else:
         # List local reels
-        reels_dir = Path("content/reels")
         if not reels_dir.exists():
             typer.echo("No local reels directory found.")
             return
@@ -700,10 +737,15 @@ def list_reels_cmd(
             typer.echo("No local reels found.")
             return
 
-        table = Table(title=f"Local Reels ({len(local_reels)})")
-        table.add_column("#", style="bold cyan", width=3)
-        table.add_column("Identifier", style="bold")
-        table.add_column("Status", style="dim")
+        # Get current reel for highlighting
+        current_reel = None
+        if CURRENT_REEL_FILE.exists():
+            try:
+                current_reel = Path(CURRENT_REEL_FILE.read_text().strip())
+            except Exception:
+                pass
+
+        console.print(f"\n[bold]Local Reels ({len(local_reels)})[/bold]\n")
 
         for i, reel in enumerate(local_reels[:limit], 1):
             has_claim = (reel / "inputs" / "claim.json").exists()
@@ -713,15 +755,34 @@ def list_reels_cmd(
             if has_kit:
                 status = "[green]Complete[/green]"
             elif has_claim and has_seed:
-                status = "Ready"
+                status = "[cyan]Ready[/cyan]"
             elif has_claim:
                 status = "[yellow]Partial[/yellow]"
             else:
                 status = "[dim]Empty[/dim]"
 
-            table.add_row(str(i), reel.name, status)
+            is_current = current_reel and reel.resolve() == current_reel.resolve()
+            current_marker = " << current" if is_current else ""
+            
+            console.print(f"  {i}. [bold]{reel.name}[/bold] {status}{current_marker}")
 
-        console.print(table)
+        console.print()
+        
+        # Interactive selection
+        choice = typer.prompt("Select # to set as current (or Enter to skip)", default="", show_default=False)
+        
+        if choice.strip():
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(local_reels):
+                    selected = local_reels[idx]
+                    CURRENT_REEL_FILE.write_text(str(selected.resolve()))
+                    typer.echo(f"\n[OK] Current reel set to: {selected.name}")
+                    typer.echo(f"\n   Next: uv run arcanomy run")
+                else:
+                    typer.echo(f"[ERROR] Invalid selection. Enter 1-{len(local_reels)}", err=True)
+            except ValueError:
+                typer.echo("[ERROR] Enter a number", err=True)
 
 
 @app.command("fetch")
@@ -876,11 +937,11 @@ def validate_cmd(
         raise typer.Exit(1)
 
 
-@app.command("list-blogs")
+@app.command("list-blogs", hidden=True)
 def list_blogs(
     limit: int = typer.Option(10, "--limit", "-n", help="Number of blogs to show"),
 ):
-    """List available blog posts from Arcanomy CDN."""
+    """List available blog posts from Arcanomy CDN. (Legacy - use list-reels instead)"""
     from rich.console import Console
     from rich.table import Table
     from src.services import fetch_featured_blogs
@@ -914,7 +975,7 @@ def list_blogs(
     console.print(table)
 
 
-@app.command("ingest-blog")
+@app.command("ingest-blog", hidden=True)
 def ingest_blog(
     identifier: Optional[str] = typer.Argument(
         None,
@@ -1144,41 +1205,24 @@ def guide():
     ))
     
     workflow = """
-[bold]WORKFLOW A: From CDN (Studio-generated seeds)[/bold]
+[bold]WORKFLOW: From CDN (Studio-generated seeds)[/bold]
 
-1. [cyan]List available reels:[/cyan]
+1. [cyan]List and fetch:[/cyan]
    $ uv run arcanomy list-reels
+   (Select a number to fetch and set as current)
 
-2. [cyan]Fetch a reel:[/cyan]
-   $ uv run arcanomy fetch 2025-12-26-my-reel-slug
-
-3. [cyan]Validate (optional):[/cyan]
-   $ uv run arcanomy validate
-
-4. [cyan]Run the pipeline:[/cyan]
+2. [cyan]Run the pipeline:[/cyan]
    $ uv run arcanomy run
 
-5. [cyan]Assemble in CapCut:[/cyan]
+3. [cyan]Assemble in CapCut:[/cyan]
    Follow guides/capcut_assembly_guide.md
 
-[bold]WORKFLOW B: Manual creation[/bold]
+[bold]MANUAL CREATION (alternative)[/bold]
 
-1. [cyan]Create a reel:[/cyan]
-   $ uv run arcanomy new my-reel-slug
-
-2. [cyan]Edit the inputs:[/cyan]
-   - inputs/claim.json  (your main claim)
-   - inputs/seed.md     (Hook, Core Insight, Visual Vibe, Script Structure, Key Data)
-   - inputs/chart.json  (optional, for chart-based reels)
-
-3. [cyan]Validate:[/cyan]
-   $ uv run arcanomy validate
-
-4. [cyan]Run the pipeline:[/cyan]
-   $ uv run arcanomy run
-
-5. [cyan]Assemble in CapCut:[/cyan]
-   Follow guides/capcut_assembly_guide.md
+1. $ uv run arcanomy new my-reel-slug
+2. Edit inputs/ (claim.json, seed.md, optional chart.json)
+3. $ uv run arcanomy validate
+4. $ uv run arcanomy run
 
 [bold]OUTPUT STRUCTURE[/bold]
 
@@ -1219,13 +1263,9 @@ content/reels/<reel>/
   uv run arcanomy validate          Validate reel files
 
   [cyan]Pipeline:[/cyan]
-  uv run arcanomy run <path>        Run pipeline (full)
-  uv run arcanomy run <path> -s plan  Run to plan stage only
-  uv run arcanomy status <path>     Show pipeline status
-
-  [cyan]Blog Ingestion:[/cyan]
-  uv run arcanomy list-blogs        List blogs from CDN
-  uv run arcanomy ingest-blog       Create reel from blog
+  uv run arcanomy run               Run pipeline (full)
+  uv run arcanomy run -s plan       Run to plan stage only
+  uv run arcanomy status            Show pipeline status
 
   [cyan]Tools:[/cyan]
   uv run arcanomy preview           Start Remotion preview
