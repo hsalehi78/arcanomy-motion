@@ -3,21 +3,18 @@
 ## Quick Start
 
 ```bash
-uv run reels        # 1. Pick a reel
-uv run init         # 2. Create provenance
-uv run plan         # 3. AI generates script
-uv run visual_plan  # 4. AI creates image prompts
-uv run assets       # 5. Generate images
-uv run vidprompt    # 6. Refine video prompts
-uv run videos       # 7. Generate video clips
-uv run subsegments  # 8. Assemble 10s clips
-uv run voice        # 9. ElevenLabs TTS
-uv run captions     # 10. SRT subtitles
-uv run charts       # 11. Animated charts
-uv run kit          # 12. Thumbnail + guides
+uv run arcanomy list-reels  # 1. Fetch a reel from CDN
+uv run plan                 # 2. AI generates script
+uv run visual_plan          # 3. AI creates image prompts
+uv run assets               # 4. Generate images
+uv run vidprompt            # 5. Refine video prompts
+uv run videos               # 6. Generate video clips
+uv run subsegments          # 7. Assemble 10s clips
+uv run voice                # 8. ElevenLabs TTS
+uv run captions             # 9. SRT subtitles
+uv run charts               # 10. Animated charts
+uv run kit                  # 11. Thumbnail + guides
 ```
-
-Or run all at once: `uv run run-all`
 
 ## Other Commands
 

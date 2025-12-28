@@ -77,12 +77,11 @@ def generate_plan(reel_path, *, force=False, ai=False):
         voice_text = {...}
 ```
 
-### CLI Enhancement: `src/commands.py`
+### CLI Usage
 
 ```bash
-# New usage
-uv run arcanomy run <path> --ai        # Enable AI script generation
-uv run arcanomy run <path> --ai -s plan  # Generate AI plan only
+# AI script generation is enabled by default
+uv run plan          # Generates AI plan with provenance
 ```
 
 ---

@@ -32,27 +32,33 @@ All design decisions are governed by **`docs/principles/`**:
 INPUTS                          PIPELINE                         OUTPUTS
 ─────────────────────────────────────────────────────────────────────────────
 inputs/claim.json    ──┐
-inputs/seed.md       ──┤──►  init ──► plan ──► subsegments ──► voice
-inputs/chart.json?   ──┘                            │
-                                                    ▼
-                                              captions ──► charts ──► kit
-                                                                      │
-                                                                      ▼
-                                                              CapCut Assembly
-                                                              (manual)
+inputs/seed.md       ──┤──►  plan ──► visual_plan ──► assets ──► videos
+inputs/chart.json?   ──┘                                            │
+                                                                    ▼
+                                    subsegments ──► voice ──► captions
+                                                                    │
+                                                                    ▼
+                                                      charts ──► kit
+                                                                  │
+                                                                  ▼
+                                                          CapCut Assembly
+                                                          (manual)
 ```
 
 ### Stages
 
 | Stage | Command | Output |
 |-------|---------|--------|
-| **init** | `--stage init` | `meta/provenance.json` |
-| **plan** | `--stage plan` | `meta/plan.json` |
-| **subsegments** | `--stage subsegments` | `subsegments/subseg-*.mp4` |
-| **voice** | `--stage voice` | `voice/subseg-*.wav` |
-| **captions** | `--stage captions` | `captions/captions.srt` |
-| **charts** | `--stage charts` | `charts/chart-*.mp4` |
-| **kit** | `--stage kit` (default) | `thumbnail/`, `guides/`, `meta/quality_gate.json` |
+| **plan** | `uv run plan` | `meta/plan.json`, `meta/provenance.json` |
+| **visual_plan** | `uv run visual_plan` | `meta/visual_plan.json` |
+| **assets** | `uv run assets` | `renders/images/composites/*.png` |
+| **vidprompt** | `uv run vidprompt` | `meta/video_prompts.json` |
+| **videos** | `uv run videos` | `renders/videos/clip_*.mp4` |
+| **subsegments** | `uv run subsegments` | `subsegments/subseg-*.mp4` |
+| **voice** | `uv run voice` | `voice/subseg-*.wav` |
+| **captions** | `uv run captions` | `captions/captions.srt` |
+| **charts** | `uv run charts` | `charts/chart-*.mp4` |
+| **kit** | `uv run kit` | `thumbnail/`, `guides/`, `meta/quality_gate.json` |
 
 ---
 
@@ -65,17 +71,20 @@ Arcanomy Studio produces the seed files and uploads them to CDN. Arcanomy Motion
 **Workflow A: Fetch from CDN (recommended)**
 
 ```bash
-# List available reels from CDN
+# List and fetch a reel from CDN (interactive picker)
 uv run arcanomy list-reels
 
-# Fetch a reel (downloads claim.json, seed.md, chart.json)
-uv run arcanomy fetch 2025-12-26-my-reel-slug
-
-# Validate the fetched files
-uv run arcanomy validate
-
-# Run the pipeline
-uv run arcanomy run
+# Run each stage
+uv run plan          # AI generates script + provenance
+uv run visual_plan   # AI creates image prompts
+uv run assets        # Generate images
+uv run vidprompt     # Refine video prompts
+uv run videos        # Generate video clips
+uv run subsegments   # Assemble 10s clips
+uv run voice         # ElevenLabs TTS
+uv run captions      # SRT subtitles
+uv run charts        # Animated charts
+uv run kit           # Thumbnail + guides
 ```
 
 **Workflow B: Manual creation**
@@ -85,9 +94,13 @@ uv run arcanomy run
 uv run arcanomy new my-reel-slug
 
 # Edit inputs/ (claim.json, seed.md, optional chart.json)
-# Then validate and run
+# Then validate
 uv run arcanomy validate
-uv run arcanomy run
+
+# Run each stage (same as Workflow A)
+uv run plan
+uv run visual_plan
+# ... etc
 ```
 
 Required inputs:
@@ -186,40 +199,39 @@ uv run arcanomy render-chart docs/charts/bar-chart-basic.json
 
 ```bash
 # CDN Integration (primary workflow)
-uv run arcanomy list-reels           # List reels from CDN
-uv run arcanomy list-reels --source local  # List local reels
-uv run arcanomy fetch <identifier>   # Fetch reel from CDN
-uv run arcanomy validate             # Validate reel files
+uv run arcanomy list-reels           # List and fetch reels from CDN
 
-# Pipeline
-uv run arcanomy run                  # Run current reel
-uv run arcanomy run -s plan          # Run to specific stage
-uv run arcanomy run --fresh          # Wipe and rerun
+# Pipeline Stages (run in order)
+uv run plan          # AI generates script + provenance
+uv run visual_plan   # AI creates image prompts
+uv run assets        # Generate images
+uv run vidprompt     # Refine video prompts
+uv run videos        # Generate video clips
+uv run subsegments   # Assemble 10s clips
+uv run voice         # ElevenLabs TTS
+uv run captions      # SRT subtitles
+uv run charts        # Animated charts
+uv run kit           # Thumbnail + guides
+
+# Status
+uv run current                       # Show current reel + status
 uv run arcanomy status               # Show pipeline status
 
 # Reel Management
 uv run arcanomy new <slug>           # Create new reel (manual workflow)
-uv run arcanomy reels                # Interactive reel picker
-uv run arcanomy current              # Show current reel
-uv run arcanomy set <path>           # Set current reel
+uv run arcanomy reels                # Interactive local reel picker
+uv run arcanomy validate             # Validate reel files
 
 # Tools
 uv run arcanomy preview              # Start Remotion preview
 uv run arcanomy render-chart <json>  # Render standalone chart
-uv run arcanomy guide                # Show full help
+uv run guide                         # Show full help
+uv run commit                        # Git add/commit/push
 ```
 
 ### AI Script Generation
 
-AI-powered script generation is enabled by default. Use `--no-ai` to disable.
-
-```bash
-# Run with AI (default)
-uv run arcanomy run
-
-# Disable AI (use placeholder scripts)
-uv run arcanomy run --no-ai
-```
+AI-powered script generation is enabled by default.
 
 The AI scriptwriter:
 - Transforms your claim into a compelling 50-second script

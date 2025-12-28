@@ -16,8 +16,9 @@ Arcanomy Studio                        R2 Storage                         Arcano
                                               
 1. Generate files      ───────▶  2. Upload to R2  ───────▶  3. Fetch & Run Pipeline
    - claim.json                   /content/reels/{id}/        
-   - seed.md                        ├── claim.json             uv run arcanomy fetch {id}
-   - chart.json                     ├── seed.md                uv run arcanomy run
+   - seed.md                        ├── claim.json             uv run arcanomy list-reels
+   - chart.json                     ├── seed.md                uv run plan / visual_plan / ...
+                                    └── chart.json
                                     └── chart.json               
 ```
 
@@ -156,32 +157,29 @@ Update `_indexes/ready.json` to include the new reel.
 
 Once files are on R2, Arcanomy Motion can:
 
-### Option 1 (Canonical today): Download seeds to local `content/reels/` and run
+### Canonical Workflow
 
 ```bash
-# Download the three seed files to:
-#   content/reels/<reel-identifier>/inputs/
-#     claim.json
-#     seed.md
-#     chart.json (optional)
-#
-# Then run:
-uv run arcanomy run content/reels/2025-12-26-knowledge-permission-trap
+# 1. List and fetch reels from CDN (interactive picker)
+uv run arcanomy list-reels
+
+# 2. Run each stage
+uv run plan          # AI generates script + provenance
+uv run visual_plan   # AI creates image prompts
+uv run assets        # Generate images
+uv run vidprompt     # Refine video prompts
+uv run videos        # Generate video clips
+uv run subsegments   # Assemble 10s clips
+uv run voice         # ElevenLabs TTS
+uv run captions      # SRT subtitles
+uv run charts        # Animated charts
+uv run kit           # Thumbnail + guides
 
 # The pipeline outputs a CapCut kit locally:
 # - 10s subsegments
 # - 10s chart overlays (if chart.json provided)
 # - voice wavs, captions.srt
 # - guides + thumbnail + quality_gate
-```
-
-### Option 2 (Planned): List and fetch from an index
-
-```bash
-# Planned CLI commands (documented for future implementation):
-# uv run arcanomy list-reels --source r2
-# uv run arcanomy fetch <reel-identifier>
-# uv run arcanomy ingest-reel
 ```
 
 ---

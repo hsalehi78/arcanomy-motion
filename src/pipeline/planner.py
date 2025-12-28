@@ -18,9 +18,10 @@ from src.utils.paths import (
     claim_json_path,
     ensure_pipeline_layout,
     plan_path,
+    provenance_path,
     seed_path,
 )
-from src.pipeline.provenance import write_json_immutable
+from src.pipeline.provenance import build_provenance, RunContext, write_json_immutable
 from src.utils.logger import get_logger
 
 logger = get_logger()
@@ -241,6 +242,20 @@ def generate_plan(
     """
     reel_path = Path(reel_path)
     ensure_pipeline_layout(reel_path)
+
+    # Create provenance if it doesn't exist
+    prov_file = provenance_path(reel_path)
+    if not prov_file.exists():
+        claim_file_for_prov = claim_json_path(reel_path)
+        chart_file_for_prov = chart_json_path(reel_path)
+        prov_payload = build_provenance(
+            reel_path=reel_path,
+            claim_path=claim_file_for_prov if claim_file_for_prov.exists() else None,
+            chart_path=chart_file_for_prov if chart_file_for_prov.exists() else None,
+            ctx=RunContext(mode="pipeline", fresh=False, force=force),
+        )
+        write_json_immutable(prov_file, prov_payload, force=False)
+        logger.info(f"[Plan] Created provenance.json")
 
     # Load inputs
     claim_file = claim_json_path(reel_path)

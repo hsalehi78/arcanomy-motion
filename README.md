@@ -63,13 +63,22 @@ Arcanomy Motion converts **Arcanomy Studio reel seeds** into a **CapCut-ready as
 ## Quick Start
 
 ```bash
-# 1) Get a reel seed from Arcanomy Studio (claim.json + seed.md + optional chart.json)
-#    Place it under: content/reels/<reel-id>/inputs/
+# 1) Fetch a reel from CDN
+uv run arcanomy list-reels
 
-# 2) Run the pipeline (produces CapCut kit + 10s assets)
-uv run arcanomy run content/reels/<reel-id>
+# 2) Run each stage
+uv run plan          # AI generates script + provenance
+uv run visual_plan   # AI creates image prompts
+uv run assets        # Generate images
+uv run vidprompt     # Refine video prompts
+uv run videos        # Generate video clips
+uv run subsegments   # Assemble 10s clips
+uv run voice         # ElevenLabs TTS
+uv run captions      # SRT subtitles
+uv run charts        # Animated charts
+uv run kit           # Thumbnail + guides
 
-# Assemble in CapCut using guides/capcut_assembly_guide.md
+# 3) Assemble in CapCut using guides/capcut_assembly_guide.md
 ```
 
 See `START_HERE.md` for the full quick start guide.
@@ -80,12 +89,11 @@ See `START_HERE.md` for the full quick start guide.
 
 | Stage | Output | Description |
 |-------|--------|-------------|
-| **init** | `meta/provenance.json` | Initialize run context |
-| **plan** | `meta/plan.json` | Generate segments and subsegments |
-| **visual_plan** | `meta/visual_plan.json` | (Optional) Visual prompts for seed images + 10s clips |
-| **assets** | `renders/images/composites/*.png` | (Optional) Generate seed images |
-| **vidprompt** | `meta/video_prompts.json` | (Optional) Refine motion prompts for 10s clips |
-| **videos** | `renders/videos/clip_XX.mp4` | (Optional) Generate 10s AI video clips (or use overrides) |
+| **plan** | `meta/plan.json`, `meta/provenance.json` | Generate segments and subsegments |
+| **visual_plan** | `meta/visual_plan.json` | Visual prompts for seed images + 10s clips |
+| **assets** | `renders/images/composites/*.png` | Generate seed images |
+| **vidprompt** | `meta/video_prompts.json` | Refine motion prompts for 10s clips |
+| **videos** | `renders/videos/clip_XX.mp4` | Generate 10s AI video clips |
 | **subsegments** | `subsegments/subseg-*.mp4` | 10.0s background videos |
 | **voice** | `voice/subseg-*.wav` | Voice audio per subsegment |
 | **captions** | `captions/captions.srt` | Line-level SRT captions |
@@ -146,17 +154,32 @@ content/reels/<slug>/
 ## CLI Reference
 
 ```bash
+# CDN Integration
+uv run arcanomy list-reels           # List and fetch reels from CDN
+
+# Pipeline Stages (run in order)
+uv run plan          # AI generates script + provenance
+uv run visual_plan   # AI creates image prompts
+uv run assets        # Generate images
+uv run vidprompt     # Refine video prompts
+uv run videos        # Generate video clips
+uv run subsegments   # Assemble 10s clips
+uv run voice         # ElevenLabs TTS
+uv run captions      # SRT subtitles
+uv run charts        # Animated charts
+uv run kit           # Thumbnail + guides
+
+# Reel Management
 uv run arcanomy new <slug>           # Create new reel
-uv run arcanomy run <path>           # Run full pipeline
-uv run arcanomy run <path> -s plan   # Run to specific stage
-uv run arcanomy run <path> --fresh   # Wipe and rerun
-uv run arcanomy status <path>        # Show pipeline status
-uv run arcanomy reels                # List/select reels
-uv run arcanomy current              # Show current reel
-uv run arcanomy set <path>           # Set current reel
+uv run arcanomy reels                # List/select local reels
+uv run current                       # Show current reel
+uv run arcanomy status               # Show pipeline status
+
+# Tools
 uv run arcanomy preview              # Start Remotion preview
 uv run arcanomy render-chart <json>  # Render chart from JSON
-uv run arcanomy guide                # Show help
+uv run guide                         # Show help
+uv run commit                        # Git add/commit/push
 ```
 
 ---
