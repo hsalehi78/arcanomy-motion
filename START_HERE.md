@@ -11,33 +11,43 @@ Run `uv run arcanomy guide` anytime to see this in your terminal.
 ### Canonical Workflow: Studio Seeds → Motion Kit → CapCut Assembly
 
 Arcanomy Motion does **not** originate reel concepts anymore.
-**Arcanomy Studio produces reel seeds**, and Arcanomy Motion converts those seeds into:
+**Arcanomy Studio produces reel seeds** and uploads them to the CDN. Arcanomy Motion fetches those seeds and converts them into:
 
 - **10.0s assets** (subsegments, charts, voice, captions)
 - a **CapCut-ready assembly kit** (guides, thumbnail, quality gate)
 
 CapCut Desktop remains the final editor (canonical doctrine).
 
-### 1) Get a reel seed from Arcanomy Studio
+### 1) Fetch a reel seed from CDN
 
-You need these inputs inside a reel folder:
+```bash
+# List available reels from CDN
+uv run arcanomy list-reels
+
+# Fetch a reel (downloads claim.json, seed.md, chart.json to local folder)
+uv run arcanomy fetch 2025-12-26-my-reel-slug
+
+# Validate the fetched files (optional but recommended)
+uv run arcanomy validate
+
+# Run the pipeline
+uv run arcanomy run
+```
+
+This creates the following structure:
 
 ```
 content/reels/<reel-id>/
   inputs/
     claim.json      # required
-    seed.md         # required
+    seed.md         # required (Hook, Core Insight, Visual Vibe, Script Structure, Key Data)
     chart.json      # optional (for data-driven reels)
 ```
 
 Notes:
 - A reel is typically **5–6 subsegments** = **50–60 seconds** (10-second blocks).
 - `chart.json` is only needed when the reel benefits from a chart overlay.
-
-```bash
-# Run the pipeline on the reel
-uv run arcanomy run content/reels/<reel-id>
-```
+- See `docs/arcanomy-studio-integration/` for the complete integration spec.
 
 ### 2) (Optional) Pro visuals + overrides
 
@@ -136,18 +146,27 @@ content/reels/<reel-slug>/
 ## CLI Commands
 
 ```bash
+# CDN Integration (primary workflow)
+uv run arcanomy list-reels           # List reels from CDN
+uv run arcanomy fetch <identifier>   # Fetch reel from CDN
+uv run arcanomy validate             # Validate reel files
+
 # Pipeline
 uv run arcanomy run                  # Run current reel
 uv run arcanomy run -s plan          # Run to specific stage
 uv run arcanomy run --fresh          # Wipe and rerun
 uv run arcanomy status               # Show pipeline status
 
-# Utilities
+# Reel Management
+uv run arcanomy new <slug>           # Create new reel (manual workflow)
+uv run arcanomy reels                # List/select local reels
 uv run arcanomy current              # Show current reel
 uv run arcanomy set <path>           # Set current reel
+
+# Tools
 uv run arcanomy preview              # Start Remotion preview
 uv run arcanomy render-chart <json>  # Render standalone chart
-uv run arcanomy guide                # Show help
+uv run arcanomy guide                # Show full help
 ```
 
 ### Notes on legacy commands
@@ -199,8 +218,18 @@ See `docs/charts/` for all templates and documentation.
 **Ready to start?**
 
 ```bash
+# Option A: Fetch from CDN (recommended)
+uv run arcanomy list-reels
+uv run arcanomy fetch <identifier>
+uv run arcanomy validate
+uv run arcanomy run
+
+# Option B: Manual creation
 uv run arcanomy new my-first-reel
-# Put Studio seeds in inputs/ (claim.json + seed.md + optional chart.json)
-uv run arcanomy run content/reels/<reel-id>
-# Open guides/capcut_assembly_guide.md in CapCut Desktop
+# Edit inputs/ (claim.json + seed.md + optional chart.json)
+uv run arcanomy validate
+uv run arcanomy run
+
+# Then assemble in CapCut Desktop
+# Open guides/capcut_assembly_guide.md
 ```

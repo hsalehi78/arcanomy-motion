@@ -60,21 +60,46 @@ inputs/chart.json?   ──┘                            │
 
 ### Canonical: Studio Seeds → Motion Kit → CapCut Assembly
 
-Arcanomy Studio produces the seed files. Arcanomy Motion renders the kit.
+Arcanomy Studio produces the seed files and uploads them to CDN. Arcanomy Motion fetches and renders.
 
-Required inputs (from Studio):
-- `inputs/claim.json`
-- `inputs/seed.md`
+**Workflow A: Fetch from CDN (recommended)**
 
-Optional inputs (from Studio):
-- `inputs/chart.json` (for chart overlays)
+```bash
+# List available reels from CDN
+uv run arcanomy list-reels
+
+# Fetch a reel (downloads claim.json, seed.md, chart.json)
+uv run arcanomy fetch 2025-12-26-my-reel-slug
+
+# Validate the fetched files
+uv run arcanomy validate
+
+# Run the pipeline
+uv run arcanomy run
+```
+
+**Workflow B: Manual creation**
+
+```bash
+# Create a new reel with template files
+uv run arcanomy new my-reel-slug
+
+# Edit inputs/ (claim.json, seed.md, optional chart.json)
+# Then validate and run
+uv run arcanomy validate
+uv run arcanomy run
+```
+
+Required inputs:
+- `inputs/claim.json` — Machine-readable claim + metadata
+- `inputs/seed.md` — Creative brief (Hook, Core Insight, Visual Vibe, Script Structure, Key Data)
+
+Optional inputs:
+- `inputs/chart.json` — Remotion chart props (for data-driven reels)
 
 A reel is typically **5–6 subsegments** = **50–60 seconds** (10-second blocks).
 
-```bash
-# Run the pipeline on a reel folder
-uv run arcanomy run content/reels/<reel-id>
-```
+See `docs/arcanomy-studio-integration/` for the complete seed file specification.
 
 ### Pro Mode (Optional): Visual Planning + Seed Images + 10s AI Clips
 
@@ -86,21 +111,7 @@ Motion supports an optional “pro” path driven by system prompts:
 
 **Overrides while learning:** if a `renders/videos/clip_XX.mp4` file already exists, Motion should use it (skip regeneration) and still produce the CapCut kit.
 
-### 3. Run the pipeline
-
-```bash
-# Run the current reel:
-uv run arcanomy run
-
-# With AI script generation:
-uv run arcanomy run --ai
-
-# Pick a different reel first:
-uv run arcanomy reels
-uv run arcanomy run --ai
-```
-
-### 4. Assemble in CapCut
+### Assemble in CapCut
 
 Open `guides/capcut_assembly_guide.md` and follow the instructions.
 
@@ -174,32 +185,40 @@ uv run arcanomy render-chart docs/charts/bar-chart-basic.json
 ## CLI Reference
 
 ```bash
+# CDN Integration (primary workflow)
+uv run arcanomy list-reels           # List reels from CDN
+uv run arcanomy list-reels --source local  # List local reels
+uv run arcanomy fetch <identifier>   # Fetch reel from CDN
+uv run arcanomy validate             # Validate reel files
+
 # Pipeline
 uv run arcanomy run                  # Run current reel
-uv run arcanomy run --ai             # Run with AI script generation
 uv run arcanomy run -s plan          # Run to specific stage
 uv run arcanomy run --fresh          # Wipe and rerun
 uv run arcanomy status               # Show pipeline status
 
-# Utilities
+# Reel Management
+uv run arcanomy new <slug>           # Create new reel (manual workflow)
+uv run arcanomy reels                # Interactive reel picker
 uv run arcanomy current              # Show current reel
 uv run arcanomy set <path>           # Set current reel
+
+# Tools
 uv run arcanomy preview              # Start Remotion preview
 uv run arcanomy render-chart <json>  # Render standalone chart
-uv run arcanomy guide                # Show help
+uv run arcanomy guide                # Show full help
 ```
 
-### AI Script Generation (NEW)
+### AI Script Generation
 
-Use `--ai` to enable AI-powered script generation from your claim:
+AI-powered script generation is enabled by default. Use `--no-ai` to disable.
 
 ```bash
-# Pick a reel and run with AI:
-uv run arcanomy reels
-uv run arcanomy run --ai
+# Run with AI (default)
+uv run arcanomy run
 
-# Or directly with partial name matching:
-uv run arcanomy run my-reel --ai
+# Disable AI (use placeholder scripts)
+uv run arcanomy run --no-ai
 ```
 
 The AI scriptwriter:

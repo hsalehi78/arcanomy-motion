@@ -17,6 +17,19 @@ from .chart_renderer import (
     render_bar_chart,
     render_chart_from_json,
 )
+from .reel_fetch import (
+    ReelEntry,
+    list_reels,
+    fetch_reel,
+    get_reel_url,
+)
+from .validator import (
+    ValidationResult,
+    validate_claim,
+    validate_seed,
+    validate_chart,
+    validate_reel,
+)
 
 __all__ = [
     "LLMService",
@@ -34,5 +47,16 @@ __all__ = [
     "BarDataPoint",
     "render_bar_chart",
     "render_chart_from_json",
+    # Reel fetch (R2/CDN)
+    "ReelEntry",
+    "list_reels",
+    "fetch_reel",
+    "get_reel_url",
+    # Validation
+    "ValidationResult",
+    "validate_claim",
+    "validate_seed",
+    "validate_chart",
+    "validate_reel",
 ]
 

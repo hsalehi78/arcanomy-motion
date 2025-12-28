@@ -163,17 +163,26 @@ def new(
     claim_path = inputs_dir(reel_path) / "claim.json"
     claim_path.write_text(json.dumps(claim, indent=2) + "\n", encoding="utf-8")
 
-    # Create optional seed.md for notes
-    seed_content = """# Notes (Optional)
+    # Create seed.md with required sections per documentation
+    seed_content = """# Hook
+[Your scroll-stopping opening line - max 15 words]
 
-This file is for your personal notes and ideas. It is NOT processed by the pipeline.
-The canonical input is claim.json. Add chart.json for chart-based reels.
+# Core Insight
+[The single main lesson or takeaway - max 50 words. Use specific numbers.]
 
-## Idea
-[Your concept here]
+# Visual Vibe
+Dark, moody, cinematic. Gold accents on black.
 
-## Visual Style
-[Describe the mood and look]
+# Script Structure
+**TRUTH:** [The counter-intuitive or confrontational truth]
+
+**MISTAKE:** [The common mistake people make]
+
+**FIX:** [The simple reframe or solution]
+
+# Key Data
+- Stat 1: [value]
+- Stat 2: [value]
 """
     seed_path(reel_path).write_text(seed_content, encoding="utf-8")
 
@@ -638,6 +647,235 @@ def commit(
     typer.echo("[OK] Committed and pushed successfully")
 
 
+@app.command("list-reels")
+def list_reels_cmd(
+    limit: int = typer.Option(20, "--limit", "-n", help="Number of reels to show"),
+    source: str = typer.Option(
+        "cdn",
+        "--source",
+        "-s",
+        help="Source to list from: cdn (remote) or local",
+    ),
+):
+    """List available reels from CDN or local folder."""
+    from rich.console import Console
+    from rich.table import Table
+    from src.services import list_reels as fetch_cdn_reels, ReelEntry
+
+    console = Console()
+
+    if source == "cdn":
+        try:
+            reels = fetch_cdn_reels(limit=limit)
+        except Exception as e:
+            typer.echo(f"[ERROR] Failed to fetch reels from CDN: {e}", err=True)
+            typer.echo("   (CDN index may not exist yet)")
+            raise typer.Exit(1)
+
+        if not reels:
+            typer.echo("No reels found on CDN.")
+            typer.echo("   The reels index may not exist yet.")
+            return
+
+        console.print(f"\n[bold]Available Reels on CDN ({len(reels)})[/bold]\n")
+        
+        for i, reel in enumerate(reels, 1):
+            chart_info = " [cyan](chart)[/cyan]" if reel.has_chart else ""
+            console.print(f"  {i}. [bold]{reel.identifier}[/bold]{chart_info}")
+            console.print(f"     {reel.format_type} | {reel.created_date}")
+        
+        console.print()
+        console.print("[dim]To fetch: uv run arcanomy fetch <identifier>[/dim]")
+
+    else:
+        # List local reels
+        reels_dir = Path("content/reels")
+        if not reels_dir.exists():
+            typer.echo("No local reels directory found.")
+            return
+
+        local_reels = sorted([d for d in reels_dir.iterdir() if d.is_dir()], reverse=True)
+
+        if not local_reels:
+            typer.echo("No local reels found.")
+            return
+
+        table = Table(title=f"Local Reels ({len(local_reels)})")
+        table.add_column("#", style="bold cyan", width=3)
+        table.add_column("Identifier", style="bold")
+        table.add_column("Status", style="dim")
+
+        for i, reel in enumerate(local_reels[:limit], 1):
+            has_claim = (reel / "inputs" / "claim.json").exists()
+            has_seed = (reel / "inputs" / "seed.md").exists()
+            has_kit = (reel / "meta" / "quality_gate.json").exists()
+
+            if has_kit:
+                status = "[green]Complete[/green]"
+            elif has_claim and has_seed:
+                status = "Ready"
+            elif has_claim:
+                status = "[yellow]Partial[/yellow]"
+            else:
+                status = "[dim]Empty[/dim]"
+
+            table.add_row(str(i), reel.name, status)
+
+        console.print(table)
+
+
+@app.command("fetch")
+def fetch_reel_cmd(
+    identifier: str = typer.Argument(..., help="Reel identifier to fetch from CDN"),
+    output_dir: Path = typer.Option(
+        Path("content/reels"),
+        "--output",
+        "-o",
+        help="Output directory for reels",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Overwrite existing local files",
+    ),
+    run_pipeline: bool = typer.Option(
+        False,
+        "--run",
+        "-r",
+        help="Immediately run the pipeline after fetching",
+    ),
+):
+    """Fetch a reel's seed files from CDN.
+
+    Downloads claim.json, seed.md, and chart.json (if present) to local folder.
+
+    Example:
+        uv run arcanomy fetch 2025-12-26-knowledge-permission-trap
+        uv run arcanomy fetch 2025-12-26-knowledge-permission-trap --run
+    """
+    from src.services import fetch_reel
+
+    typer.echo(f"[Fetch] Fetching reel: {identifier}")
+
+    try:
+        reel_path = fetch_reel(identifier, output_dir=output_dir, overwrite=force)
+    except FileNotFoundError as e:
+        typer.echo(f"[ERROR] {e}", err=True)
+        raise typer.Exit(1)
+    except FileExistsError as e:
+        typer.echo(f"[ERROR] {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"[ERROR] Failed to fetch reel: {e}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"[OK] Fetched to: {reel_path}")
+
+    # List fetched files
+    inputs = reel_path / "inputs"
+    for f in ["claim.json", "seed.md", "chart.json"]:
+        if (inputs / f).exists():
+            typer.echo(f"   - {f}")
+
+    # Set as current reel
+    CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
+    typer.echo(f"   (Set as current reel)")
+
+    if run_pipeline:
+        typer.echo("\n" + "=" * 40)
+        typer.echo("[Pipeline] Running...")
+
+        prov_path = pipeline_init(reel_path, force=True)
+        typer.echo("[OK] Init complete")
+
+        plan_file = generate_plan(reel_path, force=True, ai=True)
+        typer.echo("[OK] Plan complete")
+
+        typer.echo(f"\n   Next: uv run arcanomy run")
+    else:
+        typer.echo(f"\n   Next: uv run arcanomy run")
+
+
+@app.command("validate")
+def validate_cmd(
+    reel_path: Optional[Path] = typer.Argument(
+        None,
+        help="Path to the reel folder (optional - uses current reel if not specified)",
+    ),
+    fix: bool = typer.Option(
+        False,
+        "--fix",
+        help="Attempt to auto-fix simple issues (not yet implemented)",
+    ),
+):
+    """Validate reel seed files against the specification.
+
+    Checks claim.json, seed.md, and chart.json (if present) for:
+    - Required fields and sections
+    - Word count limits (hook: 15, insight: 50, claim: 25)
+    - Chart schema compliance
+    - Content quality (vague language, em-dashes)
+
+    Example:
+        uv run arcanomy validate
+        uv run arcanomy validate content/reels/2025-12-26-my-reel
+    """
+    from rich.console import Console
+    from src.services import validate_reel
+
+    console = Console()
+
+    # Resolve reel path
+    if reel_path is None:
+        reel_path = _get_current_reel()
+    else:
+        reel_path = Path(reel_path)
+        if not reel_path.exists():
+            # Try to find by partial name
+            reels_dir = Path("content/reels")
+            if reels_dir.exists():
+                matches = [d for d in reels_dir.iterdir() if d.is_dir() and str(reel_path) in d.name]
+                if len(matches) == 1:
+                    reel_path = matches[0]
+                elif len(matches) > 1:
+                    typer.echo(f"[ERROR] Multiple reels match '{reel_path}':", err=True)
+                    for m in matches:
+                        typer.echo(f"   - {m.name}")
+                    raise typer.Exit(1)
+
+    if not reel_path.exists():
+        typer.echo(f"[ERROR] Reel not found: {reel_path}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"[Validate] {reel_path.name}")
+    typer.echo("-" * 40)
+
+    result = validate_reel(reel_path)
+
+    # Display errors
+    if result.errors:
+        console.print(f"\n[red]Errors ({len(result.errors)}):[/red]")
+        for err in result.errors:
+            console.print(f"  [red]X[/red] {err}")
+
+    # Display warnings
+    if result.warnings:
+        console.print(f"\n[yellow]Warnings ({len(result.warnings)}):[/yellow]")
+        for warn in result.warnings:
+            console.print(f"  [yellow]![/yellow] {warn}")
+
+    # Summary
+    if result.passed:
+        console.print(f"\n[green][OK] Validation PASSED[/green]")
+        if result.warnings:
+            console.print(f"  ({len(result.warnings)} warnings)")
+    else:
+        console.print(f"\n[red][FAIL] Validation FAILED[/red]")
+        console.print(f"  {len(result.errors)} errors, {len(result.warnings)} warnings")
+        raise typer.Exit(1)
+
+
 @app.command("list-blogs")
 def list_blogs(
     limit: int = typer.Option(10, "--limit", "-n", help="Number of blogs to show"),
@@ -906,19 +1144,40 @@ def guide():
     ))
     
     workflow = """
-[bold]WORKFLOW[/bold]
+[bold]WORKFLOW A: From CDN (Studio-generated seeds)[/bold]
+
+1. [cyan]List available reels:[/cyan]
+   $ uv run arcanomy list-reels
+
+2. [cyan]Fetch a reel:[/cyan]
+   $ uv run arcanomy fetch 2025-12-26-my-reel-slug
+
+3. [cyan]Validate (optional):[/cyan]
+   $ uv run arcanomy validate
+
+4. [cyan]Run the pipeline:[/cyan]
+   $ uv run arcanomy run
+
+5. [cyan]Assemble in CapCut:[/cyan]
+   Follow guides/capcut_assembly_guide.md
+
+[bold]WORKFLOW B: Manual creation[/bold]
 
 1. [cyan]Create a reel:[/cyan]
    $ uv run arcanomy new my-reel-slug
 
 2. [cyan]Edit the inputs:[/cyan]
    - inputs/claim.json  (your main claim)
+   - inputs/seed.md     (Hook, Core Insight, Visual Vibe, Script Structure, Key Data)
    - inputs/chart.json  (optional, for chart-based reels)
 
-3. [cyan]Run the pipeline:[/cyan]
-   $ uv run arcanomy run content/reels/YYYY-MM-DD-my-reel-slug
+3. [cyan]Validate:[/cyan]
+   $ uv run arcanomy validate
 
-4. [cyan]Assemble in CapCut:[/cyan]
+4. [cyan]Run the pipeline:[/cyan]
+   $ uv run arcanomy run
+
+5. [cyan]Assemble in CapCut:[/cyan]
    Follow guides/capcut_assembly_guide.md
 
 [bold]OUTPUT STRUCTURE[/bold]
@@ -948,13 +1207,27 @@ content/reels/<reel>/
 
 [bold]COMMANDS[/bold]
 
+  [cyan]Reel Management:[/cyan]
   uv run arcanomy new <slug>        Create new reel
+  uv run arcanomy reels             List/select local reels
+  uv run arcanomy current           Show current reel
+  uv run arcanomy set <path>        Set current reel
+
+  [cyan]CDN Integration:[/cyan]
+  uv run arcanomy list-reels        List reels from CDN
+  uv run arcanomy fetch <id>        Fetch reel from CDN
+  uv run arcanomy validate          Validate reel files
+
+  [cyan]Pipeline:[/cyan]
   uv run arcanomy run <path>        Run pipeline (full)
   uv run arcanomy run <path> -s plan  Run to plan stage only
   uv run arcanomy status <path>     Show pipeline status
-  uv run arcanomy reels             List/select reels
-  uv run arcanomy current           Show current reel
-  uv run arcanomy set <path>        Set current reel
+
+  [cyan]Blog Ingestion:[/cyan]
+  uv run arcanomy list-blogs        List blogs from CDN
+  uv run arcanomy ingest-blog       Create reel from blog
+
+  [cyan]Tools:[/cyan]
   uv run arcanomy preview           Start Remotion preview
   uv run arcanomy render-chart <json>  Render standalone chart
 """
