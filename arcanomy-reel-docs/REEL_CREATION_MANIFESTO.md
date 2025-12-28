@@ -18,10 +18,24 @@ A good reel:
 
 We start with one source text (a blog/article). Our job is to extract **one claim worth repeating**, then speak it clearly.
 
+### The deliverable (what gets handed off / approved)
+
+The deliverable is a **Script Package**:
+- **Claim** (one sentence)
+- **Why it matters** (one sentence)
+- **Emotion target** (LOL/WTF/OMG/Aha/Awww)
+- **Word count** (must be in range)
+- **Remembered sentence** (the line you’re earning)
+- **Script** (spoken voiceover text)
+- **Proof notes (private)** (where the “facty” lines come from in the text)
+
+Everything else is downstream.
+
 ## 3) The Sacred Constraints (non‑negotiable)
 
 - **One idea**: If it needs “and also…”, it is two reels.
 - **Spoken truth**: Write for the mouth, not for the page.
+- **Hard length cap**: Default to discovery-friendly length caps (see **`WRITING_GUIDE.md` → Monk mode**).
 - **No fake authority**: Never say “studies show”, “research says”, “experts agree”, or cite institutions in the reel.
 - **No invented numbers**: If a number is not in the text, it does not belong.
 - **No vague advice**: The viewer must know what to think or do differently.
@@ -53,6 +67,8 @@ From the source, choose a claim that is:
 - **Proof notes (private)**: a short quote/paraphrase + where it appears in the text (not for the reel—only for approval).
 
 ## 5) Writing the script (how to think, not a formula)
+
+For writing craft (emotion-first writing, hook/body/close patterns, editing, and approval rubric), follow **`WRITING_GUIDE.md`**.
 
 You are crafting a spoken argument with a clean arc:
 attention → clarity → credibility → takeaway.
@@ -120,11 +136,48 @@ A script is acceptable only if:
 - any “facty” line or number is traceable to the text (in the private proof notes)
 - the ending gives one crisp takeaway
 
-## 8) Output (what you hand to the editor / next stage)
+## 8) Engagement Gate (fast approval test)
 
-You should end with:
-- **Claim** (1 sentence)
-- **Script** (spoken, clean, honest)
-- **Proof notes** (where the support lives in the source)
+This is the “is this worth making?” gate. A second reader/listener should be able to answer these quickly.
+
+If the script fails 2 or more, rewrite.
+
+- **2-second hook test**: Would you keep listening after the first line?
+- **Curiosity + payoff test**: Does it create a question early and answer it cleanly?
+- **Concrete test**: Does it include at least one vivid detail, mechanism, or example (not just vibes)?
+- **Compression test**: Can you remove 20% of the words without losing meaning? If yes, it’s still too bloated.
+- **Sentence rhythm test**: Too many long sentences in a row = it won’t feel “spoken”.
+- **Punchline test**: Is the final takeaway repeatable in one sentence?
+- **Edge test**: Does it take a stance (without being dishonest)?
+
+### The “bad script” smell list (rewrite immediately)
+
+- starts with disclaimers or throat-clearing
+- explains context for too long before saying the point
+- uses generic motivational language
+- stacks multiple claims (“and also…”) instead of one
+- uses authority framing (“research says…”) instead of clear reasoning
+- contains more than 1–2 numbers unless absolutely necessary
+
+## 9) Data + charts (spoken script still matters)
+
+If a data point will later be visualized as a chart, it still belongs in the **spoken script** (the voiceover is the spine).
+
+Rules:
+- **Say the data plainly** (no “studies show” framing).
+- **Scope it** (avoid absolutes like “men do not…”; use the actual scope the text supports).
+- **Keep it minimal**: 0–2 numbers is the default unless the whole reel is a “numbers” reel.
+- **Make the point without the chart**: the chart should reinforce, not rescue, comprehension.
+
+## 10) Output (what you hand off / approve)
+
+You should end with the **Script Package**:
+- **Claim** (one sentence)
+- **Why it matters** (one sentence)
+- **Emotion target** (LOL/WTF/OMG/Aha/Awww)
+- **Word count** (must be in range)
+- **Remembered sentence** (the line you’re earning)
+- **Script** (spoken, clean, honest, line-disciplined)
+- **Proof notes (private)** (where support lives in the text)
 
 That is a reel. Everything else is downstream.
