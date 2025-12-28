@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/claim_locked.schema.json",
+  "title": "ClaimLocked",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "claim_id",
+    "claim_text",
+    "primary_tag",
+    "format",
+    "proof_anchor_ids",
+    "needs_chart"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "claim_id": { "type": "string" },
+    "claim_text": { "type": "string", "minLength": 10 },
+    "primary_tag": { "type": "string" },
+    "format": {
+      "type": "string",
+      "enum": ["contrarian_truth", "math_slap", "checklist", "story_lesson", "myth_bust"]
+    },
+    "core_stat": { "type": ["string", "null"] },
+    "core_stat_hash": { "type": ["string", "null"] },
+    "proof_anchor_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^p_\\d{3}$" }
+    },
+    "needs_chart": { "type": "boolean" },
+    "chart_template": {
+      "type": ["string", "null"],
+      "enum": [null, "single_stat", "comparison_bar", "range_bar", "timeline", "pie_simple"]
+    },
+    "thumbnail_text": { "type": ["string", "null"] }
+  }
+}
+

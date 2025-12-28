@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/script.schema.json",
+  "title": "Script",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "text", "sections", "proof_anchor_ids"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "text": { "type": "string", "minLength": 50 },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hook", "truth", "problem", "fix", "close"],
+      "properties": {
+        "hook": { "type": "string" },
+        "truth": { "type": "string" },
+        "problem": { "type": "string" },
+        "fix": { "type": "string" },
+        "close": { "type": "string" }
+      }
+    },
+    "proof_anchor_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^p_\\d{3}$" }
+    },
+    "word_count": { "type": "integer", "minimum": 1 },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["unverified", "verified"] },
+        "dropped_claims": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
+

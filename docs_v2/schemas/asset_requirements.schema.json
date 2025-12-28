@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/asset_requirements.schema.json",
+  "title": "AssetRequirements",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "min_clips",
+    "clip_cadence_seconds",
+    "music_mood_tag"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "min_clips": { "type": "integer", "minimum": 1, "maximum": 30 },
+    "clip_cadence_seconds": { "type": "number", "minimum": 1, "maximum": 6 },
+    "chart_window_seconds": { "type": ["number", "null"], "minimum": 1, "maximum": 12 },
+    "music_mood_tag": { "type": "string" }
+  }
+}
+

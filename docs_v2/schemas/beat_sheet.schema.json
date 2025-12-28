@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/beat_sheet.schema.json",
+  "title": "BeatSheet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "fps", "duration_seconds", "beats"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "fps": { "type": "integer", "enum": [30] },
+    "duration_seconds": { "type": "number", "minimum": 5, "maximum": 90 },
+    "beats": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["beat_id", "t_start", "t_end", "vo_text", "caption_text", "visual_slot", "events"],
+        "properties": {
+          "beat_id": { "type": "string" },
+          "t_start": { "type": "number", "minimum": 0 },
+          "t_end": { "type": "number", "minimum": 0 },
+          "vo_text": { "type": "string" },
+          "caption_text": { "type": "string" },
+          "caption_emphasis": { "type": "array", "items": { "type": "string" } },
+          "visual_slot": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string", "enum": ["BROLL_SLOT", "CHART_SLOT", "MATH_CARD_SLOT", "AI_SLOT"] },
+              "broll": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["required_tags", "composition"],
+                "properties": {
+                  "required_tags": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+                  "composition": { "type": "string", "enum": ["wide", "medium", "close", "macro", "abstract"] }
+                }
+              },
+              "chart": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["template", "duration_seconds"],
+                "properties": {
+                  "template": { "type": "string", "enum": ["single_stat", "comparison_bar", "range_bar", "timeline", "pie_simple"] },
+                  "duration_seconds": { "type": "number", "minimum": 1, "maximum": 12 },
+                  "props": { "type": "object" }
+                }
+              },
+              "math_card": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["text"],
+                "properties": { "text": { "type": "string" } }
+              },
+              "ai": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reason"],
+                "properties": { "reason": { "type": "string" } }
+              }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "type": { "const": "BROLL_SLOT" } } },
+                "then": { "required": ["broll"] }
+              },
+              {
+                "if": { "properties": { "type": { "const": "CHART_SLOT" } } },
+                "then": { "required": ["chart"] }
+              },
+              {
+                "if": { "properties": { "type": { "const": "MATH_CARD_SLOT" } } },
+                "then": { "required": ["math_card"] }
+              },
+              {
+                "if": { "properties": { "type": { "const": "AI_SLOT" } } },
+                "then": { "required": ["ai"] }
+              }
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "t"],
+              "properties": {
+                "type": { "type": "string", "enum": ["ZOOM", "SOUND_RESET", "OVERLAY_IN", "OVERLAY_OUT"] },
+                "t": { "type": "number", "minimum": 0 },
+                "payload": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

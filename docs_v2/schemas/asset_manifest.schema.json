@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/asset_manifest.schema.json",
+  "title": "AssetManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "clips", "music", "overlays"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["beat_id", "clip_id", "path", "source_in", "source_out"],
+        "properties": {
+          "beat_id": { "type": "string" },
+          "clip_id": { "type": "string" },
+          "path": { "type": "string" },
+          "source_in": { "type": "number", "minimum": 0 },
+          "source_out": { "type": "number", "minimum": 0 },
+          "score": { "type": "number" }
+        }
+      }
+    },
+    "music": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["track_id", "path"],
+      "properties": {
+        "track_id": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    },
+    "overlays": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chart_path", "math_card_path"],
+      "properties": {
+        "chart_path": { "type": ["string", "null"] },
+        "math_card_path": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
+
