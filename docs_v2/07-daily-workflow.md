@@ -2,6 +2,8 @@
 
 This is the operational runbook that should map 1:1 to CLI commands.
 
+---
+
 ## Phase 0 — Initialization
 
 **Goal:** create run folder + load context.
@@ -11,7 +13,11 @@ This is the operational runbook that should map 1:1 to CLI commands.
 - Query Concept Ledger for this blog + recent history
 - Compute `dayN = count(ledger entries for blog_slug) + 1`
 
+**Failure mode:** If ledger query fails (network/auth), abort run with error. Do not fall back to `day_n = 1`—that breaks dedupe.
+
 **Output:** `run_context.json`
+
+---
 
 ## Phase 1 — Claim selection + dedupe
 
@@ -29,13 +35,15 @@ This is the operational runbook that should map 1:1 to CLI commands.
 
 - Block if `primary_tag` used in last 7 reels (same blog)
 - Block if `core_stat_hash` used in last 14 reels
-- Block if semantic similarity to last 7 takeaways > threshold
+- Block if semantic similarity to last 7 takeaways > **0.85** (cosine similarity threshold)
 
 If fewer than 2 pass:
 - regenerate with an explicit avoid list (max 3 attempts)
 - otherwise force a micro-claim from unused blog section
 
 **Output:** `01_claim/claim_locked.json` + `dedupe_report.json`
+
+---
 
 ## Phase 2 — Script + Beat Sheet + Asset Requirements
 
@@ -47,10 +55,10 @@ If fewer than 2 pass:
 
 Generate `beat_sheet.json`:
 - beats with `t_start`, `t_end`
-- caption + emphasis tokens
+- caption + emphasis tokens (see `caption_emphasis` schema for `{ word, t }` pairs)
 - visual slots:
   - `BROLL_SLOT` (required tags + composition)
-  - `CHART_SLOT` (template + props + duration)
+  - `CHART_SLOT` (template + typed props + duration)
   - `MATH_CARD_SLOT`
   - `AI_SLOT` (fallback only)
 - events: ZOOM, SOUND_RESET, OVERLAY_IN, OVERLAY_OUT
@@ -66,19 +74,25 @@ Generate `asset_requirements.json`:
 - `02_script/beat_sheet_v1.json`
 - `02_script/asset_requirements.json`
 
+---
+
 ## Phase 3 — Deterministic verification gate
 
 **Goal:** remove hallucinations before asset work.
 
 - Parse script for:
   - numbers
-  - “research shows” / “studies”
+  - "research shows" / "studies"
   - causal claims
 - Each must match a proof anchor snippet
 - If not: weaken/remove/replace line
 - Max 2 rewrite cycles; then drop the stat
 
+**Failure mode:** If LLM rate-limited, retry with exponential backoff (1s → 2s → 4s, max 3 retries). If still failing, abort phase and log.
+
 **Output:** `02_script/script_verified.json`
+
+---
 
 ## Phase 4 — Resolve visuals from local libraries (no browsing)
 
@@ -91,7 +105,7 @@ For each `BROLL_SLOT`:
 - Assign `source_in`, `source_out` matching beat duration
 
 If insufficient unique clips:
-- fill with abstract transitions pack (recommended to create a small pack if you don’t have one yet)
+- fill with abstract transitions pack (recommended to create a small pack if you don't have one yet)
 - if still short: `AI_SLOT` fallback (image→motion)
 
 **Output:** `03_assets/clips/` + `asset_manifest.json`
@@ -103,6 +117,8 @@ If insufficient unique clips:
 
 **Output:** `03_assets/music/selected.mp3`
 
+---
+
 ## Phase 5 — Audio + captions
 
 - Generate VO from verified script → `vo.wav`
@@ -113,14 +129,22 @@ If insufficient unique clips:
   - never split numbers
 - Generate `emphasis.json` from beat sheet
 
+**Failure mode:** If TTS API fails, retry up to 3× with backoff. If still failing, abort (do not ship silent reel).
+
 **Output:** `04_audio/vo.wav`, `captions.srt`, `emphasis.json`
+
+---
 
 ## Phase 6 — Charts (only if beat sheet demands)
 
-- Render chart overlay
-- If render fails: generate fallback math card PNG
+- Render chart overlay via Remotion
+- If render fails or times out (>120s): generate fallback math card PNG
+
+**Failure mode:** Chart render timeout → fallback to `fallback_math_card.png`. Log warning but continue.
 
 **Output:** `06_overlays/chart.mp4` OR `fallback_math_card.png`
+
+---
 
 ## Phase 7 — Assemble CapCut Kit
 
@@ -130,10 +154,14 @@ Create `07_capcut_kit/` with `imports/` and `edit_plan.md`.
 - total duration
 - time mapping table `t_start–t_end → clip file → source_in/out`
 - chart placement + scale
-- zoom timestamps
+- zoom timestamps (with scale + direction)
 - sound reset timestamp
 - caption emphasis words + timestamps
-- music ducking + fade in/out
+- music ducking target (default: 70% in CapCut / −6 dB)
+- fade in/out instructions
+- caption preset name
+
+---
 
 ## Phase 8 — CapCut finishing (manual)
 
@@ -148,6 +176,8 @@ Follow mechanical steps:
 - zoom + sound reset per timestamps
 - export `final.mp4`
 
+---
+
 ## Phase 9 — Update ledger
 
 Append what shipped:
@@ -157,3 +187,17 @@ Append what shipped:
 - chart template/data
 - takeaway + hook premise
 
+**Failure mode:** If ledger write fails, retry 3× with backoff. If still failing, save entry to `99_provenance/ledger_pending.json` for manual retry later.
+
+---
+
+## Failure Modes Summary
+
+| Phase | Failure | Behavior |
+|-------|---------|----------|
+| 0 | Ledger query fails | Abort run (do not guess day_n) |
+| 1 | LLM fails to generate candidates | Retry 2×, then abort |
+| 3 | LLM rate-limited | Exponential backoff (1→2→4s), max 3 retries |
+| 5 | TTS API fails | Retry 3×, then abort (no silent reel) |
+| 6 | Chart render timeout | Fallback to math card PNG, continue |
+| 9 | Ledger write fails | Retry 3×, then save to pending file |

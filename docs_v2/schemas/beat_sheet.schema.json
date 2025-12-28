@@ -23,7 +23,19 @@
           "t_end": { "type": "number", "minimum": 0 },
           "vo_text": { "type": "string" },
           "caption_text": { "type": "string" },
-          "caption_emphasis": { "type": "array", "items": { "type": "string" } },
+          "caption_emphasis": {
+            "type": "array",
+            "description": "Words/phrases to emphasize. If timestamps are unknown at beat-sheet time, omit `t` and resolve later into emphasis.json.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text"],
+              "properties": {
+                "text": { "type": "string", "minLength": 1 },
+                "t": { "type": ["number", "null"], "minimum": 0 }
+              }
+            }
+          },
           "visual_slot": {
             "type": "object",
             "additionalProperties": false,
@@ -46,8 +58,130 @@
                 "properties": {
                   "template": { "type": "string", "enum": ["single_stat", "comparison_bar", "range_bar", "timeline", "pie_simple"] },
                   "duration_seconds": { "type": "number", "minimum": 1, "maximum": 12 },
-                  "props": { "type": "object" }
-                }
+                  "props": { "type": "object", "additionalProperties": true }
+                },
+                "allOf": [
+                  {
+                    "if": { "properties": { "template": { "const": "single_stat" } } },
+                    "then": {
+                      "properties": {
+                        "props": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "required": ["value"],
+                          "properties": {
+                            "value": { "type": "number" },
+                            "label": { "type": ["string", "null"] },
+                            "prefix": { "type": ["string", "null"] },
+                            "suffix": { "type": ["string", "null"] }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": { "properties": { "template": { "const": "comparison_bar" } } },
+                    "then": {
+                      "properties": {
+                        "props": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "required": ["items"],
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": ["label", "value"],
+                                "properties": {
+                                  "label": { "type": "string" },
+                                  "value": { "type": "number" },
+                                  "color": { "type": ["string", "null"] }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": { "properties": { "template": { "const": "range_bar" } } },
+                    "then": {
+                      "properties": {
+                        "props": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "required": ["min", "max"],
+                          "properties": {
+                            "min": { "type": "number" },
+                            "max": { "type": "number" },
+                            "label": { "type": ["string", "null"] }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": { "properties": { "template": { "const": "timeline" } } },
+                    "then": {
+                      "properties": {
+                        "props": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "required": ["points"],
+                          "properties": {
+                            "points": {
+                              "type": "array",
+                              "minItems": 2,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": ["t", "value"],
+                                "properties": {
+                                  "t": { "type": "string" },
+                                  "value": { "type": "number" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": { "properties": { "template": { "const": "pie_simple" } } },
+                    "then": {
+                      "properties": {
+                        "props": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "required": ["slices"],
+                          "properties": {
+                            "slices": {
+                              "type": "array",
+                              "minItems": 2,
+                              "maxItems": 6,
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": ["label", "value"],
+                                "properties": {
+                                  "label": { "type": "string" },
+                                  "value": { "type": "number" },
+                                  "color": { "type": ["string", "null"] }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
               },
               "math_card": {
                 "type": "object",
@@ -90,8 +224,28 @@
               "properties": {
                 "type": { "type": "string", "enum": ["ZOOM", "SOUND_RESET", "OVERLAY_IN", "OVERLAY_OUT"] },
                 "t": { "type": "number", "minimum": 0 },
-                "payload": { "type": "object" }
-              }
+                "payload": { "type": "object", "additionalProperties": true }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "type": { "const": "ZOOM" } } },
+                  "then": {
+                    "required": ["payload"],
+                    "properties": {
+                      "payload": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "required": ["scale"],
+                        "properties": {
+                          "scale": { "type": "number", "minimum": 1.0, "maximum": 2.5 },
+                          "direction": { "type": ["string", "null"], "enum": [null, "in", "out"] },
+                          "easing": { "type": ["string", "null"] }
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
             }
           }
         }

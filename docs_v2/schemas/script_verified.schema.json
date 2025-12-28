@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/script_verified.schema.json",
+  "title": "ScriptVerified",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "verification_pass", "script"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "verification_pass": { "type": "boolean" },
+    "dropped_claims": { "type": "array", "items": { "type": "string" } },
+    "verification_notes": { "type": "array", "items": { "type": "string" } },
+    "script": { "$ref": "script.schema.json" }
+  }
+}
+

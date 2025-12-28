@@ -4,9 +4,10 @@
   "title": "ClaimCandidates",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "blog_identifier", "candidates"],
+  "required": ["schema_version", "run_id", "blog_identifier", "candidates"],
   "properties": {
     "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
     "blog_identifier": { "type": "string" },
     "candidates": {
       "type": "array",

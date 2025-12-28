@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/provenance.schema.json",
+  "title": "Provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "created_at", "inputs", "phases", "tools"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blog_hash", "ledger_query", "broll_index_hash", "music_index_hash"],
+      "properties": {
+        "blog_hash": { "type": "string", "minLength": 8 },
+        "ledger_query": { "type": "object" },
+        "broll_index_hash": { "type": "string", "minLength": 8 },
+        "music_index_hash": { "type": "string", "minLength": 8 }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "started_at", "ended_at", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "started_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["ok", "failed", "skipped"] },
+          "notes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ffmpeg", "remotion", "llm"],
+      "properties": {
+        "ffmpeg": { "type": ["string", "null"] },
+        "remotion": { "type": ["string", "null"] },
+        "llm": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  }
+}
+

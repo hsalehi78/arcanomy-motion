@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/music_index.schema.json",
+  "title": "MusicIndex",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "tracks"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "duration_seconds", "mood_tags", "has_vocals", "intensity"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3 },
+          "path": { "type": "string", "description": "POSIX-style relative path under content/libraries/music/ (e.g., tracks/track-0001.mp3)." },
+          "duration_seconds": { "type": "number", "minimum": 0.1 },
+          "bpm": { "type": ["number", "null"], "minimum": 20, "maximum": 300 },
+          "mood_tags": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "has_vocals": { "type": "boolean" },
+          "intensity": { "type": "string", "enum": ["low", "medium", "high"] }
+        }
+      }
+    }
+  }
+}
+

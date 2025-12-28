@@ -1,53 +1,55 @@
-# Clarifications Needed (fill these once) — TODO(V2)
+# Clarifications — Resolved & Still Open
 
-Answering these lets the v2 docs become fully “drop-in” for your new repo.
+## ✅ Resolved (locked into docs)
 
-## R2 / CDN
+| Topic | Decision | Doc updated |
+|-------|----------|-------------|
+| CDN base URL | Keep `https://cdn.arcanomydata.com` | `12-r2-storage.md` |
+| R2 bucket | `arcanomy` bucket, `content/` prefix | `12-r2-storage.md` |
+| Reel seed index | Keep `_indexes/ready.json` | `12-r2-storage.md` |
+| Supabase auth model | User-auth + RLS | `14-supabase-concept-ledger.md` |
+| Ledger table | `public.concept_ledger` (solo/simple) | `14-supabase-concept-ledger.md` |
+| Clip ID generation | Hash from filename + file content | `09-broll-library.md` |
+| Vocals in music | Allowed (but default to instrumental) | `10-music-library.md` |
+| Chart schema | Keep current Remotion schema | `11-chart-overlays.md` |
+| Semantic similarity threshold | 0.85 cosine | `07-daily-workflow.md` |
+| Ducking default | 70% CapCut / −6 dB | `07-daily-workflow.md`, `00-glossary.md` |
+| Transitions pack | None yet; recommend creating 10–30 clips | `09-broll-library.md` |
+| Folder numbering gap | Reserved `05_qc/` for QA artifacts | `04-run-folder-spec.md` |
+| Blog store versioning | One folder per version (`v1/`, `v2/`, …) | `13-blog-source-store.md` |
+| Paragraph ID policy | Stable within a blog version; new version on blog edits | `13-blog-source-store.md` |
 
-- **CDN base URL**: keep `https://cdn.arcanomydata.com` ✅ (confirmed)
-- **R2 layout**: bucket `arcanomy`, prefix `content/` ✅ (confirmed from your console screenshot)
-- **Reel seed index**: keep `content/reels/_indexes/ready.json` ✅ (recommended default; confirm if you want a different name)
-- **Blog bundle index (v2)**: `TODO(V2)` do you want:
-  - no index (always fetch by identifier), or
-  - `content/blogs/_indexes/ready.json` (recommended)
+---
 
-## Blog source store
+## 🔴 Still Open — TODO(V2)
 
-- **Source of truth**:
-  - keep using existing blog MDX at `/content/posts/{id}/content.mdx`, or ingest from elsewhere?
-- **Versioning strategy**:
-  - one folder per blog version, or a `version` field inside `blog.json`?
-- **Paragraph ID policy**:
-  - do you require IDs to persist even if the blog is edited later (recommended), or is “latest only” acceptable?
+Fill these before implementation begins:
 
-## Supabase
+### 1. Supabase project ref
 
-- **Project**: `TODO(V2)` paste your Supabase project URL (or project ref) so we can lock the integration docs.
-- **Auth model**:
-  - user-auth ✅ (confirmed)
-- **Tables**:
-  - confirm the ledger table name (e.g., `public.concept_ledger`)
-  - keep it simple (ledger only for MVP) ✅ (confirmed)
-- **RLS**:
-  - with user-auth: **enable RLS** ✅ (recommended default; see `14-supabase-concept-ledger.md`)
+Which Supabase project is v2 writing to? (e.g., `https://xyzabc.supabase.co`)
 
-## B-roll library
+→ Update `14-supabase-concept-ledger.md` once known.
 
-- **Clip IDs**: generate deterministically ✅ (confirmed)
-- **Hard constraints**:
-  - `TODO(V2)` default recommendation: disallow `has_faces=true` and `has_logos=true` unless the beat explicitly requires it.
-- **Transitions pack**:
-  - none yet ✅ (confirmed) → recommended to create a small pack (10–30 clips)
+### 2. Blog bundle index (optional)
 
-## Music library
+Do you want a v2-specific index file for parsed blog bundles?
 
-- **Allowed**: vocals allowed ✅ (confirmed)
-- **Ducking targets**: `TODO(V2)` if you don’t have a preference, start with:
-  - music at ~15–25% volume under VO
-  - fade in/out 0.3–0.6s
-  - after SOUND_RESET: +10–20% for 0.5–1.0s
+- Option A: Yes, at `content/blogs/_indexes/ready.json`
+- Option B: No, fetch by identifier only
 
-## Charts
+→ If yes, update `13-blog-source-store.md`.
 
-- Keep current Remotion chart schema as-is (recommended), or do you want a simplified v2-only overlay schema? keep it
+### 3. Paragraph IDs (already decided)
 
+Resolved via per-version folders (see above). Proof anchors are stable because old runs reference `content/blogs/{id}/vN/blog.json`.
+
+---
+
+## Not Blocking MVP
+
+These can be deferred:
+
+- **Faces/logos policy** in b-roll — decide per-tag if needed
+- **Exact ducking dB** — 70% CapCut default works; tune later
+- **Transitions pack** — ship MVP without; add later

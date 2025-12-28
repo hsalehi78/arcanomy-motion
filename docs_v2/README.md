@@ -19,6 +19,9 @@ It is designed so you can copy `docs_v2/` into a brand-new repository and begin 
 
 ## Index
 
+- **Reference**
+  - `00-glossary.md` — Terms, thresholds, defaults
+
 - **Product + philosophy**
   - `01-product-goals.md`
   - `02-core-primitive.md`
@@ -30,8 +33,9 @@ It is designed so you can copy `docs_v2/` into a brand-new repository and begin 
   - `06-json-schemas.md`
 
 - **Daily runbook**
-  - `07-daily-workflow.md`
+  - `07-daily-workflow.md` — End-to-end phases + failure modes
   - `08-deterministic-verification.md`
+  - `21-beat-sheet-sanity-check.md` — Deterministic timing invariants gate
 
 - **Assets + libraries**
   - `09-broll-library.md`
@@ -52,11 +56,43 @@ It is designed so you can copy `docs_v2/` into a brand-new repository and begin 
 - **Migration**
   - `17-v1-to-v2-migration.md`
 
+- **CapCut assembly**
+  - `18-capcut-kit-spec.md`
+
+- **Open items**
+  - `19-clarifications-needed.md` — Remaining `TODO(V2)` placeholders
+
+- **Quality**
+  - `20-testing-strategy.md` — Schema validation, unit tests, CI
+
+## Schemas (`schemas/`)
+
+| Schema | Purpose |
+|--------|---------|
+| `run_context.schema.json` | Phase 0 output |
+| `claim_candidates.schema.json` | Phase 1 internal |
+| `claim_locked.schema.json` | Phase 1 output |
+| `dedupe_report.schema.json` | Phase 1 output |
+| `script.schema.json` | Phase 2 internal |
+| `beat_sheet.schema.json` | Phase 2 output (the control plane) |
+| `asset_requirements.schema.json` | Phase 2 output |
+| `script_verified.schema.json` | Phase 3 output |
+| `asset_manifest.schema.json` | Phase 4 output |
+| `blog.schema.json` | Blog source store (paragraph IDs) |
+| `ledger_entry.schema.json` | Phase 9 output |
+
+## Templates (`templates/`)
+
+| Template | Purpose |
+|----------|---------|
+| `edit_plan.template.md` | CapCut assembly instructions |
+| `blog.example.json` | Sample blog.json with paragraph IDs |
+
 ## Placeholders you must fill
 
 Search for `TODO(V2)` in this folder and replace:
-- **CDN base URLs / buckets** (if changing from current `cdn.arcanomydata.com`)
-- **Supabase project + schema/table names**
-- **Auth** (service role vs user auth) for writes
-- **B-roll + music licensing / allowed sources**
+- **Supabase project ref** (for ledger writes)
+- **Blog bundle index** (optional: `_indexes/ready.json` for blogs)
+- **Paragraph ID persistence policy** (recommended: persist across edits)
 
+Most other decisions have been locked in based on your answers.

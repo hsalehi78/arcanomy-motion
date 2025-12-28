@@ -11,6 +11,11 @@ The generator should output a concrete plan per run with real filenames and time
 - **day_n**: {{day_n}}
 - **duration**: {{duration_seconds}}s
 
+## CapCut Presets
+
+- **caption preset name**: {{caption_preset_name}}
+- **grade preset name (optional)**: {{grade_preset_name}}
+
 ## Clip Plan (V1)
 
 | beat_id | t_start–t_end | clip_file | source_in–source_out | notes |
@@ -38,6 +43,12 @@ The generator should output a concrete plan per run with real filenames and time
 ## Music (A2)
 
 - **track**: {{music_track}}
-- **ducking**: {{ducking_target}}
+- **ducking**:
+  - **CapCut target (%)**: {{ducking_target_percent}}
+  - **Alt (dB, if you prefer)**: {{ducking_target_db}}
 - **fade**: {{fade_in_out}}
 
+## Events (zoom/overlay)
+
+- **zoom events** (from beat sheet):
+  - {{t}}s → scale={{zoom_scale}} direction={{zoom_direction}}

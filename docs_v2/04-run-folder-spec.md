@@ -33,6 +33,12 @@ runs/YYYY-MM-DD_blogslug_dayN/
     captions.srt
     emphasis.json
 
+  05_qc/                      # Reserved (optional): deterministic checks + QA artifacts
+    audio_qc.json             # optional
+    captions_qc.json          # optional
+    kit_qc.json               # optional
+    beat_sheet_qc.json        # optional
+
   06_overlays/
     chart.mp4                  # optional
     fallback_math_card.png     # optional
@@ -50,6 +56,7 @@ runs/YYYY-MM-DD_blogslug_dayN/
         chart.mp4              # optional
         fallback_math_card.png # optional
     edit_plan.md
+    kit_manifest.json          # optional but recommended
 
   99_provenance/
     provenance.json
@@ -61,3 +68,6 @@ runs/YYYY-MM-DD_blogslug_dayN/
 - **Inputs referenced by the run** must be captured in `run_context.json` (blog identifier + hash, ledger query window, library index hashes).
 - If you regenerate, increment versioned filenames or store `*_v2.json` rather than overwriting silently.
 
+## Why `05_qc/` exists
+
+The v2 workflow has a real notion of **gates** (dedupe, verification, resolver sufficiency). `05_qc/` is reserved for any machine-readable QA artifacts you add later without renumbering the run contract.

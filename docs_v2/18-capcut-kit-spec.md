@@ -18,6 +18,7 @@ The kit is the only daily deliverable that matters.
       chart.mp4                  # optional
       fallback_math_card.png     # optional
   edit_plan.md
+  kit_manifest.json              # recommended (maps source assets → kit filenames)
 ```
 
 ## `edit_plan.md` required sections
@@ -44,6 +45,10 @@ The kit is the only daily deliverable that matters.
 - **Music**
   - ducking target
   - fade-in/out instructions
+
+## `kit_manifest.json`
+
+To make kit building reproducible and machine-verifiable, generate a kit manifest using `schemas/kit_manifest.schema.json`.
 
 ## Track doctrine (keep this stable)
 

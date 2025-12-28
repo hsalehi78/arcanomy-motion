@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "blog_identifier": "2025-08-10-knowledge-the-psychology-of-money",
+  "slug": "the-psychology-of-money",
+  "title": "The Psychology of Money",
+  "published_date": "2025-08-10",
+  "source": {
+    "type": "mdx_cdn",
+    "path": "https://cdn.arcanomydata.com/content/posts/2025-08-10-knowledge-the-psychology-of-money/content.mdx"
+  },
+  "sections": [
+    {
+      "heading": "Introduction",
+      "paragraphs": [
+        {
+          "id": "p_001",
+          "text": "Money decisions are rarely about math. They’re about behavior.",
+          "source_offset": { "start": 0, "end": 78 }
+        },
+        {
+          "id": "p_002",
+          "text": "Two people can read the same investing book and do opposite things.",
+          "source_offset": { "start": 79, "end": 160 }
+        }
+      ]
+    }
+  ],
+  "tables": [],
+  "figures": []
+}
+

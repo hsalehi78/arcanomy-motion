@@ -40,6 +40,8 @@ Stop conditions:
   - `dropped_claims[]`
   - `verification_notes[]`
 
+**Schema:** validate the wrapper file against `schemas/script_verified.schema.json`. The embedded `script` must validate against `schemas/script.schema.json`.
+
 ## Note on future upgrades
 
 You can add a secondary verifier LLM later, but the hard rule stays:

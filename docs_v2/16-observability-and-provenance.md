@@ -16,6 +16,8 @@ Write `99_provenance/provenance.json` with:
 - model/provider versions (if LLM used)
 - render tool versions (ffmpeg, remotion)
 
+**Schema:** validate this file against `schemas/provenance.schema.json`.
+
 ## Logs
 
 Write `99_provenance/logs.txt` (append-only) with:

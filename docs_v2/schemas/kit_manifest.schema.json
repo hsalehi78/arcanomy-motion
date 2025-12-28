@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcanomy.dev/schemas/kit_manifest.schema.json",
+  "title": "KitManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "imports", "clip_map"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "run_id": { "type": "string" },
+    "imports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["voice", "captions", "clips_dir", "music_dir", "overlays_dir"],
+      "properties": {
+        "voice": { "type": "string", "description": "Path relative to 07_capcut_kit/imports/ (e.g., vo.wav)." },
+        "captions": { "type": "string", "description": "Path relative to 07_capcut_kit/imports/ (e.g., captions.srt)." },
+        "clips_dir": { "type": "string", "const": "clips/" },
+        "music_dir": { "type": "string", "const": "music/" },
+        "overlays_dir": { "type": "string", "const": "overlays/" }
+      }
+    },
+    "clip_map": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["beat_id", "source_path", "kit_path", "source_in", "source_out"],
+        "properties": {
+          "beat_id": { "type": "string" },
+          "source_path": { "type": "string", "description": "Original resolved clip path (e.g., content/libraries/broll/clips/...)."} ,
+          "kit_path": { "type": "string", "description": "Destination path relative to imports/ (e.g., clips/clip-01.mp4)." },
+          "source_in": { "type": "number", "minimum": 0 },
+          "source_out": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "music": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["source_path", "kit_path"],
+      "properties": {
+        "source_path": { "type": "string" },
+        "kit_path": { "type": "string" }
+      }
+    },
+    "overlays": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chart", "math_card"],
+      "properties": {
+        "chart": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["source_path", "kit_path"],
+          "properties": { "source_path": { "type": "string" }, "kit_path": { "type": "string" } }
+        },
+        "math_card": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["source_path", "kit_path"],
+          "properties": { "source_path": { "type": "string" }, "kit_path": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
+

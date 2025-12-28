@@ -19,15 +19,31 @@ The v2 system can keep using `content.mdx` as the upstream source.
 - `blog.md` — the human-readable cleaned source
 - `blog.json` — structured representation including stable paragraph IDs
 
+## Versioning (decision)
+
+Use **one folder per version**. This gives “time travel” debugging with no extra machinery.
+
+Recommended layout:
+
+```
+content/blogs/{blog-identifier}/
+  v1/
+    blog.md
+    blog.json
+    meta.json
+  v2/
+    ...
+```
+
 ## Stable paragraph IDs
 
-Paragraph IDs must be stable across time. Format:
+Paragraph IDs must be stable **within a blog version**. Format:
 
 - `p_001`, `p_002`, …
 
 Rules:
-- IDs are assigned once and never re-assigned.
-- If you update the blog content, create a new version folder (or version field).
+- IDs are generated for a given version and never re-assigned within that version.
+- If the blog content changes, create a **new version folder** (e.g., `v2/`) and regenerate IDs for that version.
 
 ## `blog.json` (MVP)
 

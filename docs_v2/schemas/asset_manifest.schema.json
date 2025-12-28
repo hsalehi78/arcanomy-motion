@@ -19,6 +19,7 @@
           "beat_id": { "type": "string" },
           "clip_id": { "type": "string" },
           "path": { "type": "string" },
+          "kit_path": { "type": ["string", "null"], "description": "Relative path inside 07_capcut_kit/imports/ if copied (e.g., clips/clip-01.mp4)." },
           "source_in": { "type": "number", "minimum": 0 },
           "source_out": { "type": "number", "minimum": 0 },
           "score": { "type": "number" }
@@ -31,7 +32,8 @@
       "required": ["track_id", "path"],
       "properties": {
         "track_id": { "type": "string" },
-        "path": { "type": "string" }
+        "path": { "type": "string" },
+        "kit_path": { "type": ["string", "null"], "description": "Relative path inside 07_capcut_kit/imports/ if copied (e.g., music/selected.mp3)." }
       }
     },
     "overlays": {
@@ -40,7 +42,9 @@
       "required": ["chart_path", "math_card_path"],
       "properties": {
         "chart_path": { "type": ["string", "null"] },
-        "math_card_path": { "type": ["string", "null"] }
+        "math_card_path": { "type": ["string", "null"] },
+        "chart_kit_path": { "type": ["string", "null"], "description": "Relative path inside 07_capcut_kit/imports/overlays/ if copied." },
+        "math_card_kit_path": { "type": ["string", "null"], "description": "Relative path inside 07_capcut_kit/imports/overlays/ if copied." }
       }
     }
   }
