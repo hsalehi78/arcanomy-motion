@@ -168,7 +168,7 @@ DEFAULT_PROVIDERS = {
     "assets": "kie",            # → nano-banana-pro
     
     # Video generation
-    "videos": "veo",            # → veo-3-1
+    "videos": "kling",          # → kling/v2-5-turbo (veo not yet implemented)
     
     # Audio generation
     "audio": "elevenlabs",      # → eleven_v3

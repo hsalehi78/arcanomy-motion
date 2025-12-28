@@ -6,6 +6,12 @@
 
 ---
 
+## Output Philosophy: Self-Contained
+
+Your output `visual_plan.json` must be **self-contained**. Downstream stages (assets, videos, etc.) should NOT need to reference plan.json. Everything needed to generate visuals must be in your output.
+
+---
+
 ## Your Task
 
 Given the plan.json (which contains subsegments with voice scripts), create:
@@ -13,6 +19,8 @@ Given the plan.json (which contains subsegments with voice scripts), create:
 1. **Image prompts** for DALL-E/Gemini/Kie.ai (static "breathing photographs")
 2. **Motion prompts** for Kling/Runway (subtle animation descriptions)
 3. **Global Atmosphere Block** (ensures visual consistency across all assets)
+
+Note: Chart subsegments will be handled separately - you only need to generate prompts for non-chart subsegments. The system will automatically include chart subsegments in the final output with their props.
 
 ---
 
@@ -71,6 +79,14 @@ Each 10-second clip animates a SINGLE image with ONE micro-movement:
   ]
 }
 ```
+
+The system will automatically enrich your output with:
+- `beat` - The narrative beat (hook_claim, support_proof, etc.)
+- `duration_seconds` - How long the subsegment lasts
+- `voice_text` - The voiceover script
+- `visual_intent` - The original visual direction from plan
+- `on_screen_text` - Text overlay if any
+- Chart subsegments (type: "chart") with their props
 
 ---
 
@@ -171,5 +187,4 @@ Include at least 3 textures per prompt:
 2. **seed.md** - Creative brief with visual vibe
 3. **claim.json** - Core claim for thematic grounding
 
-Generate one asset per subsegment (minimum). For chart subsegments, the visual is the chart itself - skip image generation for those.
-
+Generate one asset per subsegment (minimum). For chart subsegments, the visual is the chart itself - skip image generation for those (they will be added automatically).

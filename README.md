@@ -69,7 +69,7 @@ uv run arcanomy list-reels
 # 2) Run each stage
 uv run plan          # AI generates script + provenance
 uv run visual_plan   # AI creates image prompts
-uv run assets        # Generate images
+uv run seed-images   # Generate images
 uv run vidprompt     # Refine video prompts
 uv run videos        # Generate video clips
 uv run subsegments   # Assemble 10s clips
@@ -91,7 +91,7 @@ See `START_HERE.md` for the full quick start guide.
 |-------|--------|-------------|
 | **plan** | `meta/plan.json`, `meta/provenance.json` | Generate segments and subsegments |
 | **visual_plan** | `meta/visual_plan.json` | Visual prompts for seed images + 10s clips |
-| **assets** | `renders/images/composites/*.png` | Generate seed images |
+| **seed-images** | `renders/images/composites/*.png` | Generate seed images |
 | **vidprompt** | `meta/video_prompts.json` | Refine motion prompts for 10s clips |
 | **videos** | `renders/videos/clip_XX.mp4` | Generate 10s AI video clips |
 | **subsegments** | `subsegments/subseg-*.mp4` | 10.0s background videos |
@@ -160,7 +160,7 @@ uv run arcanomy list-reels           # List and fetch reels from CDN
 # Pipeline Stages (run in order)
 uv run plan          # AI generates script + provenance
 uv run visual_plan   # AI creates image prompts
-uv run assets        # Generate images
+uv run seed-images   # Generate images
 uv run vidprompt     # Refine video prompts
 uv run videos        # Generate video clips
 uv run subsegments   # Assemble 10s clips

@@ -207,7 +207,7 @@ def run(
         None,
         "--stage",
         "-s",
-        help="Run ONLY this stage: init|plan|visual_plan|assets|vidprompt|videos|subsegments|voice|captions|charts|kit. Omit to run all.",
+        help="Run ONLY this stage: init|plan|visual_plan|seed_images|vidprompt|videos|subsegments|voice|captions|charts|kit. Omit to run all.",
     ),
     fresh: bool = typer.Option(
         False,
@@ -235,7 +235,7 @@ def run(
     With no -s flag: runs ALL stages in order.
     With -s <stage>: runs ONLY that one stage.
     
-    Stages: init → plan → visual_plan → assets → vidprompt → videos → subsegments → voice → captions → charts → kit
+    Stages: init → plan → visual_plan → seed_images → vidprompt → videos → subsegments → voice → captions → charts → kit
     """
     from dotenv import load_dotenv
 
@@ -278,7 +278,7 @@ def run(
     # Auto-set as current reel for convenience
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
-    valid_stages = ("init", "plan", "visual_plan", "assets", "vidprompt", "videos", "subsegments", "voice", "captions", "charts", "kit")
+    valid_stages = ("init", "plan", "visual_plan", "seed_images", "vidprompt", "videos", "subsegments", "voice", "captions", "charts", "kit")
     
     if stage is not None and stage not in valid_stages:
         typer.echo(f"[ERROR] --stage must be one of: {', '.join(valid_stages)}", err=True)
@@ -315,9 +315,9 @@ def run(
         typer.echo("[OK] Visual plan complete")
         typer.echo(f"   Visual plan: {vp_file}")
 
-    def run_assets():
+    def run_seed_images():
         assets = generate_assets(reel_path, force=force)
-        typer.echo("[OK] Assets complete")
+        typer.echo("[OK] Seed images complete")
         success = len([a for a in assets if a.get("status") == "success"])
         typer.echo(f"   Generated: {success} images")
 
@@ -369,7 +369,7 @@ def run(
         "init": run_init,
         "plan": run_plan,
         "visual_plan": run_visual_plan,
-        "assets": run_assets,
+        "seed_images": run_seed_images,
         "vidprompt": run_vidprompt,
         "videos": run_videos,
         "subsegments": run_subsegments,
@@ -1406,8 +1406,8 @@ def run_visual_plan():
     typer.echo(f"[OK] Visual plan complete")
 
 
-def run_assets():
-    """uv run assets — AI generates images from prompts."""
+def run_seed_images():
+    """uv run seed-images — AI generates images from prompts."""
     from dotenv import load_dotenv
     load_dotenv()
     
@@ -1416,7 +1416,7 @@ def run_assets():
     
     assets = generate_assets(reel_path, force=False)
     success = len([a for a in assets if a.get("status") == "success"])
-    typer.echo(f"[OK] Assets complete: {success} images")
+    typer.echo(f"[OK] Seed images complete: {success} images")
 
 
 def run_vidprompt():
@@ -1522,7 +1522,7 @@ def run_all():
     run_init()
     run_plan()
     run_visual_plan()
-    run_assets()
+    run_seed_images()
     run_vidprompt()
     run_videos()
     run_subsegments()

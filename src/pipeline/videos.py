@@ -119,8 +119,21 @@ def generate_videos(
         clip_number = clip.get("clip_number", 0)
         segment_id = clip.get("subsegment_id", clip_number)
         seed_image_rel = clip.get("seed_image", "")
-        video_prompt = clip.get("video_prompt", "")
+        video_prompt = clip.get("video_prompt") or ""  # Handle explicit null in JSON
         duration = str(clip.get("duration_seconds", 10))
+        movement_type = clip.get("movement_type", "")
+
+        # Skip pre-rendered clips (e.g., chart animations that are already mp4)
+        if movement_type == "pre-rendered":
+            logger.info(f"[{clip_number}/{len(clips)}] {segment_id} [SKIP] Pre-rendered")
+            execution_log["skipped"] += 1
+            execution_log["clips"].append({
+                "clip_number": clip_number,
+                "subsegment_id": segment_id,
+                "seed_image": seed_image_rel,
+                "status": "pre-rendered",
+            })
+            continue
 
         # Resolve paths
         seed_image_path = reel_path / seed_image_rel

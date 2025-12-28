@@ -4,6 +4,9 @@ Reads plan.json (subsegments with voice scripts) and uses LLM to generate:
 1. Image prompts for DALL-E/Gemini/Kie.ai
 2. Motion prompts for Kling/Runway video generation
 3. Global atmosphere block for visual consistency
+
+OUTPUT: Self-contained visual_plan.json with all context needed for asset generation.
+No downstream stage should need to reference plan.json.
 """
 
 from __future__ import annotations
@@ -96,6 +99,9 @@ def generate_visual_plan(
     if not subsegments:
         raise ValueError("No subsegments found in plan.json")
 
+    # Extract reel metadata for self-contained output
+    reel_meta = plan.get("reel", {})
+
     if ai:
         visual_plan = _generate_with_ai(
             subsegments=subsegments,
@@ -107,14 +113,100 @@ def generate_visual_plan(
     else:
         visual_plan = _generate_placeholder(subsegments)
 
+    # Enrich with metadata and chart subsegments
+    visual_plan = _enrich_visual_plan(visual_plan, subsegments, reel_meta)
+
     # Write output
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(visual_plan, indent=2), encoding="utf-8")
     
     logger.info(f"Visual plan generated: {output_path}")
     logger.info(f"  Assets: {len(visual_plan.get('assets', []))}")
+    
+    # Count by type
+    image_count = len([a for a in visual_plan.get('assets', []) if a.get('type') != 'chart'])
+    chart_count = len([a for a in visual_plan.get('assets', []) if a.get('type') == 'chart'])
+    logger.info(f"  Images: {image_count}, Charts: {chart_count}")
 
     return output_path
+
+
+def _enrich_visual_plan(
+    visual_plan: dict[str, Any],
+    subsegments: list[dict],
+    reel_meta: dict,
+) -> dict[str, Any]:
+    """Enrich visual plan with metadata and chart subsegments.
+    
+    Makes visual_plan.json self-contained by:
+    1. Adding reel metadata
+    2. Adding duration/voice_text/visual_intent to each asset
+    3. Adding chart subsegments that LLM skipped
+    """
+    # Build subsegment lookup
+    ss_lookup = {ss.get("subsegment_id"): ss for ss in subsegments}
+    
+    # Add reel-level metadata
+    visual_plan["reel_id"] = reel_meta.get("reel_id", "unknown")
+    visual_plan["total_duration_seconds"] = reel_meta.get("duration_seconds", 50.0)
+    
+    # Track which subsegments have assets
+    covered_ss_ids = {a.get("subsegment_id") for a in visual_plan.get("assets", [])}
+    
+    # Enrich existing assets with subsegment context
+    enriched_assets = []
+    for asset in visual_plan.get("assets", []):
+        ss_id = asset.get("subsegment_id")
+        ss = ss_lookup.get(ss_id, {})
+        
+        # Add self-contained fields
+        asset["beat"] = ss.get("beat", "unknown")
+        asset["duration_seconds"] = ss.get("duration_seconds", 10.0)
+        asset["voice_text"] = ss.get("voice", {}).get("text", "") if isinstance(ss.get("voice"), dict) else ""
+        asset["visual_intent"] = ss.get("visual", {}).get("intent", "") if isinstance(ss.get("visual"), dict) else ""
+        asset["on_screen_text"] = ss.get("visual", {}).get("on_screen_text", "") if isinstance(ss.get("visual"), dict) else ""
+        
+        # Normalize type for non-chart assets
+        if asset.get("type") not in ("chart",):
+            asset["type"] = "image"  # Normalize to "image" for clarity
+        
+        enriched_assets.append(asset)
+    
+    # Add chart subsegments that were skipped by LLM
+    for ss in subsegments:
+        ss_id = ss.get("subsegment_id")
+        charts = ss.get("charts", [])
+        
+        if charts and ss_id not in covered_ss_ids:
+            # This is a chart subsegment - add it
+            chart = charts[0] if charts else {}
+            chart_id = chart.get("chart_id", ss.get("chart_id", f"{ss_id}-chart"))
+            
+            chart_asset = {
+                "id": f"{ss_id}-chart",
+                "subsegment_id": ss_id,
+                "name": f"Chart: {chart_id}",
+                "type": "chart",
+                "beat": ss.get("beat", "unknown"),
+                "duration_seconds": ss.get("duration_seconds", 10.0),
+                "voice_text": ss.get("voice", {}).get("text", "") if isinstance(ss.get("voice"), dict) else "",
+                "visual_intent": ss.get("visual", {}).get("intent", "") if isinstance(ss.get("visual"), dict) else "",
+                "on_screen_text": ss.get("visual", {}).get("on_screen_text", "") if isinstance(ss.get("visual"), dict) else "",
+                "chart_id": chart_id,
+                "chart_props": chart.get("props", {}),
+                "image_prompt": None,
+                "motion_prompt": None,
+                "camera_movement": None,
+                "suggested_filename": f"{chart_id}.mp4",
+            }
+            enriched_assets.append(chart_asset)
+    
+    # Sort assets by subsegment order
+    ss_order = {ss.get("subsegment_id"): i for i, ss in enumerate(subsegments)}
+    enriched_assets.sort(key=lambda a: ss_order.get(a.get("subsegment_id"), 999))
+    
+    visual_plan["assets"] = enriched_assets
+    return visual_plan
 
 
 def _generate_with_ai(
@@ -129,7 +221,7 @@ def _generate_with_ai(
     llm = LLMService(provider=provider)
     system_prompt = _load_system_prompt()
 
-    # Filter out chart subsegments (they don't need image generation)
+    # Filter out chart subsegments (LLM only generates image prompts)
     non_chart_subsegments = [
         ss for ss in subsegments
         if not ss.get("charts")
@@ -144,7 +236,7 @@ def _generate_with_ai(
 {seed}
 
 ## Plan Summary
-- Total duration: {plan.get('total_duration_seconds', 50)}s
+- Total duration: {plan.get('reel', {}).get('duration_seconds', 50)}s
 - Subsegments: {len(subsegments)}
 
 ## Subsegments Needing Visual Assets
@@ -201,8 +293,9 @@ def _generate_placeholder(subsegments: list[dict]) -> dict[str, Any]:
     
     for ss in subsegments:
         ss_id = ss.get("subsegment_id", "unknown")
+        voice_text = ss.get("voice", {}).get("text", "") if isinstance(ss.get("voice"), dict) else ""
         
-        # Skip chart subsegments
+        # Skip chart subsegments (they'll be added by _enrich_visual_plan)
         if ss.get("charts"):
             continue
         
@@ -210,8 +303,8 @@ def _generate_placeholder(subsegments: list[dict]) -> dict[str, Any]:
             "id": f"{ss_id}-asset",
             "subsegment_id": ss_id,
             "name": f"Asset for {ss_id}",
-            "type": "object",
-            "image_prompt": f"[PLACEHOLDER] Image for {ss_id}: {ss.get('voice_text', '')[:50]}...",
+            "type": "image",
+            "image_prompt": f"[PLACEHOLDER] Image for {ss_id}: {voice_text[:50]}...",
             "motion_prompt": "[PLACEHOLDER] Subtle movement. Slow zoom in.",
             "camera_movement": "Slow zoom in",
             "suggested_filename": f"{ss_id}-asset.png",
@@ -228,9 +321,11 @@ def _format_subsegments_for_prompt(subsegments: list[dict]) -> str:
     lines = []
     for ss in subsegments:
         ss_id = ss.get("subsegment_id", "unknown")
-        voice_text = ss.get("voice_text", "")
-        visual_intent = ss.get("visual_intent", "")
-        lines.append(f"""### {ss_id}
+        voice_text = ss.get("voice", {}).get("text", "") if isinstance(ss.get("voice"), dict) else ""
+        visual_intent = ss.get("visual", {}).get("intent", "") if isinstance(ss.get("visual"), dict) else ""
+        duration = ss.get("duration_seconds", 10.0)
+        beat = ss.get("beat", "unknown")
+        lines.append(f"""### {ss_id} ({beat}, {duration}s)
 - Voice: "{voice_text}"
 - Visual Intent: {visual_intent}
 """)
@@ -243,6 +338,6 @@ def _format_chart_subsegments(subsegments: list[dict]) -> str:
     for ss in subsegments:
         if ss.get("charts"):
             ss_id = ss.get("subsegment_id", "unknown")
-            lines.append(f"- {ss_id}: Has chart, skip image generation")
+            chart_id = ss.get("chart_id", "unknown")
+            lines.append(f"- {ss_id}: Has chart ({chart_id}), skip image generation")
     return "\n".join(lines) if lines else "(None)"
-

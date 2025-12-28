@@ -32,7 +32,7 @@ All design decisions are governed by **`docs/principles/`**:
 INPUTS                          PIPELINE                         OUTPUTS
 ─────────────────────────────────────────────────────────────────────────────
 inputs/claim.json    ──┐
-inputs/seed.md       ──┤──►  plan ──► visual_plan ──► assets ──► videos
+inputs/seed.md       ──┤──►  plan ──► visual_plan ──► seed-images ──► videos
 inputs/chart.json?   ──┘                                            │
                                                                     ▼
                                     subsegments ──► voice ──► captions
@@ -51,7 +51,7 @@ inputs/chart.json?   ──┘                                            │
 |-------|---------|--------|
 | **plan** | `uv run plan` | `meta/plan.json`, `meta/provenance.json` |
 | **visual_plan** | `uv run visual_plan` | `meta/visual_plan.json` |
-| **assets** | `uv run assets` | `renders/images/composites/*.png` |
+| **seed-images** | `uv run seed-images` | `renders/images/composites/*.png` |
 | **vidprompt** | `uv run vidprompt` | `meta/video_prompts.json` |
 | **videos** | `uv run videos` | `renders/videos/clip_*.mp4` |
 | **subsegments** | `uv run subsegments` | `subsegments/subseg-*.mp4` |
@@ -77,7 +77,7 @@ uv run arcanomy list-reels
 # Run each stage
 uv run plan          # AI generates script + provenance
 uv run visual_plan   # AI creates image prompts
-uv run assets        # Generate images
+uv run seed-images   # Generate images
 uv run vidprompt     # Refine video prompts
 uv run videos        # Generate video clips
 uv run subsegments   # Assemble 10s clips
@@ -204,7 +204,7 @@ uv run arcanomy list-reels           # List and fetch reels from CDN
 # Pipeline Stages (run in order)
 uv run plan          # AI generates script + provenance
 uv run visual_plan   # AI creates image prompts
-uv run assets        # Generate images
+uv run seed-images   # Generate images
 uv run vidprompt     # Refine video prompts
 uv run videos        # Generate video clips
 uv run subsegments   # Assemble 10s clips

@@ -6,7 +6,7 @@
 uv run arcanomy list-reels  # 1. Fetch a reel from CDN
 uv run plan                 # 2. AI generates script
 uv run visual_plan          # 3. AI creates image prompts
-uv run assets               # 4. Generate images
+uv run seed-images          # 4. Generate images
 uv run vidprompt            # 5. Refine video prompts
 uv run videos               # 6. Generate video clips
 uv run subsegments          # 7. Assemble 10s clips
