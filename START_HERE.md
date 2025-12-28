@@ -1,65 +1,51 @@
-# Arcanomy Motion — Quick Start
+# Arcanomy Motion
 
-## The Workflow (2 commands)
+## Quick Start
 
 ```bash
-uv run arcanomy list-reels   # Pick a reel from CDN
-uv run arcanomy run          # Generate the CapCut kit
+uv run reels        # 1. Pick a reel
+uv run init         # 2. Create provenance
+uv run plan         # 3. AI generates script
+uv run visual_plan  # 4. AI creates image prompts
+uv run assets       # 5. Generate images
+uv run vidprompt    # 6. Refine video prompts
+uv run videos       # 7. Generate video clips
+uv run subsegments  # 8. Assemble 10s clips
+uv run voice        # 9. ElevenLabs TTS
+uv run captions     # 10. SRT subtitles
+uv run charts       # 11. Animated charts
+uv run kit          # 12. Thumbnail + guides
 ```
 
-Then open `guides/capcut_assembly_guide.md` in CapCut Desktop.
+Or run all at once: `uv run run-all`
 
----
+## Other Commands
 
-## What This Pipeline Does
-
-**Input:** Reel seeds from Arcanomy Studio (on CDN)  
-**Output:** CapCut-ready assembly kit
-
+```bash
+uv run current      # Show current reel + status
+uv run guide        # Full help
+uv run commit       # Git add/commit/push
 ```
-Studio uploads seed → You fetch it → Pipeline generates kit → You assemble in CapCut
-```
-
----
-
-## Output Files
-
-After running, you get:
-
-| Folder | Contents |
-|--------|----------|
-| `subsegments/` | 10-second video clips |
-| `voice/` | Voice audio per clip |
-| `captions/` | SRT subtitle file |
-| `charts/` | Animated chart overlays (if any) |
-| `thumbnail/` | Thumbnail image |
-| `guides/` | CapCut assembly instructions |
-
----
-
-## Commands
-
-| Command | What it does |
-|---------|--------------|
-| `uv run arcanomy list-reels` | List CDN reels, select to fetch |
-| `uv run arcanomy run` | Run pipeline on current reel |
-| `uv run arcanomy current` | Show current reel |
-| `uv run arcanomy validate` | Check reel files are valid |
-| `uv run arcanomy guide` | Show help |
-
----
 
 ## Setup
 
 1. Copy `.env.example` to `.env`
 2. Add your API keys:
-   - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+   - `ANTHROPIC_API_KEY`
    - `ELEVENLABS_API_KEY`
 
----
+## Output
 
-## More Docs
+After running, check `guides/capcut_assembly_guide.md` for CapCut assembly instructions.
 
-- `docs/README.md` — Full pipeline documentation
-- `docs/arcanomy-studio-integration/` — Seed file specifications
-- `docs/charts/` — Chart templates
+```
+content/reels/<reel>/
+  meta/           # plan.json, visual_plan.json, quality_gate.json
+  renders/        # images/, videos/
+  subsegments/    # 10s video clips
+  voice/          # audio files
+  captions/       # captions.srt
+  charts/         # animated chart overlays
+  thumbnail/      # thumbnail.png
+  guides/         # assembly instructions
+```

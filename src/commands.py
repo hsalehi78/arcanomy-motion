@@ -203,11 +203,11 @@ def run(
         None, 
         help="Path to the reel folder (optional - uses current reel if not specified)",
     ),
-    stage: str = typer.Option(
-        "kit",
+    stage: Optional[str] = typer.Option(
+        None,
         "--stage",
         "-s",
-        help="How far to run: init|plan|visual_plan|assets|vidprompt|videos|subsegments|voice|captions|charts|kit. Default: kit (full).",
+        help="Run ONLY this stage: init|plan|visual_plan|assets|vidprompt|videos|subsegments|voice|captions|charts|kit. Omit to run all.",
     ),
     fresh: bool = typer.Option(
         False,
@@ -232,12 +232,10 @@ def run(
 ):
     """Run the pipeline for a reel.
     
-    Generates a CapCut-ready assembly kit from claim.json + seed.md (+ optional chart.json).
-    Uses AI (Opus 4.5 by default) to generate scripts from seed.md.
-    Output: subsegments, charts, voice, captions, guides, thumbnail.
+    With no -s flag: runs ALL stages in order.
+    With -s <stage>: runs ONLY that one stage.
     
-    If no reel path is provided, uses the current reel (set via 'arcanomy set' or 'arcanomy reels').
-    Use --no-ai to disable AI and use placeholder scripts.
+    Stages: init → plan → visual_plan → assets → vidprompt → videos → subsegments → voice → captions → charts → kit
     """
     from dotenv import load_dotenv
 
@@ -281,94 +279,108 @@ def run(
     CURRENT_REEL_FILE.write_text(str(reel_path.resolve()))
 
     valid_stages = ("init", "plan", "visual_plan", "assets", "vidprompt", "videos", "subsegments", "voice", "captions", "charts", "kit")
-    if stage not in valid_stages:
+    
+    if stage is not None and stage not in valid_stages:
         typer.echo(f"[ERROR] --stage must be one of: {', '.join(valid_stages)}", err=True)
         raise typer.Exit(1)
 
     ai = not no_ai  # AI is default, --no-ai disables it
+    
+    # Determine which stages to run
+    if stage is None:
+        # Run all stages
+        stages_to_run = list(valid_stages)
+        typer.echo("[Pipeline] Running all stages")
+    else:
+        # Run only the specified stage
+        stages_to_run = [stage]
+        typer.echo(f"[Stage] {stage}")
+    
     if no_ai:
-        typer.echo("[Mode] Using placeholder scripts (--no-ai)")
-    else:
-        typer.echo("[Mode] AI script generation enabled")
+        typer.echo("[Mode] AI disabled (--no-ai)")
 
-    prov_path = pipeline_init(reel_path, fresh=fresh, force=force)
-    typer.echo("[OK] Init complete")
-    typer.echo(f"   Provenance: {prov_path}")
+    # Stage runners
+    def run_init():
+        prov_path = pipeline_init(reel_path, fresh=fresh, force=force)
+        typer.echo("[OK] Init complete")
+        typer.echo(f"   Provenance: {prov_path}")
 
-    if stage == "init":
-        return
+    def run_plan():
+        plan_file = generate_plan(reel_path, force=force, ai=ai, ai_provider=ai_provider)
+        typer.echo("[OK] Plan complete")
+        typer.echo(f"   Plan: {plan_file}")
 
-    plan_file = generate_plan(reel_path, force=force, ai=ai, ai_provider=ai_provider)
-    typer.echo("[OK] Plan complete")
-    typer.echo(f"   Plan: {plan_file}")
-    if stage == "plan":
-        return
+    def run_visual_plan():
+        vp_file = generate_visual_plan(reel_path, force=force, ai=ai, provider_override=ai_provider)
+        typer.echo("[OK] Visual plan complete")
+        typer.echo(f"   Visual plan: {vp_file}")
 
-    # Visual plan (image/motion prompts)
-    vp_file = generate_visual_plan(reel_path, force=force, ai=ai, provider_override=ai_provider)
-    typer.echo("[OK] Visual plan complete")
-    typer.echo(f"   Visual plan: {vp_file}")
-    if stage == "visual_plan":
-        return
+    def run_assets():
+        assets = generate_assets(reel_path, force=force)
+        typer.echo("[OK] Assets complete")
+        success = len([a for a in assets if a.get("status") == "success"])
+        typer.echo(f"   Generated: {success} images")
 
-    # Asset generation (images)
-    assets = generate_assets(reel_path, force=force)
-    typer.echo("[OK] Assets complete")
-    success = len([a for a in assets if a.get("status") == "success"])
-    typer.echo(f"   Generated: {success} images")
-    if stage == "assets":
-        return
+    def run_vidprompt():
+        vp_prompts = generate_video_prompts(reel_path, force=force, ai=ai, provider_override=ai_provider)
+        typer.echo("[OK] Video prompts complete")
+        typer.echo(f"   Prompts: {vp_prompts}")
 
-    # Video prompt refinement
-    vp_prompts = generate_video_prompts(reel_path, force=force, ai=ai, provider_override=ai_provider)
-    typer.echo("[OK] Video prompts complete")
-    typer.echo(f"   Prompts: {vp_prompts}")
-    if stage == "vidprompt":
-        return
+    def run_videos():
+        videos = generate_videos(reel_path, force=force)
+        typer.echo("[OK] Videos complete")
+        success = len([v for v in videos if v.get("status") == "success"])
+        typer.echo(f"   Generated: {success} clips")
 
-    # Video generation
-    videos = generate_videos(reel_path, force=force)
-    typer.echo("[OK] Videos complete")
-    success = len([v for v in videos if v.get("status") == "success"])
-    typer.echo(f"   Generated: {success} clips")
-    if stage == "videos":
-        return
+    def run_subsegments():
+        outputs = generate_subsegments(reel_path, force=force)
+        typer.echo("[OK] Subsegments complete")
+        out_dir = str(Path(outputs[0]).parent) if outputs else "subsegments"
+        typer.echo(f"   Wrote: {len(outputs)} clips -> {out_dir}")
 
-    outputs = generate_subsegments(reel_path, force=force)
-    typer.echo("[OK] Subsegments complete")
-    out_dir = str(Path(outputs[0]).parent) if outputs else "subsegments"
-    typer.echo(f"   Wrote: {len(outputs)} clips -> {out_dir}")
-    if stage == "subsegments":
-        return
+    def run_voice():
+        wavs = generate_voice(reel_path, force=force)
+        typer.echo("[OK] Voice complete")
+        wav_dir = str(Path(wavs[0]).parent) if wavs else "voice"
+        typer.echo(f"   Wrote: {len(wavs)} wavs -> {wav_dir}")
 
-    wavs = generate_voice(reel_path, force=force)
-    typer.echo("[OK] Voice complete")
-    wav_dir = str(Path(wavs[0]).parent) if wavs else "voice"
-    typer.echo(f"   Wrote: {len(wavs)} wavs -> {wav_dir}")
-    if stage == "voice":
-        return
+    def run_captions():
+        srt = generate_captions_srt(reel_path, force=force)
+        typer.echo("[OK] Captions complete")
+        typer.echo(f"   SRT: {srt}")
 
-    srt = generate_captions_srt(reel_path, force=force)
-    typer.echo("[OK] Captions complete")
-    typer.echo(f"   SRT: {srt}")
-    if stage == "captions":
-        return
+    def run_charts():
+        charts = render_charts(reel_path, force=force)
+        typer.echo("[OK] Charts complete")
+        if charts:
+            typer.echo(f"   Wrote: {len(charts)} mp4 -> {Path(charts[0]).parent}")
+        else:
+            typer.echo("   Wrote: 0 (no chart jobs in plan.json)")
 
-    charts = render_charts(reel_path, force=force)
-    typer.echo("[OK] Charts complete")
-    if charts:
-        typer.echo(f"   Wrote: {len(charts)} mp4 -> {Path(charts[0]).parent}")
-    else:
-        typer.echo("   Wrote: 0 (no chart jobs in plan.json)")
-    if stage == "charts":
-        return
+    def run_kit():
+        kit = generate_kit(reel_path, force=force)
+        typer.echo("[OK] Kit complete")
+        typer.echo(f"   Thumbnail: {kit['thumbnail']}")
+        typer.echo(f"   Guide: {kit['capcut_guide']}")
+        typer.echo(f"   Checklist: {kit['retention_checklist']}")
+        typer.echo(f"   Quality gate: {kit['quality_gate']}")
 
-    kit = generate_kit(reel_path, force=force)
-    typer.echo("[OK] Kit complete")
-    typer.echo(f"   Thumbnail: {kit['thumbnail']}")
-    typer.echo(f"   Guide: {kit['capcut_guide']}")
-    typer.echo(f"   Checklist: {kit['retention_checklist']}")
-    typer.echo(f"   Quality gate: {kit['quality_gate']}")
+    stage_runners = {
+        "init": run_init,
+        "plan": run_plan,
+        "visual_plan": run_visual_plan,
+        "assets": run_assets,
+        "vidprompt": run_vidprompt,
+        "videos": run_videos,
+        "subsegments": run_subsegments,
+        "voice": run_voice,
+        "captions": run_captions,
+        "charts": run_charts,
+        "kit": run_kit,
+    }
+
+    for s in stages_to_run:
+        stage_runners[s]()
 
 
 @app.command()
@@ -451,9 +463,14 @@ def current():
         ("inputs/claim.json", "Claim"),
         ("meta/provenance.json", "Init"),
         ("meta/plan.json", "Plan"),
+        ("meta/visual_plan.json", "Visual Plan"),
+        ("renders/images/composites", "Assets"),
+        ("meta/video_prompts.json", "Vidprompt"),
+        ("renders/videos", "Videos"),
         ("subsegments/subseg-01.mp4", "Subsegments"),
         ("voice/subseg-01.wav", "Voice"),
         ("captions/captions.srt", "Captions"),
+        ("charts", "Charts"),
         ("thumbnail/thumbnail.png", "Thumbnail"),
         ("meta/quality_gate.json", "Quality Gate"),
     ]
@@ -1103,7 +1120,7 @@ def ingest_blog(
     from src.services.blog_ingest import extract_seed_pipeline
     
     typer.echo("[LLM] Starting 3-step extraction pipeline...")
-    typer.echo("   (Anthropic → OpenAI → Anthropic)")
+    typer.echo("   (Anthropic -> OpenAI -> Anthropic)")
     
     try:
         seed_content, config, chart_json = extract_seed_pipeline(
@@ -1263,8 +1280,8 @@ content/reels/<reel>/
   uv run arcanomy validate          Validate reel files
 
   [cyan]Pipeline:[/cyan]
-  uv run arcanomy run               Run pipeline (full)
-  uv run arcanomy run -s plan       Run to plan stage only
+  uv run arcanomy run               Run ALL stages
+  uv run arcanomy run -s <stage>    Run ONLY that stage
   uv run arcanomy status            Show pipeline status
 
   [cyan]Tools:[/cyan]
@@ -1333,6 +1350,189 @@ _commit_app.command()(commit)
 def run_commit():
     """Entry point for 'uv run commit'."""
     _commit_app()
+
+
+# =============================================================================
+# Pipeline Stage Entry Points
+# Each runs ONLY that stage (not cumulative)
+# =============================================================================
+
+def _get_reel_or_exit() -> Path:
+    """Get current reel path or exit with helpful message."""
+    if not CURRENT_REEL_FILE.exists():
+        typer.echo("[ERROR] No reel selected.")
+        typer.echo("   Run: uv run reels")
+        raise typer.Exit(1)
+    reel_path = Path(CURRENT_REEL_FILE.read_text().strip())
+    if not reel_path.exists():
+        typer.echo(f"[ERROR] Reel not found: {reel_path}")
+        raise typer.Exit(1)
+    return reel_path
+
+
+def run_init():
+    """uv run init — Create provenance metadata."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    prov_path = pipeline_init(reel_path, fresh=False, force=False)
+    typer.echo(f"[OK] Init complete")
+
+
+def run_plan():
+    """uv run plan — AI generates script structure."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    plan_file = generate_plan(reel_path, force=False, ai=True, ai_provider=None)
+    typer.echo(f"[OK] Plan complete")
+
+
+def run_visual_plan():
+    """uv run visual_plan — AI creates image/motion prompts."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    vp_file = generate_visual_plan(reel_path, force=False, ai=True, provider_override=None)
+    typer.echo(f"[OK] Visual plan complete")
+
+
+def run_assets():
+    """uv run assets — AI generates images from prompts."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    assets = generate_assets(reel_path, force=False)
+    success = len([a for a in assets if a.get("status") == "success"])
+    typer.echo(f"[OK] Assets complete: {success} images")
+
+
+def run_vidprompt():
+    """uv run vidprompt — AI refines motion prompts."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    vp_prompts = generate_video_prompts(reel_path, force=False, ai=True, provider_override=None)
+    typer.echo(f"[OK] Video prompts complete")
+
+
+def run_videos():
+    """uv run videos — AI generates video clips."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    videos = generate_videos(reel_path, force=False)
+    success = len([v for v in videos if v.get("status") == "success"])
+    typer.echo(f"[OK] Videos complete: {success} clips")
+
+
+def run_subsegments():
+    """uv run subsegments — Assemble 10s video clips."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    outputs = generate_subsegments(reel_path, force=False)
+    typer.echo(f"[OK] Subsegments complete: {len(outputs)} clips")
+
+
+def run_voice():
+    """uv run voice — Generate voiceover audio."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    wavs = generate_voice(reel_path, force=False)
+    typer.echo(f"[OK] Voice complete: {len(wavs)} wavs")
+
+
+def run_captions():
+    """uv run captions — Create SRT subtitles."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    srt = generate_captions_srt(reel_path, force=False)
+    typer.echo(f"[OK] Captions complete")
+
+
+def run_charts():
+    """uv run charts — Render animated charts."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    charts = render_charts(reel_path, force=False)
+    if charts:
+        typer.echo(f"[OK] Charts complete: {len(charts)} mp4")
+    else:
+        typer.echo("[OK] Charts complete: 0 (no chart.json)")
+
+
+def run_kit():
+    """uv run kit — Generate thumbnail, guides, quality gate."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    
+    kit = generate_kit(reel_path, force=False)
+    typer.echo(f"[OK] Kit complete")
+    typer.echo(f"   Thumbnail: {kit['thumbnail']}")
+    typer.echo(f"   Guide: {kit['capcut_guide']}")
+
+
+def run_all():
+    """uv run run-all — Run all pipeline stages."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    reel_path = _get_reel_or_exit()
+    typer.echo(f"[Reel] {reel_path.name}")
+    typer.echo("=" * 40)
+    
+    # Run each stage
+    run_init()
+    run_plan()
+    run_visual_plan()
+    run_assets()
+    run_vidprompt()
+    run_videos()
+    run_subsegments()
+    run_voice()
+    run_captions()
+    run_charts()
+    run_kit()
+    
+    typer.echo("=" * 40)
+    typer.echo("[OK] All stages complete")
 
 
 if __name__ == "__main__":

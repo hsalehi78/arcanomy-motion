@@ -36,6 +36,20 @@ reels = "src.commands:_run_reels"
 chart = "src.commands:_run_chart"
 commit = "src.commands:run_commit"
 
+# Pipeline stages (each runs ONLY that stage)
+init = "src.commands:run_init"
+plan = "src.commands:run_plan"
+visual_plan = "src.commands:run_visual_plan"
+assets = "src.commands:run_assets"
+vidprompt = "src.commands:run_vidprompt"
+videos = "src.commands:run_videos"
+subsegments = "src.commands:run_subsegments"
+voice = "src.commands:run_voice"
+captions = "src.commands:run_captions"
+charts = "src.commands:run_charts"
+kit = "src.commands:run_kit"
+run-all = "src.commands:run_all"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
